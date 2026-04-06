@@ -1,0 +1,338 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id              String      @id @default(cuid())
+  email           String      @unique
+  password        String?
+  name            String?
+  phone           String?
+  isVerified      Boolean     @default(false)
+  profileKey      String?     /// Ayrshare profile key for this user's social accounts
+  ayrshareUserId  String?     /// Ayrshare internal profile ID
+  tokenBalance    Int         @default(50)   /// remaining AI tokens
+  tokenUsed       Int         @default(0)    /// total tokens consumed since last refill
+  trialEndsAt     DateTime?   /// null after trial is consumed or on paid plan
+  mamoCustomerId  String?     /// MamoPay customer reference
+  referralCode    String?     @unique /// stable referral code for invite links
+  referredByCode  String?     /// referral code of the user who invited this user
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  refreshTokens   RefreshToken[]
+  verifyTokens    VerifyToken[]
+  resetTokens     ResetToken[]
+  magicTokens     MagicToken[]
+  activity        Activity?
+  preference      Preference?
+  dataImages      DataImage[]
+  campaigns       Campaign[]
+  socialAccounts  SocialAccount[]
+  posts           Post[]
+  tokenLogs       TokenLog[]
+  subscription    UserSubscription?
+  payments        Payment[]
+  referralsSent   Referral[]   @relation("referrer")
+  referralsReceived Referral?  @relation("referee")
+  strategies      Strategy[]
+}
+
+/// Referral tracking — one row per successful referral
+model Referral {
+  id          String   @id @default(cuid())
+  referrerId  String                /// user who sent the invite
+  referrer    User     @relation("referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  refereeId   String   @unique      /// user who signed up via the link
+  referee     User     @relation("referee", fields: [refereeId], references: [id], onDelete: Cascade)
+  tokensAwarded Int    @default(50) /// tokens given to each party
+  status      String   @default("pending") /// pending | completed (completed = referee verified)
+  createdAt   DateTime @default(now())
+}
+
+/// Subscription plan — stored in DB, editable without deploy
+model Plan {
+  id            String   @id @default(cuid())
+  name          String   @unique  /// "Starter" | "Pro" | "Business"
+  monthlyPrice  Int                /// SAR
+  yearlyPrice   Int                /// SAR per month when billed annually
+  tokenCount    Int                /// tokens included per month
+  platformLimit Int      @default(3)
+  features      String             /// JSON array of feature strings
+  locked        String   @default("[]") /// JSON array of locked feature strings
+  watermark     Boolean  @default(false)
+  popular       Boolean  @default(false)
+  active        Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  subscriptions UserSubscription[]
+}
+
+/// One active subscription per user
+model UserSubscription {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId               String
+  plan                 Plan      @relation(fields: [planId], references: [id])
+  status               String    @default("active")  /// active | cancelled | past_due | trialing
+  billingType          String    @default("monthly")  /// monthly | yearly
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  mamoSubscriptionId   String?   /// MamoPay subscription/link ID
+  cancelledAt          DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+/// Payment record — one per charge attempt
+model Payment {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount            Int                 /// SAR in smallest unit (halalas) — stored as SAR for simplicity
+  currency          String   @default("SAR")
+  status            String              /// succeeded | failed | pending | refunded
+  provider          String   @default("mamopay")
+  providerPaymentId String?             /// MamoPay charge ID
+  type              String              /// subscription | token_purchase | topup
+  description       String?
+  metadata          String?             /// JSON: { planName, packId, tokens, … }
+  idempotencyKey    String?  @unique
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+/// Token packages available for purchase — stored in DB
+model TokenPackage {
+  id         String   @id @default(cuid())
+  name       String              /// "Starter Pack" | "Pro Pack" etc.
+  tokenCount Int
+  price      Int                 /// SAR
+  active     Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+/// AI token usage log — one row per AI operation
+model TokenLog {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  description String
+  tokens      Int
+  agent       String   @default("Content") /// Content | Strategy | Engagement | Analytics | Ads | Brand
+  createdAt   DateTime @default(now())
+}
+
+/// Published/scheduled social media posts
+model Post {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform    String    /// comma-separated: "instagram,tiktok,facebook"
+  caption     String    @db.Text
+  hashtags    String?   /// comma-separated
+  mediaUrls   String?   /// JSON array of media URLs
+  scheduledAt DateTime?
+  status      String    @default("Draft") /// Draft | Scheduled | Published | Failed
+  ayrshareId  String?   /// Ayrshare post ID for analytics tracking
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+/// Connected social platform accounts — one row per platform per user
+model SocialAccount {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform    String   /// instagram | tiktok | facebook | x | youtube | linkedin | snapchat | pinterest | threads | googlebusiness
+  username    String?
+  followers   Int      @default(0)
+  connected   Boolean  @default(true)
+  connectedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, platform])
+}
+
+/// Ad campaigns — tracked per user, enriched via Ayrshare analytics
+model Campaign {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  status          String   @default("Scheduled") /// Active | Scheduled | Completed | Paused | Draft
+  platforms       String                          /// comma-separated: "instagram,tiktok,facebook"
+  budget          Int                             /// SAR total
+  spent           Int      @default(0)            /// SAR spent so far
+  reach           Int      @default(0)            /// unique people reached
+  impressions     Int      @default(0)
+  clicks          Int      @default(0)
+  roi             Float?                          /// e.g. 2.8 → displayed as "2.8x"
+  startDate       DateTime
+  endDate         DateTime
+  isAI            Boolean  @default(true)         /// Speeda AI-optimized badge
+  location        String?
+  ageRange        String?
+  interests       String?                         /// comma-separated
+  ayrsharePostIds String?                         /// comma-separated Ayrshare post IDs for analytics
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+/// Business profile — one per user
+model Activity {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business_name        String?
+  industry             String?
+  country              String?
+  location             String?  /// city
+  opening_hours        String?  /// JSON: { open, close, is24Hours, hoursVary }
+  business_size        String?
+  year_founded         String?
+  audience_target      String?
+  unique_selling_point String?
+  certifications       String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+/// Brand voice & content preferences — one per user
+model Preference {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tone_of_voice        String?  /// comma-separated: "Professional, Bold"
+  language_preference  String?  /// comma-separated: "saudi, english"
+  business_description String?
+  social_media_goals   String?  /// comma-separated: "More Followers, More Orders"
+  color_primary        String?  /// hex: "#0020d4"
+  color_secondary      String?  /// hex: "#00c7f3"
+  preferred_platforms  String?  /// comma-separated platform ids
+  hashtags             String?
+  emojis               String?
+  other                String?  /// custom language text
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+/// AI-generated social media strategy — multiple per user
+model Strategy {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String?                /// strategy name from n8n
+  status           String   @default("active") /// active | completed | cancelled
+  periodStartDate  DateTime?
+  periodEndDate    DateTime?
+  weekCount        Int      @default(8)
+  goal             String?  @db.Text      /// overall strategy goal
+  platforms        String?                /// comma-separated platforms
+  n8nSessionId     String?                /// n8n chat session that created this
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  weeklyPlannings  WeeklyPlanning[]
+}
+
+/// Weekly breakdown of a strategy
+model WeeklyPlanning {
+  id             String   @id @default(cuid())
+  strategyId     String
+  strategy       Strategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  weekNumber     Int
+  weekStartDate  DateTime?
+  weekEndDate    DateTime?
+  postsCount     Int      @default(0)
+  weeklyGoal     String?  @db.Text
+  status         String   @default("pending") /// pending | in_progress | completed
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  draftPosts     DraftPost[]
+}
+
+/// Individual draft post within a weekly plan
+model DraftPost {
+  id               String   @id @default(cuid())
+  weeklyPlanningId String
+  weeklyPlanning   WeeklyPlanning @relation(fields: [weeklyPlanningId], references: [id], onDelete: Cascade)
+  platform         String?              /// target platform
+  caption          String?  @db.Text
+  hashtags         String?
+  mediaUrl         String?              /// generated image/video URL
+  mediaType        String?              /// image | video
+  postDate         DateTime?
+  postTime         String?              /// "14:00" format
+  postDetails      String?  @db.Text    /// additional context
+  postReminder     String?
+  status           String   @default("draft") /// draft | approved | published | rejected
+  publishedPostId  String?              /// links to Post.id after publishing
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+/// Brand identity assets (logo, guidelines, visuals) — many per user
+model DataImage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  filename  String
+  mimetype  String
+  size      Int      /// bytes
+  data      Bytes    /// raw file content — max 10 MB enforced at API level
+  createdAt DateTime @default(now())
+}
+
+/// Refresh tokens — long-lived, stored in DB for revocation
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+/// Email verification — 6-digit OTP
+model VerifyToken {
+  id        String   @id @default(cuid())
+  code      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+/// Password reset tokens
+model ResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+/// Magic-link / quick-login tokens
+model MagicToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

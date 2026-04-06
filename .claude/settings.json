@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"const c=require\\('crypto'\\); console.log\\('ACCESS:', c.randomBytes\\(48\\).toString\\('base64url'\\)\\); console.log\\('REFRESH:', c.randomBytes\\(48\\).toString\\('base64url'\\)\\); console.log\\('ADMIN:', c.randomBytes\\(32\\).toString\\('base64url'\\)\\);\")",
+      "Bash(npm -v)",
+      "Bash(psql --version)",
+      "Bash(npm install:*)",
+      "Bash(npx tsx:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx prisma:*)"
+    ]
+  }
+}

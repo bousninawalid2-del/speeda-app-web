@@ -1,0 +1,109 @@
+version: '3.9'
+
+services:
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       speeda
+      POSTGRES_USER:     speeda
+      POSTGRES_PASSWORD: speeda_secret
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U speeda']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Next.js App ─────────────────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV:                 production
+      DATABASE_URL:             postgresql://speeda:speeda_secret@db:5432/speeda
+      JWT_ACCESS_SECRET:        ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET:       ${JWT_REFRESH_SECRET}
+      JWT_ACCESS_EXPIRES:       ${JWT_ACCESS_EXPIRES:-15m}
+      JWT_REFRESH_EXPIRES:      ${JWT_REFRESH_EXPIRES:-7d}
+      SMTP_HOST:                ${SMTP_HOST}
+      SMTP_PORT:                ${SMTP_PORT:-587}
+      SMTP_USER:                ${SMTP_USER}
+      SMTP_PASS:                ${SMTP_PASS}
+      EMAIL_FROM:               ${EMAIL_FROM}
+      AYRSHARE_API_KEY:         ${AYRSHARE_API_KEY}
+      AYRSHARE_WEBHOOK_SECRET:  ${AYRSHARE_WEBHOOK_SECRET}
+      ANTHROPIC_API_KEY:        ${ANTHROPIC_API_KEY}
+      MAMOPAY_API_KEY:          ${MAMOPAY_API_KEY}
+      MAMOPAY_SANDBOX:          ${MAMOPAY_SANDBOX:-false}
+      MAMOPAY_WEBHOOK_SECRET:   ${MAMOPAY_WEBHOOK_SECRET}
+      NEXT_PUBLIC_APP_URL:      ${NEXT_PUBLIC_APP_URL}
+      FREE_TRIAL_DAYS:          ${FREE_TRIAL_DAYS:-14}
+      ADMIN_SECRET:             ${ADMIN_SECRET}
+      N8N_WEBHOOK_URL:          http://n8n:5678/webhook/210b7b4e-4fb5-420b-b219-9a9e66aa8872
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3000/api/health || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── DB migrations (one-off) ─────────────────────────────────────────────────
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: npx prisma migrate deploy
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://speeda:speeda_secret@db:5432/speeda
+    restart: 'no'
+
+  # ── n8n (Workflow Automation) ──────────────────────────────────────────────────
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '5678:5678'
+    environment:
+      # n8n core
+      N8N_HOST:                 ${N8N_HOST:-0.0.0.0}
+      N8N_PORT:                 5678
+      N8N_PROTOCOL:             https
+      WEBHOOK_URL:              ${N8N_WEBHOOK_URL_PUBLIC:-https://n8n.speeda.ai/}
+      # n8n database — same Postgres, separate schema
+      DB_TYPE:                  postgresdb
+      DB_POSTGRESDB_HOST:       db
+      DB_POSTGRESDB_PORT:       5432
+      DB_POSTGRESDB_DATABASE:   speeda
+      DB_POSTGRESDB_USER:       speeda
+      DB_POSTGRESDB_PASSWORD:   speeda_secret
+      DB_POSTGRESDB_SCHEMA:     n8n
+      # n8n auth
+      N8N_BASIC_AUTH_ACTIVE:    'true'
+      N8N_BASIC_AUTH_USER:      ${N8N_AUTH_USER:-admin}
+      N8N_BASIC_AUTH_PASSWORD:  ${N8N_AUTH_PASSWORD:-changeme}
+      # Timezone
+      GENERIC_TIMEZONE:         ${TIMEZONE:-Asia/Riyadh}
+      TZ:                       ${TIMEZONE:-Asia/Riyadh}
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  postgres_data:
+  n8n_data:

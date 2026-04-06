@@ -1,0 +1,86 @@
+import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import { z } from 'zod';
+import { prisma } from '@/lib/db';
+import { generateOTP, errorResponse } from '@/lib/auth-guard';
+import { sendVerificationEmail } from '@/lib/email';
+import { startFreeTrial } from '@/lib/subscription-guard';
+
+const schema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  phone: z.string().optional(),
+  referralCode: z.string().optional(),
+});
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const parsed = schema.safeParse(body);
+    if (!parsed.success) {
+      return errorResponse(parsed.error.issues[0].message);
+    }
+    const { name, email, password, phone, referralCode } = parsed.data;
+
+    // Check for existing account
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return errorResponse('An account with this email already exists', 409);
+    }
+
+    // Validate referral code if provided
+    let referrerId: string | null = null;
+    if (referralCode) {
+      const referrer = await prisma.user.findUnique({
+        where: { referralCode },
+        select: { id: true },
+      });
+      if (referrer) referrerId = referrer.id;
+    }
+
+    const hashed = await bcrypt.hash(password, 12);
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashed,
+        phone,
+        referredByCode: referralCode || null,
+      },
+    });
+
+    // Create referral record if valid referrer found
+    if (referrerId) {
+      await prisma.referral.create({
+        data: {
+          referrerId,
+          refereeId: user.id,
+          tokensAwarded: 50,
+          status: 'pending', // becomes 'completed' when email is verified
+        },
+      });
+    }
+
+    // Generate & save OTP
+    const code = generateOTP();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+    await prisma.verifyToken.create({
+      data: { code, userId: user.id, expiresAt },
+    });
+
+    // Start free trial for new users (non-blocking)
+    startFreeTrial(user.id).catch(console.error);
+
+    // Send verification email (don't block the response)
+    sendVerificationEmail(email, name, code).catch(console.error);
+
+    return NextResponse.json(
+      { message: 'Account created. Check your email for a verification code.', userId: user.id },
+      { status: 201 }
+    );
+  } catch (err) {
+    console.error('[register]', err);
+    return errorResponse('Internal server error', 500);
+  }
+}
