@@ -307,7 +307,12 @@ export const PostHistoryScreen = ({
                         <button onClick={() => handleRetry(post.id)} className="h-8 px-4 rounded-lg bg-red-accent text-primary-foreground text-[12px] font-bold flex items-center gap-1.5 btn-press">
                           <RefreshCw size={12} /> {t('postHistory.retry', 'Retry')}
                         </button>
-                        <button onClick={() => onNavigate?.('postEdit')} className="text-muted-foreground text-[12px] font-semibold flex items-center gap-1">✏️ {t('common.edit', 'Edit')}</button>
+                        <button
+                          onClick={() => onNavigate?.(`postEdit?postId=${encodeURIComponent(post.id)}&from=post-history`)}
+                          className="text-muted-foreground text-[12px] font-semibold flex items-center gap-1"
+                        >
+                          ✏️ {t('common.edit', 'Edit')}
+                        </button>
                       </div>
                     </div>
                   )}

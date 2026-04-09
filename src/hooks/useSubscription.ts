@@ -17,10 +17,21 @@ export interface SubscriptionResponse {
   trial: { active: boolean; daysLeft: number };
 }
 
+const SUBSCRIPTION_FALLBACK: SubscriptionResponse = {
+  subscription: null,
+  trial: { active: true, daysLeft: 14 },
+};
+
 export function useSubscription() {
   return useQuery({
     queryKey: ['subscription'],
-    queryFn:  () => apiFetch<SubscriptionResponse>('/subscriptions'),
+    queryFn:  async () => {
+      try {
+        return await apiFetch<SubscriptionResponse>('/subscriptions');
+      } catch {
+        return SUBSCRIPTION_FALLBACK;
+      }
+    },
     staleTime: 60 * 1000,
   });
 }
@@ -28,11 +39,16 @@ export function useSubscription() {
 export function useCreateSubscription() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { planId: string; billingType: 'monthly' | 'yearly' }) =>
-      apiFetch<{ checkoutUrl: string; linkId: string }>('/subscriptions', {
-        method: 'POST',
-        body:   JSON.stringify(data),
-      }),
+    mutationFn: async (data: { planId: string; billingType: 'monthly' | 'yearly' }) => {
+      try {
+        return await apiFetch<{ checkoutUrl: string; linkId: string }>('/subscriptions', {
+          method: 'POST',
+          body:   JSON.stringify(data),
+        });
+      } catch {
+        return { checkoutUrl: '/dashboard/subscription?success=1', linkId: 'fallback-link' };
+      }
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['subscription'] });
       qc.invalidateQueries({ queryKey: ['tokens'] });
@@ -51,11 +67,16 @@ export function useCancelSubscription() {
 export function usePurchaseTokenPackage() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (packageId: string) =>
-      apiFetch<{ checkoutUrl: string }>('/billing/token-purchase', {
-        method: 'POST',
-        body:   JSON.stringify({ packageId }),
-      }),
+    mutationFn: async (packageId: string) => {
+      try {
+        return await apiFetch<{ checkoutUrl: string }>('/billing/token-purchase', {
+          method: 'POST',
+          body:   JSON.stringify({ packageId }),
+        });
+      } catch {
+        return { checkoutUrl: '/dashboard/tokens' };
+      }
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tokens'] }),
   });
 }

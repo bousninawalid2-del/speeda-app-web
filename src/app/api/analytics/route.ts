@@ -9,7 +9,7 @@ const PERIOD_DAYS: Record<string, number> = {
   '7d': 7, '30d': 30, '90d': 90, '1y': 365,
 };
 
-const ALLOWED_PLATFORMS = ['instagram', 'twitter', 'facebook', 'tiktok', 'linkedin', 'youtube', 'snapchat'] as const;
+const ALLOWED_PLATFORMS = ['instagram', 'twitter', 'facebook', 'tiktok', 'linkedin', 'youtube', 'snapchat', 'gmb'] as const;
 
 const querySchema = z.object({
   period:   z.enum(['7d', '30d', '90d', '1y']).default('7d'),

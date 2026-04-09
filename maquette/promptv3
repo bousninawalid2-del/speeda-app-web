@@ -1,0 +1,75 @@
+# Optimal Prompt for Claude AI: Deep Project Finalization
+
+You are a senior full-stack developer and QA reviewer. Your task is to complete the Speeda-app project to a secure, robust, and production-ready state, following best practices and the QA review below. Address all unfinished work, refactor non-recommended code, and ensure all business logic and security-sensitive features are correctly implemented in the backend. Be especially thorough in the following areas:
+
+## Project Completion Checklist (Deep Review)
+
+### 1. Remove or Refactor Mock/Static Data
+- Eliminate all fallback to mock/static data in production code (e.g., campaigns, post edit).
+- Ensure all data flows use real API endpoints and database integration.
+
+### 2. Refresh Token & Session Security
+- Audit all refresh token logic (front and back):
+  - Ensure refresh tokens are never exposed to client-side JavaScript or stored in localStorage. Use httpOnly, secure cookies for refresh tokens.
+  - Move all refresh token issuance, storage, and renewal logic to the backend. The frontend should only receive new access tokens via secure endpoints.
+  - Remove any refresh token handling in the frontend (e.g., localStorage, direct renewal calls).
+- Implement proper token rotation and revocation (e.g., invalidate old refresh tokens on use or logout).
+- Ensure all JWT secrets and expiry settings are managed via environment variables and never hardcoded.
+
+### 3. Core Business Logic Placement
+- Review all business logic and security-sensitive features:
+  - Move any business logic, validation, or security checks from the frontend to the backend (e.g., token validation, user role checks, payment processing, analytics aggregation).
+  - The frontend should only handle UI and call backend APIs for all sensitive operations.
+- Refactor any direct database or sensitive API access out of the frontend.
+
+### 4. Robust Error Handling & User Feedback
+- Review all API calls and hooks (e.g., useTokens, useAnalytics, usePosts) for proper loading and error state management.
+- Provide clear user feedback for all error cases.
+
+### 5. Consistent Naming & Code Structure
+- Standardize naming conventions for variables, functions, and files (especially case normalization and platform keys).
+- Refactor deeply nested callbacks or excessive inline logic into reusable hooks or utility functions.
+
+### 6. Form Validation & Navigation
+- Ensure all forms (auth, setup, profile, etc.) validate input on both client and server.
+- Review navigation logic for edge cases (router.replace vs router.push).
+
+### 7. Documentation
+- Document all assumptions about case handling, data normalization, and error boundaries.
+- Update developer documentation for onboarding and maintenance.
+
+### 8. Environment & Deployment
+- Create .env.development and .env.production files with all required configuration parameters (database, API keys, secrets, etc.).
+- Build a production-ready Dockerfile that includes:
+  - The Next.js app
+  - Database service (e.g., PostgreSQL)
+  - All required environment variables and secrets
+  - Health checks and secure production settings
+- Provide docker-compose.yml for local and production orchestration (app + database).
+
+### 9. Final QA & Testing
+- Perform end-to-end testing of all user workflows.
+- Ensure no static or mock data remains in production.
+- Review and resolve all issues from the QA review.
+- Test refresh token rotation, session expiry, and logout flows for security.
+- Test that all business logic and sensitive operations are only accessible via backend APIs.
+
+---
+
+## QA Review Summary (for reference)
+- Remove fallback static/mock data in production.
+- Refactor hardcoded logic into reusable hooks/utilities.
+- Improve error handling and user feedback.
+- Standardize naming and code structure.
+- Validate all forms and navigation logic.
+- Document case handling and error boundaries.
+- Move all security-sensitive and business logic to the backend.
+- Secure refresh token handling (no localStorage, use httpOnly cookies).
+
+---
+
+**Instructions:**
+- Use this prompt to guide Claude AI in completing the project to a production-ready state.
+- Address all points above, ensuring best practices and robust implementation throughout.
+- Output should include updated code, configuration files, and deployment scripts as needed.
+- Be especially thorough in securing refresh token handling and moving all business logic to the backend.

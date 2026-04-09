@@ -56,8 +56,20 @@ export const screenToPath: Record<string, string> = {
 export function resolveScreen(screen: string): string {
   if (screen.startsWith('__doaction__')) {
     const parts = screen.split('__');
+    const actionCardId = parts[2];
     const nav = parts[3];
-    return screenToPath[nav] ?? '/dashboard';
+    const base = screenToPath[nav] ?? '/dashboard';
+    if (!actionCardId) return base;
+    return base.includes('?')
+      ? `${base}&actionCardId=${encodeURIComponent(actionCardId)}`
+      : `${base}?actionCardId=${encodeURIComponent(actionCardId)}`;
   }
-  return screenToPath[screen] ?? '/dashboard';
+
+  const [screenKey, rawQuery] = screen.split('?', 2);
+  const base = screenToPath[screenKey] ?? '/dashboard';
+  if (!rawQuery) return base;
+
+  return base.includes('?')
+    ? `${base}&${rawQuery}`
+    : `${base}?${rawQuery}`;
 }

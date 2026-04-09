@@ -60,9 +60,10 @@ export async function getSocialAnalytics(
 ): Promise<SocialAnalytics | null> {
   if (!isConfigured()) return null;
   try {
-    const qs = `platforms=${platforms.join(',')}`;
-    const res = await fetch(`${BASE}/analytics/social?${qs}`, {
+    const res = await fetch(`${BASE}/analytics/social`, {
+      method: 'POST',
       headers: apiHeaders(profileKey),
+      body: JSON.stringify({ platforms }),
       next: { revalidate: 300 }, // cache 5 min
     });
     if (!res.ok) return null;
@@ -154,8 +155,14 @@ export async function getConnectedPlatforms(
       headers: apiHeaders(profileKey),
     });
     if (!res.ok) return null;
-    const data = await res.json() as { platforms?: Record<string, { username?: string; followers?: number }> };
-    return data.platforms ?? {};
+    const data = await res.json();
+    if (data.platforms && Object.keys(data.platforms).length > 0) {
+      return Object.fromEntries(Object.entries(data.platforms).map(([s, i]) => [s.toLowerCase(), { username: i.username, followers: i.followers || 0 }]));
+    }
+    if (Array.isArray(data.activeSocialAccounts) && data.activeSocialAccounts.length > 0) {
+      return Object.fromEntries(data.activeSocialAccounts.map((s) => [s.toLowerCase(), {}]));
+    }
+    return {};
   } catch {
     return null;
   }
