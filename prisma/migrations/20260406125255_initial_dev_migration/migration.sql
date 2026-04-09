@@ -12,10 +12,24 @@ CREATE TABLE "User" (
     "tokenUsed" INTEGER NOT NULL DEFAULT 0,
     "trialEndsAt" TIMESTAMP(3),
     "mamoCustomerId" TEXT,
+    "referralCode" TEXT,
+    "referredByCode" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Referral" (
+    "id" TEXT NOT NULL,
+    "referrerId" TEXT NOT NULL,
+    "refereeId" TEXT NOT NULL,
+    "tokensAwarded" INTEGER NOT NULL DEFAULT 50,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Referral_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -198,6 +212,61 @@ CREATE TABLE "Preference" (
 );
 
 -- CreateTable
+CREATE TABLE "Strategy" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'active',
+    "periodStartDate" TIMESTAMP(3),
+    "periodEndDate" TIMESTAMP(3),
+    "weekCount" INTEGER NOT NULL DEFAULT 8,
+    "goal" TEXT,
+    "platforms" TEXT,
+    "n8nSessionId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Strategy_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "WeeklyPlanning" (
+    "id" TEXT NOT NULL,
+    "strategyId" TEXT NOT NULL,
+    "weekNumber" INTEGER NOT NULL,
+    "weekStartDate" TIMESTAMP(3),
+    "weekEndDate" TIMESTAMP(3),
+    "postsCount" INTEGER NOT NULL DEFAULT 0,
+    "weeklyGoal" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "WeeklyPlanning_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DraftPost" (
+    "id" TEXT NOT NULL,
+    "weeklyPlanningId" TEXT NOT NULL,
+    "platform" TEXT,
+    "caption" TEXT,
+    "hashtags" TEXT,
+    "mediaUrl" TEXT,
+    "mediaType" TEXT,
+    "postDate" TIMESTAMP(3),
+    "postTime" TEXT,
+    "postDetails" TEXT,
+    "postReminder" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'draft',
+    "publishedPostId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DraftPost_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "DataImage" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -261,6 +330,12 @@ CREATE TABLE "MagicToken" (
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "User_referralCode_key" ON "User"("referralCode");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Referral_refereeId_key" ON "Referral"("refereeId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Plan_name_key" ON "Plan"("name");
 
 -- CreateIndex
@@ -286,6 +361,12 @@ CREATE UNIQUE INDEX "ResetToken_token_key" ON "ResetToken"("token");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "MagicToken_token_key" ON "MagicToken"("token");
+
+-- AddForeignKey
+ALTER TABLE "Referral" ADD CONSTRAINT "Referral_referrerId_fkey" FOREIGN KEY ("referrerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Referral" ADD CONSTRAINT "Referral_refereeId_fkey" FOREIGN KEY ("refereeId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "UserSubscription" ADD CONSTRAINT "UserSubscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -315,6 +396,15 @@ ALTER TABLE "Activity" ADD CONSTRAINT "Activity_userId_fkey" FOREIGN KEY ("userI
 ALTER TABLE "Preference" ADD CONSTRAINT "Preference_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Strategy" ADD CONSTRAINT "Strategy_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WeeklyPlanning" ADD CONSTRAINT "WeeklyPlanning_strategyId_fkey" FOREIGN KEY ("strategyId") REFERENCES "Strategy"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DraftPost" ADD CONSTRAINT "DraftPost_weeklyPlanningId_fkey" FOREIGN KEY ("weeklyPlanningId") REFERENCES "WeeklyPlanning"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "DataImage" ADD CONSTRAINT "DataImage_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -328,3 +418,4 @@ ALTER TABLE "ResetToken" ADD CONSTRAINT "ResetToken_userId_fkey" FOREIGN KEY ("u
 
 -- AddForeignKey
 ALTER TABLE "MagicToken" ADD CONSTRAINT "MagicToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
