@@ -2,6 +2,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
+datasource db {
+  provider = "postgresql"
+}
+
 model User {
   id              String      @id @default(cuid())
   email           String      @unique
@@ -39,14 +43,14 @@ model User {
 }
 
 model Referral {
-  id          String   @id @default(cuid())
-  referrerId  String
-  referrer    User     @relation("referrer", fields: [referrerId], references: [id], onDelete: Cascade)
-  refereeId   String   @unique
-  referee     User     @relation("referee", fields: [refereeId], references: [id], onDelete: Cascade)
-  tokensAwarded Int    @default(50)
-  status      String   @default("pending")
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  referrerId    String
+  referrer      User     @relation("referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  refereeId     String   @unique
+  referee       User     @relation("referee", fields: [refereeId], references: [id], onDelete: Cascade)
+  tokensAwarded Int      @default(50)
+  status        String   @default("pending")
+  createdAt     DateTime @default(now())
 }
 
 model Plan {
@@ -115,7 +119,7 @@ model TokenPackage {
 model TokenLog {
   id          String   @id @default(cuid())
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   description String
   tokens      Int
   agent       String   @default("Content")
@@ -131,7 +135,7 @@ model Post {
   hashtags    String?
   mediaUrls   String?
   scheduledAt DateTime?
-  status      String   @default("Draft")
+  status      String    @default("Draft")
   ayrshareId  String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -146,7 +150,7 @@ model SocialAccount {
   followers   Int      @default(0)
   connected   Boolean  @default(true)
   connectedAt DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime @default(now())
 
   @@unique([userId, platform])
 }
@@ -190,7 +194,7 @@ model Activity {
   unique_selling_point String?
   certifications       String?
   createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  updatedAt            DateTime @default(now())
 }
 
 model Preference {
@@ -208,60 +212,60 @@ model Preference {
   emojis               String?
   other                String?
   createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  updatedAt            DateTime @default(now())
 }
 
 model Strategy {
-  id               String   @id @default(cuid())
-  userId           String
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name             String?
-  status           String   @default("active")
-  periodStartDate  DateTime?
-  periodEndDate    DateTime?
-  weekCount        Int      @default(8)
-  goal             String?  @db.Text
-  platforms        String?
-  n8nSessionId     String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String?
+  status          String   @default("active")
+  periodStartDate DateTime?
+  periodEndDate   DateTime?
+  weekCount       Int      @default(8)
+  goal            String?  @db.Text
+  platforms       String?
+  n8nSessionId    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now())
 
-  weeklyPlannings  WeeklyPlanning[]
+  weeklyPlannings WeeklyPlanning[]
 }
 
 model WeeklyPlanning {
-  id             String   @id @default(cuid())
-  strategyId     String
-  strategy       Strategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
-  weekNumber     Int
-  weekStartDate  DateTime?
-  weekEndDate    DateTime?
-  postsCount     Int      @default(0)
-  weeklyGoal     String?  @db.Text
-  status         String   @default("pending")
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id            String   @id @default(cuid())
+  strategyId    String
+  strategy      Strategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  weekNumber    Int
+  weekStartDate DateTime?
+  weekEndDate   DateTime?
+  postsCount    Int      @default(0)
+  weeklyGoal    String?  @db.Text
+  status        String         @default("pending")
+  createdAt     DateTime       @default(now())
+  updatedAt        DateTime       @default(now())
 
-  draftPosts     DraftPost[]
+  draftPosts    DraftPost[]
 }
 
 model DraftPost {
-  id               String   @id @default(cuid())
+  id               String         @id @default(cuid())
   weeklyPlanningId String
   weeklyPlanning   WeeklyPlanning @relation(fields: [weeklyPlanningId], references: [id], onDelete: Cascade)
   platform         String?
-  caption          String?  @db.Text
+  caption          String?        @db.Text
   hashtags         String?
   mediaUrl         String?
   mediaType        String?
   postDate         DateTime?
   postTime         String?
-  postDetails      String?  @db.Text
+  postDetails      String?        @db.Text
   postReminder     String?
-  status           String   @default("draft")
+  status           String         @default("draft")
   publishedPostId  String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @default(now())
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @default(now())
 }
 
 model DataImage {
