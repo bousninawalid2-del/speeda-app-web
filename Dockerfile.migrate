@@ -6,6 +6,6 @@ COPY package.json package-lock.json* ./
 RUN npm ci --legacy-peer-deps
 
 COPY prisma ./prisma
-RUN npx prisma generate
+COPY prisma.config.ts ./prisma.config.ts
 
 CMD ["npx", "prisma", "migrate", "deploy"]
