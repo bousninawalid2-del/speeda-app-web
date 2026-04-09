@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -24,22 +25,22 @@ model User {
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
-  refreshTokens   RefreshToken[]
-  verifyTokens    VerifyToken[]
-  resetTokens     ResetToken[]
-  magicTokens     MagicToken[]
-  activity        Activity?
-  preference      Preference?
-  dataImages      DataImage[]
-  campaigns       Campaign[]
-  socialAccounts  SocialAccount[]
-  posts           Post[]
-  tokenLogs       TokenLog[]
-  subscription    UserSubscription?
-  payments        Payment[]
-  referralsSent   Referral[]   @relation("referrer")
-  referralsReceived Referral?  @relation("referee")
-  strategies      Strategy[]
+  refreshTokens     RefreshToken[]
+  verifyTokens      VerifyToken[]
+  resetTokens       ResetToken[]
+  magicTokens       MagicToken[]
+  activity          Activity?
+  preference        Preference?
+  dataImages        DataImage[]
+  campaigns         Campaign[]
+  socialAccounts    SocialAccount[]
+  posts             Post[]
+  tokenLogs         TokenLog[]
+  subscription      UserSubscription?
+  payments          Payment[]
+  referralsSent     Referral[]  @relation("referrer")
+  referralsReceived Referral?   @relation("referee")
+  strategies        Strategy[]
 }
 
 model Referral {
@@ -73,19 +74,19 @@ model Plan {
 }
 
 model UserSubscription {
-  id                   String    @id @default(cuid())
-  userId               String    @unique
-  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  planId               String
-  plan                 Plan      @relation(fields: [planId], references: [id])
-  status               String    @default("active")
-  billingType          String    @default("monthly")
-  currentPeriodStart   DateTime
-  currentPeriodEnd     DateTime
-  mamoSubscriptionId   String?
-  cancelledAt          DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  id                 String    @id @default(cuid())
+  userId             String    @unique
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId             String
+  plan               Plan      @relation(fields: [planId], references: [id])
+  status             String    @default("active")
+  billingType        String    @default("monthly")
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  mamoSubscriptionId String?
+  cancelledAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 }
 
 model Payment {
@@ -119,7 +120,7 @@ model TokenPackage {
 model TokenLog {
   id          String   @id @default(cuid())
   userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   description String
   tokens      Int
   agent       String   @default("Content")
@@ -135,7 +136,7 @@ model Post {
   hashtags    String?
   mediaUrls   String?
   scheduledAt DateTime?
-  status      String    @default("Draft")
+  status      String   @default("Draft")
   ayrshareId  String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -176,7 +177,7 @@ model Campaign {
   interests       String?
   ayrsharePostIds String?
   createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  updatedAt       DateTime @default(now())
 }
 
 model Activity {
@@ -216,37 +217,37 @@ model Preference {
 }
 
 model Strategy {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   name            String?
-  status          String   @default("active")
+  status          String    @default("active")
   periodStartDate DateTime?
   periodEndDate   DateTime?
-  weekCount       Int      @default(8)
-  goal            String?  @db.Text
+  weekCount       Int       @default(8)
+  goal            String?   @db.Text
   platforms       String?
   n8nSessionId    String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   weeklyPlannings WeeklyPlanning[]
 }
 
 model WeeklyPlanning {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   strategyId    String
-  strategy      Strategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  strategy      Strategy  @relation(fields: [strategyId], references: [id], onDelete: Cascade)
   weekNumber    Int
   weekStartDate DateTime?
   weekEndDate   DateTime?
-  postsCount    Int      @default(0)
-  weeklyGoal    String?  @db.Text
-  status        String         @default("pending")
-  createdAt     DateTime       @default(now())
-  updatedAt        DateTime       @default(now())
+  postsCount    Int       @default(0)
+  weeklyGoal    String?   @db.Text
+  status        String   @default("pending")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  draftPosts    DraftPost[]
+  draftPosts DraftPost[]
 }
 
 model DraftPost {
@@ -265,7 +266,7 @@ model DraftPost {
   status           String         @default("draft")
   publishedPostId  String?
   createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 }
 
 model DataImage {
