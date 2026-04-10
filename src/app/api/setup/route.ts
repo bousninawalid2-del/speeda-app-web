@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { requireAuth, errorResponse } from '@/lib/auth-guard';
+import { syncPreferenceToN8n, syncActivityToN8n } from '@/lib/sync-n8n';
 
 const setupSchema = z.object({
   // Activity
@@ -59,6 +60,10 @@ export async function POST(req: NextRequest) {
       update: { tone_of_voice, language_preference, business_description, social_media_goals, color_primary, color_secondary, preferred_platforms, hashtags, emojis, other },
     }),
   ]);
+
+  // Fire-and-forget sync to n8n datatest — must not block the response
+  syncPreferenceToN8n(user.sub).catch(() => {});
+  syncActivityToN8n(user.sub).catch(() => {});
 
   return Response.json({ activity, preference });
 }

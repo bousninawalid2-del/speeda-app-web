@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { requireN8nAuth } from '@/lib/n8n-guard';
 import { errorResponse } from '@/lib/auth-guard';
+import { syncPreferenceToN8n } from '@/lib/sync-n8n';
 
 /**
  * POST /api/n8n/preference
@@ -41,6 +42,9 @@ export async function POST(req: NextRequest) {
     create: { userId, ...data },
     update: data,
   });
+
+  // Fire-and-forget sync to n8n datatest — must not block the response
+  syncPreferenceToN8n(userId).catch(() => {});
 
   return Response.json({ preference });
 }
