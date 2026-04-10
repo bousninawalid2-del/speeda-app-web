@@ -414,6 +414,8 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
   const { data: postsData } = usePosts();
 
   const [briefingDismissed, setBriefingDismissed] = useState(false);
+  const [questsOpen, setQuestsOpen] = useState(false);
+  const hasNegativeReview = false;
 
   // Dynamic data from APIs
   const displayName = user?.name?.split(' ')[0] ?? 'there';
@@ -534,48 +536,156 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
             </div>
           )}
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-4 gap-4">
-            <div className="bg-card rounded-2xl border border-border-light p-4 flex flex-col items-center">
-              <MosScoreRing score={mosScore} size={64} />
-              <p className="text-[11px] text-muted-foreground font-medium mt-2">MOS Score</p>
-            </div>
-            <div className="bg-card rounded-2xl border border-border-light p-4 flex flex-col justify-center">
-              <p className="text-[22px] font-extrabold text-foreground">{tokenCount}</p>
-              <p className="text-[11px] text-muted-foreground">Tokens left</p>
-            </div>
-            <div className="bg-card rounded-2xl border border-border-light p-4 flex flex-col justify-center">
-              <p className="text-[22px] font-extrabold text-foreground">{connectedCount}</p>
-              <p className="text-[11px] text-muted-foreground">Platforms</p>
-            </div>
-            <div className="bg-card rounded-2xl border border-border-light p-4 flex flex-col justify-center">
-              <p className="text-[22px] font-extrabold text-foreground">{scheduledPosts}</p>
-              <p className="text-[11px] text-muted-foreground">Queued posts</p>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="mt-6">
-            <h2 className="text-[18px] font-bold text-foreground">{t('home.quickActions')}</h2>
-            <div className="grid grid-cols-4 gap-3 mt-3">
-              {[
-                { icon: PenSquare, label: t('home.createPost'), color: 'bg-purple-soft', textColor: 'text-purple', nav: 'create' },
-                { icon: Zap, label: t('home.campaign'), color: 'bg-green-soft', textColor: 'text-brand-teal', nav: 'campaigns' },
-                { icon: BarChart3, label: t('home.analytics'), color: 'bg-green-soft', textColor: 'text-green-accent', nav: 'analytics' },
-                { icon: MessageSquare, label: t('home.aiChat'), color: 'bg-purple-soft', textColor: 'text-purple', nav: 'chat' },
-              ].map((item, i) => (
-                <button key={i} onClick={() => onNavigate(item.nav)} className="flex flex-col items-center gap-2 bg-card rounded-2xl p-5 border border-border-light desktop-hover">
-                  <div className={`w-[64px] h-[64px] rounded-2xl ${item.color} flex items-center justify-center`}>
-                    <item.icon size={24} className={item.textColor} />
+          {/* Row 1: Briefing + MOS Score */}
+          <div className="grid grid-cols-5 gap-6">
+            {/* Left: AI Morning Briefing */}
+            <div className="col-span-3">
+              {!briefingDismissed ? (
+                <div className="gradient-hero rounded-3xl p-8 relative overflow-hidden shadow-hero h-full desktop-hover">
+                  <div className="absolute w-40 h-40 rounded-full bg-primary-foreground/5 -top-10 -right-10" />
+                  <div className="absolute w-24 h-24 rounded-full bg-primary-foreground/[0.03] bottom-2 -left-6" />
+                  <div className="relative z-10">
+                    <span className="text-[11px] uppercase font-bold tracking-[1px] text-primary-foreground/70">
+                      ✦ AI MORNING BRIEFING · <span className="animate-pulse-learning">Learning...</span>
+                    </span>
+                    <p className="text-[18px] font-semibold text-primary-foreground leading-[1.5] mt-4">I'm getting to know your business. The more you use Speeda — posting content, launching campaigns, engaging with customers — the smarter and more personalized my briefings become. Keep going, I'm learning every day.</p>
+                    <div className="flex gap-3 mt-6">
+                      <button onClick={() => onNavigate('aiBriefingPreview')} className="px-5 py-2.5 rounded-xl bg-primary-foreground/20 backdrop-blur text-primary-foreground text-[14px] font-bold btn-press hover:bg-primary-foreground/30 transition-colors">See what's coming</button>
+                      <button onClick={() => setBriefingDismissed(true)} className="px-5 py-2.5 rounded-xl bg-primary-foreground/10 text-primary-foreground/70 text-[14px] font-medium btn-press hover:bg-primary-foreground/15 transition-colors">{t('home.dismiss')}</button>
+                    </div>
                   </div>
-                  <span className="text-[12px] font-semibold text-foreground">{item.label}</span>
-                </button>
-              ))}
+                </div>
+              ) : (
+                <div className="bg-card rounded-3xl border border-border-light p-8 h-full flex items-center justify-center">
+                  <p className="text-muted-foreground text-[14px]">AI briefing dismissed for today</p>
+                </div>
+              )}
+            </div>
+
+            {/* Right: MOS Score + Streak */}
+            <div className="col-span-2 space-y-4">
+              <div className="bg-card rounded-3xl border border-border-light p-6 shadow-card desktop-hover flex flex-col items-center">
+                <TappableMosRing size={120} score={mosScore} onTap={() => onNavigate('mosScore')} />
+                <p className="text-[11px] text-muted-foreground font-medium mt-2">Marketing Operating System Score</p>
+              </div>
+              <button onClick={() => setQuestsOpen(!questsOpen)} className="w-full bg-card rounded-2xl border border-border-light p-4 flex items-center justify-between desktop-hover">
+                <span className="text-[13px] font-bold gradient-streak">{t('home.streak', { count: 12 })}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] text-muted-foreground font-medium">{t('home.weeklyQuests', { done: 3, total: 5 })}</span>
+                  <div className="w-16 h-1.5 rounded-full bg-border overflow-hidden">
+                    <div className="w-[60%] h-full gradient-btn rounded-full" />
+                  </div>
+                </div>
+              </button>
+              <AnimatePresence>
+                {questsOpen && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                    <div className="bg-card rounded-2xl border border-border-light p-4 space-y-2">
+                      {[
+                        { done: true, text: t('quests.post3Reels') },
+                        { done: true, text: t('quests.replyReviews') },
+                        { done: true, text: t('quests.launch1Campaign') },
+                        { done: false, text: t('quests.connectTikTok') },
+                        { done: false, text: t('quests.shareReview') },
+                      ].map((q, i) => (
+                        <div key={i} className={`text-[13px] ${q.done ? 'line-through text-muted-foreground' : 'text-foreground font-medium'}`}>
+                          {q.done ? '✅' : '⬜'} {q.text}
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
 
-          {/* Social Media + Engagement */}
+          {/* AI Activity Banner */}
+          <button onClick={() => onNavigate('aiActivity')} className="w-full mt-5 bg-card rounded-2xl border border-border-light p-3 px-5 flex items-center justify-between relative overflow-hidden desktop-hover">
+            <div className="absolute inset-0 animate-shimmer" />
+            <div className="flex items-center gap-2 relative z-10">
+              <div className="w-2 h-2 rounded-full bg-green-accent animate-pulse-dot" />
+              <span className="text-[11px] font-bold text-purple">{t('home.aiActive')}</span>
+            </div>
+            <span className="text-[12px] text-muted-foreground relative z-10">{t('home.aiActivitySummary')}</span>
+          </button>
+
+          {/* Row 2: Strategy Cards — horizontal scrollable */}
+          <div className="mt-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[20px] font-bold text-foreground">{t('home.todaysActions')}</h2>
+              <AnimatePresence mode="wait">
+                <motion.span key={activeCards.length} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="text-[12px] font-semibold text-muted-foreground bg-muted px-3 py-1 rounded-lg">
+                  {activeCards.length} remaining
+                </motion.span>
+              </AnimatePresence>
+            </div>
+            {activeCards.length > 0 ? (
+              <DesktopStrategyScroller cards={activeCards} onDismiss={handleDismiss} onDoAction={handleDoAction} pendingDoneId={pendingDoneId} t={t} />
+            ) : (
+              <div className="mt-3">
+                <CompletionCard doneCount={doneCount} totalCount={totalCount} />
+              </div>
+            )}
+          </div>
+
+          {/* Content Suggestions */}
+          <ContentSuggestions onNavigate={onNavigate} />
+
+          {/* Row 3: Quick Actions + AI Recommendations */}
           <div className="mt-6 grid grid-cols-2 gap-6">
+            {/* Quick Actions */}
+            <div>
+              <h2 className="text-[18px] font-bold text-foreground">{t('home.quickActions')}</h2>
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                {[
+                  { icon: PenSquare, label: t('home.createPost'), color: 'bg-purple-soft', textColor: 'text-purple', nav: 'create' },
+                  { icon: Zap, label: t('home.campaign'), color: 'bg-green-soft', textColor: 'text-brand-teal', nav: 'campaigns' },
+                  { icon: BarChart3, label: t('home.analytics'), color: 'bg-green-soft', textColor: 'text-green-accent', nav: 'analytics' },
+                  { icon: MessageSquare, label: t('home.aiChat'), color: 'bg-purple-soft', textColor: 'text-purple', nav: 'chat' },
+                ].map((item, i) => (
+                  <button key={i} onClick={() => onNavigate(item.nav)} className="flex flex-col items-center gap-2 bg-card rounded-2xl p-5 border border-border-light desktop-hover">
+                    <div className={`w-[64px] h-[64px] rounded-2xl ${item.color} flex items-center justify-center`}>
+                      <item.icon size={24} className={item.textColor} />
+                    </div>
+                    <span className="text-[12px] font-semibold text-foreground">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* AI Recommendations */}
+            <div>
+              <h2 className="text-[18px] font-bold text-foreground">{t('home.aiRecommendations')}</h2>
+              <div className="mt-3 space-y-2">
+                {[
+                  { icon: '📅', bg: 'bg-purple-soft', text: t('home.schedulePosts'), nav: 'create' },
+                  { icon: '💬', bg: 'bg-green-soft', text: t('home.respondReviews'), nav: 'chat-engagement-reviews' },
+                  { icon: '📈', bg: 'bg-orange-soft', text: t('home.increaseBudget'), nav: 'campaigns' },
+                ].map((item, i) => (
+                  <button key={i} onClick={() => onNavigate(item.nav)} className="w-full flex items-center gap-3 bg-card rounded-2xl p-4 border border-border-light desktop-hover">
+                    <div className={`w-11 h-11 rounded-2xl ${item.bg} flex items-center justify-center text-lg`}>{item.icon}</div>
+                    <span className="text-[14px] font-medium text-foreground flex-1 text-start">{item.text}</span>
+                    <ChevronRight size={16} className="text-muted-foreground" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Row 4: Competitor Watch + Social Media + Engagement — 3 equal columns */}
+          <div className="mt-6 grid grid-cols-3 gap-6">
+            {/* Competitor Watch */}
+            <button onClick={() => onNavigate('competitorWatch')} className="w-full gradient-dark rounded-2xl p-6 desktop-hover text-start flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Search size={16} className="text-primary-foreground/70" />
+                  <span className="text-[16px] font-bold text-primary-foreground">{t('home.competitorWatch')}</span>
+                </div>
+                <p className="text-[13px] text-primary-foreground/70 mt-2">{t('home.competitorDesc')}</p>
+              </div>
+              <span className="text-brand-teal text-[14px] font-bold mt-3 block">{t('home.counterMove')}</span>
+            </button>
+
             {/* Social Media */}
             <button onClick={() => onNavigate('social')} className="w-full bg-card rounded-2xl p-5 border border-border-light shadow-card flex flex-col justify-between desktop-hover text-start">
               <div>
@@ -593,12 +703,16 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
             </button>
 
             {/* Engagement */}
-            <button onClick={() => onNavigate('chat-engagement')} className="w-full bg-card rounded-2xl p-5 border border-border-light shadow-card flex flex-col justify-between desktop-hover text-start">
+            <button onClick={() => onNavigate('chat-engagement')} className={`w-full bg-card rounded-2xl p-5 border shadow-card flex flex-col justify-between desktop-hover text-start relative ${hasNegativeReview ? 'border-s-4 border-s-red-accent border-border-light bg-[hsl(0,100%,98%)]' : 'border-border-light'}`}>
               <div>
                 <MessageSquare size={20} className="text-purple" />
                 <h3 className="text-[15px] font-bold text-foreground mt-2">{t('home.engagement')}</h3>
-                <p className="text-[12px] text-muted-foreground mt-1">Manage comments &amp; DMs</p>
+                <p className="text-[12px] text-muted-foreground mt-1">{t('home.engagementDesc')}</p>
+                {hasNegativeReview && (
+                  <p className="text-[11px] text-red-accent font-semibold mt-1">⚠️ 1 negative review needs attention</p>
+                )}
               </div>
+              <span className="absolute top-3 end-3 w-6 h-6 rounded-lg bg-red-accent text-primary-foreground text-[11px] font-bold flex items-center justify-center">6</span>
             </button>
           </div>
 
@@ -614,7 +728,7 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
   }
 
   // ============================
-  // MOBILE LAYOUT (unchanged)
+  // MOBILE LAYOUT
   // ============================
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="bg-background min-h-screen pb-24">
@@ -655,8 +769,51 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
             <button onClick={() => onNavigate('tokens')} className={`px-3 py-1 rounded-2xl text-[12px] font-bold border ${tokenLow ? 'bg-red-soft text-red-accent border-red-accent/20' : 'bg-card text-brand-blue border-border-light'}`}>
               {t('home.tokensRemaining', { count: tokenCount })}
             </button>
+            <button onClick={() => onNavigate('notifications')} className="w-8 h-8 rounded-lg bg-card border border-border-light flex items-center justify-center relative">
+              <Bell size={14} className="text-muted-foreground" />
+              <div className="absolute -top-1 -end-1 w-4 h-4 rounded-full bg-red-accent text-primary-foreground text-[8px] font-bold flex items-center justify-center">3</div>
+            </button>
+            <button onClick={() => onNavigate('settings')} className="w-8 h-8 rounded-lg bg-card border border-border-light flex items-center justify-center">
+              <Settings size={14} className="text-muted-foreground" />
+            </button>
           </div>
         </div>
+
+        {/* MOS Score */}
+        <div className="flex justify-end -mt-2">
+          <TappableMosRing size={64} score={mosScore} onTap={() => onNavigate('mosScore')} />
+        </div>
+
+        {/* Streak Bar */}
+        <button onClick={() => setQuestsOpen(!questsOpen)} className="w-full mt-2 bg-card rounded-2xl border border-border-light p-3 flex items-center justify-between card-tap">
+          <span className="text-[13px] font-bold gradient-streak">{t('home.streak', { count: 12 })}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[12px] text-muted-foreground font-medium">{t('home.weeklyQuests', { done: 3, total: 5 })}</span>
+            <div className="w-16 h-1.5 rounded-full bg-border overflow-hidden">
+              <div className="w-[60%] h-full gradient-btn rounded-full" />
+            </div>
+          </div>
+        </button>
+
+        <AnimatePresence>
+          {questsOpen && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+              <div className="bg-card rounded-2xl border border-border-light p-4 mt-2 space-y-2">
+                {[
+                  { done: true, text: t('quests.post3Reels') },
+                  { done: true, text: t('quests.replyReviews') },
+                  { done: true, text: t('quests.launch1Campaign') },
+                  { done: false, text: t('quests.connectTikTok') },
+                  { done: false, text: t('quests.shareReview') },
+                ].map((q, i) => (
+                  <div key={i} className={`text-[13px] ${q.done ? 'line-through text-muted-foreground' : 'text-foreground font-medium'}`}>
+                    {q.done ? '✅' : '⬜'} {q.text}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Disconnected Platform Warning */}
         {disconnectedAccounts.length > 0 && (
@@ -670,24 +827,51 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
           </div>
         )}
 
-        {/* Summary Cards */}
-        <div className="mt-4 grid grid-cols-4 gap-2">
-          <div className="bg-card rounded-xl border border-border-light p-3 flex flex-col items-center">
-            <MosScoreRing score={mosScore} size={40} />
-            <p className="text-[9px] text-muted-foreground mt-1">MOS</p>
+        {/* AI Morning Briefing */}
+        {!briefingDismissed && (
+          <div className="mt-4 gradient-hero rounded-3xl p-6 relative overflow-hidden shadow-hero">
+            <div className="absolute w-32 h-32 rounded-full bg-primary-foreground/5 -top-8 -right-8" />
+            <div className="absolute w-20 h-20 rounded-full bg-primary-foreground/[0.03] bottom-2 -left-4" />
+            <div className="relative z-10">
+              <span className="text-[11px] uppercase font-bold tracking-[1px] text-primary-foreground/70">
+                ✦ AI MORNING BRIEFING · <span className="animate-pulse-learning">Learning...</span>
+              </span>
+              <p className="text-[16px] font-semibold text-primary-foreground leading-[1.5] mt-3">I'm getting to know your business. The more you use Speeda — posting content, launching campaigns, engaging with customers — the smarter and more personalized my briefings become. Keep going, I'm learning every day.</p>
+              <div className="flex gap-2 mt-4">
+                <button onClick={() => onNavigate('aiBriefingPreview')} className="px-4 py-2 rounded-xl bg-primary-foreground/20 backdrop-blur text-primary-foreground text-[13px] font-bold btn-press">See what's coming</button>
+                <button onClick={() => setBriefingDismissed(true)} className="px-4 py-2 rounded-xl bg-primary-foreground/10 text-primary-foreground/70 text-[13px] font-medium btn-press">{t('home.dismiss')}</button>
+              </div>
+            </div>
           </div>
-          <div className="bg-card rounded-xl border border-border-light p-3 text-center">
-            <p className="text-[18px] font-extrabold text-foreground">{tokenCount}</p>
-            <p className="text-[9px] text-muted-foreground">Tokens</p>
+        )}
+
+        {/* AI Activity Banner */}
+        <button onClick={() => onNavigate('aiActivity')} className="w-full mt-3 bg-card rounded-2xl border border-border-light p-3 px-4 flex items-center justify-between relative overflow-hidden card-tap">
+          <div className="absolute inset-0 animate-shimmer" />
+          <div className="flex items-center gap-2 relative z-10">
+            <div className="w-2 h-2 rounded-full bg-green-accent animate-pulse-dot" />
+            <span className="text-[11px] font-bold text-purple">{t('home.aiActive')}</span>
           </div>
-          <div className="bg-card rounded-xl border border-border-light p-3 text-center">
-            <p className="text-[18px] font-extrabold text-foreground">{connectedCount}</p>
-            <p className="text-[9px] text-muted-foreground">Platforms</p>
+          <span className="text-[12px] text-muted-foreground relative z-10">{t('home.aiActivitySummary')}</span>
+        </button>
+
+        {/* Strategy Cards — horizontal swipeable with peek */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[20px] font-bold text-foreground">{t('home.todaysActions')}</h2>
+            <AnimatePresence mode="wait">
+              <motion.span key={activeCards.length} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="text-[12px] font-semibold text-muted-foreground bg-muted px-3 py-1 rounded-lg">
+                {activeCards.length} remaining
+              </motion.span>
+            </AnimatePresence>
           </div>
-          <div className="bg-card rounded-xl border border-border-light p-3 text-center">
-            <p className="text-[18px] font-extrabold text-foreground">{scheduledPosts}</p>
-            <p className="text-[9px] text-muted-foreground">Queued</p>
-          </div>
+          {activeCards.length > 0 ? (
+            <MobileStrategyCards cards={activeCards} onDismiss={handleDismiss} onDoAction={handleDoAction} pendingDoneId={pendingDoneId} t={t} />
+          ) : (
+            <div className="mt-3">
+              <CompletionCard doneCount={doneCount} totalCount={totalCount} />
+            </div>
+          )}
         </div>
 
         {/* Quick Actions */}
@@ -710,11 +894,42 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
           </div>
         </div>
 
+        {/* Content Suggestions */}
+        <ContentSuggestions onNavigate={onNavigate} />
+
+        {/* AI Recommendations */}
+        <div className="mt-6">
+          <h2 className="text-[18px] font-bold text-foreground">{t('home.aiRecommendations')}</h2>
+          <div className="mt-3 space-y-2">
+            {[
+              { icon: '📅', bg: 'bg-purple-soft', text: t('home.schedulePosts'), nav: 'create' },
+              { icon: '💬', bg: 'bg-green-soft', text: t('home.respondReviews'), nav: 'chat-engagement-reviews' },
+              { icon: '📈', bg: 'bg-orange-soft', text: t('home.increaseBudget'), nav: 'campaigns' },
+            ].map((item, i) => (
+              <motion.button whileTap={{ scale: 0.98 }} key={i} onClick={() => onNavigate(item.nav)} className="w-full flex items-center gap-3 bg-card rounded-2xl p-4 border border-border-light card-tap">
+                <div className={`w-11 h-11 rounded-2xl ${item.bg} flex items-center justify-center text-lg`}>{item.icon}</div>
+                <span className="text-[14px] font-medium text-foreground flex-1 text-start">{item.text}</span>
+                <ChevronRight size={16} className="text-muted-foreground rtl:rotate-180" />
+              </motion.button>
+            ))}
+          </div>
+        </div>
+
         {/* Referral Card */}
         <button onClick={() => onNavigate('referral')} className="w-full mt-5 bg-card rounded-2xl p-4 border border-brand-teal/30 card-tap text-start">
           <p className="text-[15px] font-bold text-foreground">{t('home.inviteTitle')}</p>
           <p className="text-[12px] text-muted-foreground mt-1">{t('home.inviteDesc')}</p>
           <span className="inline-block mt-2 px-4 py-2 rounded-xl gradient-btn text-primary-foreground text-[12px] font-bold">{t('home.shareInviteLink')}</span>
+        </button>
+
+        {/* Competitor Watch */}
+        <button onClick={() => onNavigate('competitorWatch')} className="w-full mt-5 gradient-dark rounded-2xl p-4 card-tap text-start">
+          <div className="flex items-center gap-2">
+            <Search size={14} className="text-primary-foreground/70" />
+            <span className="text-[14px] font-bold text-primary-foreground">{t('home.competitorWatch')}</span>
+          </div>
+          <p className="text-[12px] text-primary-foreground/70 mt-2">{t('home.competitorDesc')}</p>
+          <span className="text-brand-teal text-[13px] font-bold mt-2 block">{t('home.counterMove')}</span>
         </button>
 
         {/* More Tools */}
@@ -735,12 +950,18 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
                 })}
               </div>
             </button>
-            <button onClick={() => onNavigate('chat-engagement')} className="bg-card rounded-2xl p-5 border border-border-light shadow-card min-h-[130px] flex flex-col justify-between card-tap text-start">
+            <button onClick={() => onNavigate('chat-engagement')} className={`bg-card rounded-2xl p-5 border shadow-card min-h-[130px] flex flex-col justify-between card-tap text-start relative ${hasNegativeReview ? 'border-s-4 border-s-red-accent border-border-light bg-[#fff5f5]' : 'border-border-light'}`}>
               <div>
                 <MessageSquare size={20} className="text-purple" />
                 <h3 className="text-[15px] font-bold text-foreground mt-2">{t('home.engagement')}</h3>
-                <p className="text-[12px] text-muted-foreground mt-1">Manage comments & DMs</p>
+                <p className="text-[12px] text-muted-foreground mt-1">{t('home.engagementDesc')}</p>
+                {hasNegativeReview && (
+                  <p className="text-[11px] text-red-accent font-semibold mt-1">⚠️ 1 negative review needs attention</p>
+                )}
               </div>
+              {hasNegativeReview && (
+                <span className="absolute top-3 end-3 w-6 h-6 rounded-lg bg-red-accent text-primary-foreground text-[11px] font-bold flex items-center justify-center">6</span>
+              )}
             </button>
           </div>
         </div>

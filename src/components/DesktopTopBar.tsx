@@ -49,6 +49,7 @@ export const DesktopTopBar = ({ onNavigate }: DesktopTopBarProps) => {
 
         <button onClick={() => onNavigate('notifications')} className="w-10 h-10 rounded-xl bg-card border border-border-light flex items-center justify-center relative hover:shadow-sm transition-shadow">
           <Bell size={16} className="text-muted-foreground" />
+          <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-accent text-primary-foreground text-[9px] font-bold flex items-center justify-center">3</div>
         </button>
 
         <div className="relative">
