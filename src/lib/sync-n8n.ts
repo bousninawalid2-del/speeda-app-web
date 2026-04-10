@@ -11,6 +11,9 @@
 import { n8nPool } from '@/lib/db-n8n';
 import { prisma } from '@/lib/db';
 
+// ⚠️ SECURITY: users table is NEVER synced — incompatible auth systems (bcrypt/JWT vs Spring Security)
+// datatest.users is used READ-ONLY to resolve email → user_id mapping only
+
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
 /**

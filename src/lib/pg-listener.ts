@@ -16,6 +16,9 @@ import { Client } from 'pg';
 import { prisma } from '@/lib/db';
 import { n8nPool } from '@/lib/db-n8n';
 
+// ⚠️ SECURITY: users table is NEVER synced — incompatible auth systems (bcrypt/JWT vs Spring Security)
+// datatest.users is used READ-ONLY to resolve email → user_id mapping only
+
 // ─── Types for the NOTIFY payload ─────────────────────────────────────────────
 
 interface N8nPreferencesRow {
