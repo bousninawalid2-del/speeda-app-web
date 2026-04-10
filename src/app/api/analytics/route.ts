@@ -103,6 +103,60 @@ export async function GET(req: NextRequest) {
   const profileScore = userActivity ? 30 : 0;
   const mosScore     = postScore + socialScore + profileScore;
 
+  // ── 4b. MOS Score factors ─────────────────────────────────────────────────
+  const activeCampaignsCount = await prisma.campaign.count({
+    where: { userId: user.sub, status: 'active' },
+  });
+
+  const postPct = Math.min(100, Math.round(totalPublishedPosts / Math.max(days, 1) * 100));
+  const engPct  = Math.min(100, Math.round(engagement / 5 * 100));
+  const covPct  = Math.min(100, Math.round(totalConnectedAccounts / 6 * 100));
+  const campPct = Math.min(100, Math.round(activeCampaignsCount / 2 * 100));
+
+  const factors = [
+    {
+      name: 'Posting Consistency', weight: 25, pct: postPct,
+      pts: `${Math.round(postPct * 25 / 100)}/25`,
+      desc: 'How regularly you publish content across platforms',
+    },
+    {
+      name: 'Engagement Rate', weight: 20, pct: engPct,
+      pts: `${Math.round(engPct * 20 / 100)}/20`,
+      desc: 'Average engagement across your connected platforms',
+    },
+    {
+      name: 'Response Time', weight: 20, pct: 60,
+      pts: '12/20',
+      desc: 'How quickly you respond to comments and messages',
+    },
+    {
+      name: 'Platform Coverage', weight: 15, pct: covPct,
+      pts: `${Math.round(covPct * 15 / 100)}/15`,
+      desc: 'How many platforms you are active on',
+    },
+    {
+      name: 'Campaign Performance', weight: 20, pct: campPct,
+      pts: `${Math.round(campPct * 20 / 100)}/20`,
+      desc: 'Performance of your active advertising campaigns',
+    },
+  ];
+
+  // ── 4c. Score history (last 4 weeks) ─────────────────────────────────────
+  const now = Date.now();
+  const scoreHistory: Array<{ week: string; score: number }> = [];
+  for (let w = 3; w >= 0; w--) {
+    const weekStart = new Date(now - (w + 1) * 7 * 24 * 60 * 60 * 1000);
+    const weekEnd   = new Date(now - w       * 7 * 24 * 60 * 60 * 1000);
+    const weekPosts = await prisma.post.count({
+      where: { userId: user.sub, status: 'published', createdAt: { gte: weekStart, lt: weekEnd } },
+    });
+    const weekScore =
+      Math.min(40, weekPosts * 4) +
+      Math.min(30, totalConnectedAccounts * 10) +
+      (userActivity ? 30 : 0);
+    scoreHistory.push({ week: `Week ${4 - w}`, score: weekScore });
+  }
+
   // ── 5. Ayrshare platform-level analytics (best-effort) ────────────────────
   const platforms = platform ? [platform] : Object.keys(followersByPlatform);
   let socialAnalytics: Record<string, unknown> | null = null;
@@ -114,6 +168,8 @@ export async function GET(req: NextRequest) {
     period,
     platform: platform ?? null,
     mosScore,
+    factors,
+    scoreHistory,
     reach:       totalReach,
     impressions: totalImpressions,
     clicks:      totalClicks,

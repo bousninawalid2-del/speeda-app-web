@@ -18,6 +18,8 @@ export interface AnalyticsData {
     byPlatform: Record<string, number>;
   };
   social: Record<string, unknown> | null;
+  factors?: Array<{ name: string; weight: number; pct: number; pts: string; desc: string }>;
+  scoreHistory?: Array<{ week: string; score: number }>;
 }
 
 const ANALYTICS_FALLBACK: AnalyticsData = {
