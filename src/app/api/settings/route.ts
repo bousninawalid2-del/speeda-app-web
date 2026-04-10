@@ -60,17 +60,26 @@ function parseStoredSettings(raw: string | null): StoredSettings {
   }
 
   try {
-    const parsed = JSON.parse(raw) as { [SETTINGS_KEY]?: Partial<SettingsPayload>; legacyCertifications?: string | null };
-    const stored = parsed?.[SETTINGS_KEY];
-    const parsedNotifications = notificationsSchema.safeParse(stored?.notifications);
+    const parsedUnknown: unknown = JSON.parse(raw);
+    if (!parsedUnknown || typeof parsedUnknown !== 'object') {
+      return {
+        settings: { ...defaultSettings, notifications: { ...defaultSettings.notifications } },
+        legacyCertifications: raw,
+      };
+    }
+    const parsed = parsedUnknown as Record<string, unknown>;
+    const legacyCertifications = typeof parsed.legacyCertifications === 'string' ? parsed.legacyCertifications : null;
+    const stored = parsed[SETTINGS_KEY];
+    const storedSettings = stored && typeof stored === 'object' ? stored as Partial<SettingsPayload> : undefined;
+    const parsedNotifications = notificationsSchema.safeParse(storedSettings?.notifications);
     return {
       settings: {
-        automations: Array.isArray(stored?.automations) && stored.automations.length === 5
-          ? stored.automations
+        automations: Array.isArray(storedSettings?.automations) && storedSettings.automations.length === 5
+          ? storedSettings.automations
           : defaultSettings.automations,
         notifications: parsedNotifications.success ? parsedNotifications.data : defaultSettings.notifications,
       },
-      legacyCertifications: parsed.legacyCertifications ?? null,
+      legacyCertifications,
     };
   } catch {
     return {
@@ -108,7 +117,7 @@ export async function PATCH(req: NextRequest) {
     const { user } = auth;
 
     let body: unknown;
-    try { body = await req.json(); } catch { return errorResponse('Invalid JSON', 400); }
+    try { body = await req.json(); } catch { return errorResponse('Request body must be valid JSON', 400); }
 
     const parsed = patchSchema.safeParse(body);
     if (!parsed.success) return errorResponse(parsed.error.issues[0].message, 400);

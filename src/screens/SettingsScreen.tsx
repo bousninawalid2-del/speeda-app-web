@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, User, Shield, CreditCard, Globe2, Wifi, Brain, Bell, BellDot, BellRing, Languages, HelpCircle, MessageCircle, Sparkles, Info, Gift, MoreVertical, Rss, ExternalLink, Pause, Play, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +16,7 @@ import { useSocialAccounts } from '../hooks/useSocialAccounts';
 import { useSettingsPreferences, useUpdateSettingsPreferences, NotificationSettings } from '../hooks/useSettingsPreferences';
 import { apiFetch } from '@/lib/api-client';
 import type { SocialAccount } from '@/services/social.service';
+import { toast } from 'sonner';
 
 interface SettingsScreenProps {
   onBack: () => void;
@@ -44,12 +45,12 @@ function logSettingsError(context: string, error: unknown) {
   }
 }
 
-function normalizePlatform(value: string): string {
+function sanitizePlatformName(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 function platformFromApi(platform: string): string | null {
-  const normalized = normalizePlatform(platform);
+  const normalized = sanitizePlatformName(platform);
   if (normalized.includes('instagram')) return 'Instagram';
   if (normalized.includes('tiktok')) return 'TikTok';
   if (normalized.includes('snapchat')) return 'Snapchat';
@@ -66,6 +67,10 @@ function platformFromApi(platform: string): string | null {
 function getApiPlatform(displayPlatform: string, accounts: SocialAccount[] | undefined): string {
   const found = accounts?.find((account) => platformFromApi(account.platform) === displayPlatform);
   return found?.platform ?? '';
+}
+
+function createPlatformMap(): Record<string, boolean> {
+  return PLATFORM_KEYS.reduce((acc, key) => ({ ...acc, [key]: false }), {} as Record<string, boolean>);
 }
 
 function formatProfileValue(name?: string | null, email?: string | null, phone?: string | null): string {
@@ -88,10 +93,6 @@ export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
   const tokenPercent = tokenTotal > 0 ? Math.round((tokenBalance / tokenTotal) * 100) : 0;
   const planName = subData?.subscription?.plan?.name ?? (subData?.trial?.active ? 'Free Trial' : 'Free');
   const profileValue = formatProfileValue(profileData?.name, profileData?.email, profileData?.phone) || user?.name || user?.email || '';
-  const platformMap = useMemo(
-    () => PLATFORM_KEYS.reduce((acc, key) => ({ ...acc, [key]: false }), {} as Record<string, boolean>),
-    []
-  );
 
   const [automations, setAutomations] = useState(DEFAULT_AUTOMATIONS);
   const [notifs, setNotifs] = useState<NotificationSettings>(DEFAULT_NOTIFICATIONS);
@@ -99,7 +100,7 @@ export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
   const [connectingPlatform, setConnectingPlatform] = useState<{ name: string; Logo: any } | null>(null);
   const [managePlatform, setManagePlatform] = useState<string | null>(null);
   const [disconnectPlatform, setDisconnectPlatform] = useState<string | null>(null);
-  const [connectedPlatforms, setConnectedPlatforms] = useState<Record<string, boolean>>(platformMap);
+  const [connectedPlatforms, setConnectedPlatforms] = useState<Record<string, boolean>>(createPlatformMap);
 
   // RSS Feed state
   const [rssFeeds, setRssFeeds] = useState<Array<{ url: string; title: string; active: boolean; postsCount: number; lastPost: string }>>([
@@ -116,13 +117,13 @@ export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
 
   useEffect(() => {
     if (!socialAccounts) return;
-    const nextMap: Record<string, boolean> = { ...platformMap };
+    const nextMap: Record<string, boolean> = createPlatformMap();
     for (const account of socialAccounts) {
       const matched = platformFromApi(account.platform);
       if (matched) nextMap[matched] = account.connected;
     }
     setConnectedPlatforms(nextMap);
-  }, [socialAccounts, platformMap]);
+  }, [socialAccounts]);
 
   const RSSFeedSection = () => (
     <div className="px-4 py-3">
@@ -276,6 +277,7 @@ export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
   const handlePlatformDisconnect = async (displayPlatform: string) => {
     const apiPlatform = getApiPlatform(displayPlatform, socialAccounts);
     if (!apiPlatform) {
+      toast.error(t('common.error'));
       logSettingsError(`disconnect skipped: unknown platform ${displayPlatform}`, new Error('platform_not_found'));
       return;
     }
@@ -290,6 +292,7 @@ export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
       await refreshSocialState();
     } catch (error) {
       setConnectedPlatforms(previous);
+      toast.error(t('common.error'));
       logSettingsError(`failed to disconnect ${displayPlatform}`, error);
     }
   };
