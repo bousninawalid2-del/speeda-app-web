@@ -21,6 +21,8 @@ export default function Page() {
   const handleSubmit = async (data: SetupPayload) => {
     await setupApi.save(data);
     toast.success('Setup saved!');
+    // Mark setup as done via cookie so middleware allows dashboard access
+    document.cookie = 'speeda_setup_done=1; path=/; max-age=31536000; SameSite=Lax';
   };
 
   const handleSocialConnect = async () => {

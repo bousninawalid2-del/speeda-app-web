@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Mail, Phone, Lock, Eye, EyeOff, ChevronLeft, ChevronDown, Search, X } from 'lucide-react';
-import { SpeedaLogo, GoogleLogo, AppleLogo } from '../components/PlatformLogos';
+import { SpeedaLogo } from '../components/PlatformLogos';
 import { useTranslation } from 'react-i18next';
 
 interface AuthScreenProps {
@@ -231,15 +231,6 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
                 Quick Login (Email Link)
               </button>
             )}
-
-            <div className="flex gap-3 mt-3">
-              <button className="flex-1 h-[56px] rounded-2xl bg-card border border-border flex items-center justify-center card-tap">
-                <GoogleLogo size={24} />
-              </button>
-              <button className="flex-1 h-[56px] rounded-2xl bg-card border border-border flex items-center justify-center card-tap">
-                <AppleLogo size={24} className="text-foreground" />
-              </button>
-            </div>
             {mode === 'signup' && (
               <p className="text-center text-[11px] text-muted-foreground mt-4">
                 {t('auth.byCreatingAccount')}{' '}
