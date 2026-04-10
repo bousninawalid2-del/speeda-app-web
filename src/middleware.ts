@@ -9,7 +9,6 @@ const PUBLIC_PATHS = [
   '/auth/verified',
   '/auth/reset-password',
   '/auth/magic',
-  '/setup',
   '/product',
 ];
 
@@ -39,7 +38,9 @@ export function middleware(request: NextRequest) {
   }
 
   const isAuthenticated = request.cookies.has('speeda_auth');
+  const hasSetup = request.cookies.has('speeda_setup_done');
   const isDashboard = pathname.startsWith('/dashboard');
+  const isSetup = pathname === '/setup';
   const isAuthPath = AUTH_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
 
   // Protect dashboard routes
@@ -47,6 +48,16 @@ export function middleware(request: NextRequest) {
     const loginUrl = new URL('/auth', request.url);
     loginUrl.searchParams.set('from', pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  // Protect setup route — requires auth
+  if (isSetup && !isAuthenticated) {
+    return NextResponse.redirect(new URL('/auth', request.url));
+  }
+
+  // If authenticated but setup not done → force /setup before dashboard
+  if (isDashboard && isAuthenticated && !hasSetup) {
+    return NextResponse.redirect(new URL('/setup', request.url));
   }
 
   // Redirect logged-in users away from auth screens

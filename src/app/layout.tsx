@@ -12,7 +12,13 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: 'Speeda — AI Social Media Companion',
   description: 'AI-powered social media management and content creation platform',
-  icons: { icon: '/favicon.ico' },
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico' },
+    ],
+    apple: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

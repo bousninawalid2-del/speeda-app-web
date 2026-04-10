@@ -90,14 +90,18 @@ export async function GET(req: NextRequest) {
     totalFollowers = socials.reduce((s, a) => s + a.followers, 0);
   }
 
-  // ── 4. MOS score — simple composite (0-100) ───────────────────────────────
-  const connectedCount = Object.keys(followersByPlatform).length;
-  const mosScore = Math.min(100, Math.round(
-    (connectedCount      * 10) +
-    (postsCount          *  2) +
-    (engagement          *  5) +
-    (totalReach > 0 ? 20 : 0)
-  ));
+  // ── 4. MOS score — dynamic composite (0-100) ─────────────────────────────
+  //   Posts published (40%) + social accounts connected (30%) + profile completed (30%)
+  const [totalPublishedPosts, totalConnectedAccounts, userActivity] = await Promise.all([
+    prisma.post.count({ where: { userId: user.sub, status: 'published' } }),
+    prisma.socialAccount.count({ where: { userId: user.sub, connected: true } }),
+    prisma.activity.findUnique({ where: { userId: user.sub } }),
+  ]);
+
+  const postScore    = Math.min(40, totalPublishedPosts * 4);
+  const socialScore  = Math.min(30, totalConnectedAccounts * 10);
+  const profileScore = userActivity ? 30 : 0;
+  const mosScore     = postScore + socialScore + profileScore;
 
   // ── 5. Ayrshare platform-level analytics (best-effort) ────────────────────
   const platforms = platform ? [platform] : Object.keys(followersByPlatform);

@@ -8,9 +8,11 @@ export default function Page() {
   const router = useRouter();
 
   return (
-    <SettingsScreen
-      onBack={() => router.push('/dashboard')}
-      onNavigate={(s) => router.push(resolveScreen(s))}
-    />
+    <div className="max-w-[430px] mx-auto relative min-h-screen bg-background overflow-x-hidden">
+      <SettingsScreen
+        onBack={() => router.push('/dashboard')}
+        onNavigate={(s) => router.push(resolveScreen(s))}
+      />
+    </div>
   );
 }

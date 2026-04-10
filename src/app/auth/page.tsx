@@ -17,6 +17,21 @@ function AuthContent() {
   const handleLogin = async (email: string, password: string) => {
     try {
       await login(email, password);
+      // Check if the user has already completed setup (Activity created)
+      try {
+        const res = await fetch('/api/setup', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.activity) {
+            // Setup already done — set the cookie and go to dashboard
+            document.cookie = 'speeda_setup_done=1; path=/; max-age=31536000; SameSite=Lax';
+            router.replace('/dashboard');
+            return;
+          }
+        }
+      } catch {
+        // Ignore check failure — fall through to /setup
+      }
       router.replace('/setup');
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Login failed');
