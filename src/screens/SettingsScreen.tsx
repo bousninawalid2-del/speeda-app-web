@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, User, Shield, CreditCard, Globe2, Wifi, Brain, Bell, BellDot, BellRing, Languages, HelpCircle, MessageCircle, Sparkles, Info, Gift, MoreVertical, Rss, ExternalLink, Pause, Play, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -11,33 +11,91 @@ import { PlatformConnectFlow, DisconnectDialog, PlatformManageMenu } from '../co
 import { useAuth } from '../contexts/AuthContext';
 import { useTokens } from '../hooks/useTokens';
 import { useSubscription } from '../hooks/useSubscription';
+import { useProfile } from '../hooks/useProfile';
+import { useSocialAccounts, useInvalidateSocialAccounts } from '../hooks/useSocialAccounts';
+import { useSettingsPreferences, useUpdateSettingsPreferences, NotificationSettings } from '../hooks/useSettingsPreferences';
+import { apiFetch } from '@/lib/api-client';
+import type { SocialAccount } from '@/services/social.service';
 
 interface SettingsScreenProps {
   onBack: () => void;
   onNavigate?: (screen: string) => void;
 }
 
+const DEFAULT_AUTOMATIONS = [true, true, true, true, false];
+const DEFAULT_NOTIFICATIONS: NotificationSettings = {
+  morningCards: true,
+  pendingComments: true,
+  eodSummary: true,
+  perfReport: true,
+  mosUpdate: true,
+  competitorRanking: false,
+  seasonalOpps: true,
+  competitorActivity: true,
+  campaignOpt: true,
+  salesSuggestions: true,
+};
+
+const PLATFORM_KEYS = ['Instagram', 'TikTok', 'Snapchat', 'Facebook', 'X', 'YouTube', 'Google Business', 'LinkedIn', 'Pinterest', 'Threads'] as const;
+
+function logSettingsError(context: string, error: unknown) {
+  if (process.env.NODE_ENV !== 'production') {
+    console.error(`[settings screen] ${context}`, error);
+  }
+}
+
+function normalizePlatform(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function platformFromApi(platform: string): string | null {
+  const normalized = normalizePlatform(platform);
+  if (normalized.includes('instagram')) return 'Instagram';
+  if (normalized.includes('tiktok')) return 'TikTok';
+  if (normalized.includes('snapchat')) return 'Snapchat';
+  if (normalized.includes('facebook')) return 'Facebook';
+  if (normalized === 'x' || normalized.includes('twitter')) return 'X';
+  if (normalized.includes('youtube')) return 'YouTube';
+  if (normalized.includes('googlebusiness') || normalized.includes('googleprofile') || normalized.includes('googlemybusiness')) return 'Google Business';
+  if (normalized.includes('linkedin')) return 'LinkedIn';
+  if (normalized.includes('pinterest')) return 'Pinterest';
+  if (normalized.includes('threads')) return 'Threads';
+  return null;
+}
+
+function getApiPlatform(displayPlatform: string, accounts: SocialAccount[] | undefined): string {
+  const found = accounts?.find((account) => platformFromApi(account.platform) === displayPlatform);
+  return found?.platform ?? normalizePlatform(displayPlatform);
+}
+
 export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const { data: profileData } = useProfile();
   const { data: tokensData } = useTokens();
   const { data: subData } = useSubscription();
+  const { data: socialAccounts, refetch: refetchSocialAccounts } = useSocialAccounts();
+  const invalidateSocialAccounts = useInvalidateSocialAccounts();
+  const { data: settingsData } = useSettingsPreferences();
+  const { mutateAsync: saveSettings } = useUpdateSettingsPreferences();
 
   const tokenBalance = tokensData?.balance ?? 0;
   const tokenTotal = tokensData?.total ?? 500;
   const tokenPercent = tokenTotal > 0 ? Math.round((tokenBalance / tokenTotal) * 100) : 0;
   const planName = subData?.subscription?.plan?.name ?? (subData?.trial?.active ? 'Free Trial' : 'Free');
-  const displayName = user?.name ?? user?.email ?? '';
+  const profileValue = [profileData?.name, profileData?.email, profileData?.phone].filter(Boolean).join(' · ') || user?.name || user?.email || '';
+  const platformMap = useMemo(
+    () => PLATFORM_KEYS.reduce((acc, key) => ({ ...acc, [key]: false }), {} as Record<string, boolean>),
+    []
+  );
 
-  const [automations, setAutomations] = useState([true, true, true, true, false]);
-  const [notifs, setNotifs] = useState({ morningCards: true, pendingComments: true, eodSummary: true, perfReport: true, mosUpdate: true, competitorRanking: false, seasonalOpps: true, competitorActivity: true, campaignOpt: true, salesSuggestions: true });
+  const [automations, setAutomations] = useState(DEFAULT_AUTOMATIONS);
+  const [notifs, setNotifs] = useState<NotificationSettings>(DEFAULT_NOTIFICATIONS);
   const [comingSoonFeature, setComingSoonFeature] = useState<string | null>(null);
   const [connectingPlatform, setConnectingPlatform] = useState<{ name: string; Logo: any } | null>(null);
   const [managePlatform, setManagePlatform] = useState<string | null>(null);
   const [disconnectPlatform, setDisconnectPlatform] = useState<string | null>(null);
-  const [connectedPlatforms, setConnectedPlatforms] = useState<Record<string, boolean>>({
-    Instagram: true, TikTok: true, Snapchat: true, Facebook: true, X: true, YouTube: true, 'Google Business': true, LinkedIn: false, Pinterest: false, Threads: false,
-  });
+  const [connectedPlatforms, setConnectedPlatforms] = useState<Record<string, boolean>>(platformMap);
 
   // RSS Feed state
   const [rssFeeds, setRssFeeds] = useState<Array<{ url: string; title: string; active: boolean; postsCount: number; lastPost: string }>>([
@@ -45,6 +103,22 @@ export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
   ]);
   const [showAddRss, setShowAddRss] = useState(false);
   const [rssUrl, setRssUrl] = useState('');
+
+  useEffect(() => {
+    if (!settingsData) return;
+    setAutomations(settingsData.automations);
+    setNotifs(settingsData.notifications);
+  }, [settingsData]);
+
+  useEffect(() => {
+    if (!socialAccounts) return;
+    const nextMap: Record<string, boolean> = { ...platformMap };
+    for (const account of socialAccounts) {
+      const matched = platformFromApi(account.platform);
+      if (matched) nextMap[matched] = account.connected;
+    }
+    setConnectedPlatforms(nextMap);
+  }, [socialAccounts, platformMap]);
 
   const RSSFeedSection = () => (
     <div className="px-4 py-3">
@@ -150,12 +224,68 @@ export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
     </div>
   );
 
-  const toggleAuto = (idx: number) => {
+  const refreshSocialState = async () => {
+    try {
+      await refetchSocialAccounts();
+      invalidateSocialAccounts();
+    } catch (error) {
+      logSettingsError('refresh social accounts failed', error);
+    }
+  };
+
+  const toggleAuto = async (idx: number) => {
     if (idx === 0) { setComingSoonFeature('autoBoost'); return; }
     if (idx === 4) { setComingSoonFeature('budgetOptimization'); return; }
-    setAutomations(a => a.map((v, i) => i === idx ? !v : v));
+    const previous = [...automations];
+    const next = automations.map((value, index) => index === idx ? !value : value);
+    setAutomations(next);
+    try {
+      await saveSettings({ automations: next });
+    } catch (error) {
+      setAutomations(previous);
+      logSettingsError('failed to save automation toggle', error);
+    }
   };
-  const toggleNotif = (key: string) => setNotifs(n => ({ ...n, [key]: !(n as any)[key] }));
+  const toggleNotif = async (key: keyof NotificationSettings) => {
+    const previous = { ...notifs };
+    const next = { ...notifs, [key]: !notifs[key] };
+    setNotifs(next);
+    try {
+      await saveSettings({ notifications: next });
+    } catch (error) {
+      setNotifs(previous);
+      logSettingsError('failed to save notification toggle', error);
+    }
+  };
+
+  const handlePlatformConnect = async () => {
+    try {
+      const response = await apiFetch<{ url: string }>('/social/connect', { method: 'POST' });
+      if (response.url && typeof window !== 'undefined') {
+        window.open(response.url, '_blank', 'noopener,noreferrer');
+      }
+      await refreshSocialState();
+    } catch (error) {
+      logSettingsError('failed to start social connection', error);
+    }
+  };
+
+  const handlePlatformDisconnect = async (displayPlatform: string) => {
+    const apiPlatform = getApiPlatform(displayPlatform, socialAccounts);
+    const previous = { ...connectedPlatforms };
+    setConnectedPlatforms((current) => ({ ...current, [displayPlatform]: false }));
+    try {
+      await apiFetch('/social/disconnect', {
+        method: 'POST',
+        body: JSON.stringify({ platform: apiPlatform }),
+      });
+      await refreshSocialState();
+    } catch (error) {
+      setConnectedPlatforms(previous);
+      logSettingsError(`failed to disconnect ${displayPlatform}`, error);
+      await refreshSocialState();
+    }
+  };
 
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <div className="mb-5">
@@ -219,7 +349,7 @@ export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
 
         {/* Account */}
         <Section title={t('settings.account')}>
-          <Row label={t('settings.profile')} value={displayName} icon={User} onClick={() => onNavigate?.('profile')} />
+          <Row label={t('settings.profile')} value={profileValue} icon={User} onClick={() => onNavigate?.('profile')} />
           <Row label={t('settings.security')} icon={Shield} onClick={() => onNavigate?.('security')} />
           <div className="px-4 py-3.5 border-b border-border-light">
             <div className="flex items-center gap-2 mb-1">
@@ -330,13 +460,13 @@ export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
             { label: t('settings.autoPause'), sub: t('settings.autoPauseDesc') },
             { label: t('settings.autoAdjust'), sub: t('settings.autoAdjustDesc') },
           ].map((item, i) => (
-            <Toggle key={i} label={item.label} sub={item.sub} on={automations[i]} onChange={() => toggleAuto(i)} />
+            <Toggle key={i} label={item.label} sub={item.sub} on={automations[i]} onChange={() => { void toggleAuto(i); }} />
           ))}
           {/* Auto-respond to DMs */}
           <div className="px-4 py-2">
             <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">{t('settings.dmAutoRespond', '💬 DM Auto-Responses')}</p>
           </div>
-          <Toggle label={t('settings.dmAutoRespondLabel', 'Auto-respond to DMs')} sub={t('settings.dmAutoRespondDesc', 'Set up auto-responses for common DM topics')} on={automations[1]} onChange={() => toggleAuto(1)} />
+          <Toggle label={t('settings.dmAutoRespondLabel', 'Auto-respond to DMs')} sub={t('settings.dmAutoRespondDesc', 'Set up auto-responses for common DM topics')} on={automations[1]} onChange={() => { void toggleAuto(1); }} />
           {automations[1] && (
             <div className="px-4 py-3 space-y-2 border-b border-border-light">
               {[
@@ -372,19 +502,19 @@ export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
           <Toggle label={t('settings.budgetDepleted')} sub={t('settings.budgetDepletedDesc')} on={true} disabled />
           <Toggle label={t('settings.platformDisconnected')} sub={t('settings.platformDisconnectedDesc')} on={true} disabled />
           <div className="px-4 py-2"><p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">{t('settings.daily')}</p></div>
-          <Toggle label={t('settings.morningCards')} sub={t('settings.morningCardsDesc')} on={notifs.morningCards} onChange={() => toggleNotif('morningCards')} />
-          <Toggle label={t('settings.pendingComments')} sub={t('settings.pendingCommentsDesc')} on={notifs.pendingComments} onChange={() => toggleNotif('pendingComments')} />
-          <Toggle label={t('settings.eodSummary')} sub={t('settings.eodSummaryDesc')} on={notifs.eodSummary} onChange={() => toggleNotif('eodSummary')} />
+          <Toggle label={t('settings.morningCards')} sub={t('settings.morningCardsDesc')} on={notifs.morningCards} onChange={() => { void toggleNotif('morningCards'); }} />
+          <Toggle label={t('settings.pendingComments')} sub={t('settings.pendingCommentsDesc')} on={notifs.pendingComments} onChange={() => { void toggleNotif('pendingComments'); }} />
+          <Toggle label={t('settings.eodSummary')} sub={t('settings.eodSummaryDesc')} on={notifs.eodSummary} onChange={() => { void toggleNotif('eodSummary'); }} />
           <div className="px-4 py-2"><p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">{t('settings.weekly')}</p></div>
-          <Toggle label={t('settings.perfReport')} sub={t('settings.perfReportDesc')} on={notifs.perfReport} onChange={() => toggleNotif('perfReport')} />
-          <Toggle label={t('settings.mosUpdate')} sub={t('settings.mosUpdateDesc')} on={notifs.mosUpdate} onChange={() => toggleNotif('mosUpdate')} />
-          <Toggle label={t('settings.competitorRanking')} sub={t('settings.competitorRankingDesc')} on={notifs.competitorRanking} onChange={() => toggleNotif('competitorRanking')} />
+          <Toggle label={t('settings.perfReport')} sub={t('settings.perfReportDesc')} on={notifs.perfReport} onChange={() => { void toggleNotif('perfReport'); }} />
+          <Toggle label={t('settings.mosUpdate')} sub={t('settings.mosUpdateDesc')} on={notifs.mosUpdate} onChange={() => { void toggleNotif('mosUpdate'); }} />
+          <Toggle label={t('settings.competitorRanking')} sub={t('settings.competitorRankingDesc')} on={notifs.competitorRanking} onChange={() => { void toggleNotif('competitorRanking'); }} />
           <div className="px-4 py-2"><p className="text-[12px] font-semibold text-purple uppercase tracking-wider">{t('settings.aiAlerts')}</p></div>
-          <Toggle label={t('settings.seasonalOpps')} sub={t('settings.seasonalOppsDesc')} on={notifs.seasonalOpps} onChange={() => toggleNotif('seasonalOpps')} />
-          <Toggle label={t('settings.competitorActivity')} sub={t('settings.competitorActivityDesc')} on={notifs.competitorActivity} onChange={() => toggleNotif('competitorActivity')} />
-          <Toggle label={t('settings.campaignOptimization')} sub={t('settings.campaignOptimizationDesc')} on={notifs.campaignOpt} onChange={() => toggleNotif('campaignOpt')} />
+          <Toggle label={t('settings.seasonalOpps')} sub={t('settings.seasonalOppsDesc')} on={notifs.seasonalOpps} onChange={() => { void toggleNotif('seasonalOpps'); }} />
+          <Toggle label={t('settings.competitorActivity')} sub={t('settings.competitorActivityDesc')} on={notifs.competitorActivity} onChange={() => { void toggleNotif('competitorActivity'); }} />
+          <Toggle label={t('settings.campaignOptimization')} sub={t('settings.campaignOptimizationDesc')} on={notifs.campaignOpt} onChange={() => { void toggleNotif('campaignOpt'); }} />
           <div className="px-4 py-2"><p className="text-[12px] font-semibold text-purple uppercase tracking-wider">Sales & Promotions</p></div>
-          <Toggle label="Sales suggestions" sub="In-app upgrade suggestions and plan advisor nudges" on={notifs.salesSuggestions} onChange={() => toggleNotif('salesSuggestions')} />
+          <Toggle label="Sales suggestions" sub="In-app upgrade suggestions and plan advisor nudges" on={notifs.salesSuggestions} onChange={() => { void toggleNotif('salesSuggestions'); }} />
         </Section>
 
         {/* Language */}
@@ -453,7 +583,7 @@ export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
             platformName={connectingPlatform.name}
             platformLogo={<connectingPlatform.Logo size={64} />}
             onComplete={() => {
-              setConnectedPlatforms(p => ({ ...p, [connectingPlatform.name]: true }));
+              void handlePlatformConnect();
               setConnectingPlatform(null);
             }}
             onCancel={() => setConnectingPlatform(null)}
@@ -470,7 +600,7 @@ export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
           <DisconnectDialog
             platformName={disconnectPlatform}
             onConfirm={() => {
-              setConnectedPlatforms(p => ({ ...p, [disconnectPlatform]: false }));
+              void handlePlatformDisconnect(disconnectPlatform);
               setDisconnectPlatform(null);
             }}
             onCancel={() => setDisconnectPlatform(null)}
