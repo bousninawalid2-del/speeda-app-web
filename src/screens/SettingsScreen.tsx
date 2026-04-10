@@ -12,7 +12,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTokens } from '../hooks/useTokens';
 import { useSubscription } from '../hooks/useSubscription';
 import { useProfile } from '../hooks/useProfile';
-import { useSocialAccounts, useInvalidateSocialAccounts } from '../hooks/useSocialAccounts';
+import { useSocialAccounts } from '../hooks/useSocialAccounts';
 import { useSettingsPreferences, useUpdateSettingsPreferences, NotificationSettings } from '../hooks/useSettingsPreferences';
 import { apiFetch } from '@/lib/api-client';
 import type { SocialAccount } from '@/services/social.service';
@@ -65,7 +65,12 @@ function platformFromApi(platform: string): string | null {
 
 function getApiPlatform(displayPlatform: string, accounts: SocialAccount[] | undefined): string {
   const found = accounts?.find((account) => platformFromApi(account.platform) === displayPlatform);
-  return found?.platform ?? normalizePlatform(displayPlatform);
+  return found?.platform ?? '';
+}
+
+function formatProfileValue(name?: string | null, email?: string | null, phone?: string | null): string {
+  const parts = [name, email, phone].filter(Boolean);
+  return parts.join(' · ');
 }
 
 export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
@@ -75,7 +80,6 @@ export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
   const { data: tokensData } = useTokens();
   const { data: subData } = useSubscription();
   const { data: socialAccounts, refetch: refetchSocialAccounts } = useSocialAccounts();
-  const invalidateSocialAccounts = useInvalidateSocialAccounts();
   const { data: settingsData } = useSettingsPreferences();
   const { mutateAsync: saveSettings } = useUpdateSettingsPreferences();
 
@@ -83,7 +87,7 @@ export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
   const tokenTotal = tokensData?.total ?? 500;
   const tokenPercent = tokenTotal > 0 ? Math.round((tokenBalance / tokenTotal) * 100) : 0;
   const planName = subData?.subscription?.plan?.name ?? (subData?.trial?.active ? 'Free Trial' : 'Free');
-  const profileValue = [profileData?.name, profileData?.email, profileData?.phone].filter(Boolean).join(' · ') || user?.name || user?.email || '';
+  const profileValue = formatProfileValue(profileData?.name, profileData?.email, profileData?.phone) || user?.name || user?.email || '';
   const platformMap = useMemo(
     () => PLATFORM_KEYS.reduce((acc, key) => ({ ...acc, [key]: false }), {} as Record<string, boolean>),
     []
@@ -227,7 +231,6 @@ export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
   const refreshSocialState = async () => {
     try {
       await refetchSocialAccounts();
-      invalidateSocialAccounts();
     } catch (error) {
       logSettingsError('refresh social accounts failed', error);
     }
@@ -272,6 +275,11 @@ export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
 
   const handlePlatformDisconnect = async (displayPlatform: string) => {
     const apiPlatform = getApiPlatform(displayPlatform, socialAccounts);
+    if (!apiPlatform) {
+      logSettingsError(`disconnect skipped: unknown platform ${displayPlatform}`, new Error('platform_not_found'));
+      return;
+    }
+
     const previous = { ...connectedPlatforms };
     setConnectedPlatforms((current) => ({ ...current, [displayPlatform]: false }));
     try {
@@ -283,7 +291,6 @@ export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
     } catch (error) {
       setConnectedPlatforms(previous);
       logSettingsError(`failed to disconnect ${displayPlatform}`, error);
-      await refreshSocialState();
     }
   };
 

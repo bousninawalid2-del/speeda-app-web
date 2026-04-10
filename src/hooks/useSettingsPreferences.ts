@@ -35,6 +35,36 @@ const SETTINGS_DEFAULTS: SettingsPreferences = {
   },
 };
 
+const SETTINGS_NOTIFICATION_KEYS: Array<keyof NotificationSettings> = [
+  'morningCards',
+  'pendingComments',
+  'eodSummary',
+  'perfReport',
+  'mosUpdate',
+  'competitorRanking',
+  'seasonalOpps',
+  'competitorActivity',
+  'campaignOpt',
+  'salesSuggestions',
+];
+
+function normalizeSettings(data: unknown): SettingsPreferences {
+  const source = data as Partial<SettingsPreferences> | undefined;
+  const automations =
+    Array.isArray(source?.automations) && source.automations.length === 5
+      ? source.automations.map(Boolean)
+      : SETTINGS_DEFAULTS.automations;
+
+  const notifications = SETTINGS_NOTIFICATION_KEYS.reduce((acc, key) => {
+    acc[key] = typeof source?.notifications?.[key] === 'boolean'
+      ? source.notifications[key]
+      : SETTINGS_DEFAULTS.notifications[key];
+    return acc;
+  }, {} as NotificationSettings);
+
+  return { automations, notifications };
+}
+
 function logSettingsError(context: string, error: unknown) {
   if (process.env.NODE_ENV !== 'production') {
     console.error(`[settings] ${context}`, error);
@@ -47,10 +77,10 @@ export function useSettingsPreferences() {
     queryFn: async () => {
       try {
         const response = await apiFetch<{ settings: SettingsPreferences }>('/settings');
-        return response.settings;
+        return normalizeSettings(response?.settings);
       } catch (error) {
         logSettingsError('fetch failed, using defaults', error);
-        return SETTINGS_DEFAULTS;
+        return normalizeSettings(undefined);
       }
     },
     staleTime: 60 * 1000,
@@ -71,4 +101,3 @@ export function useUpdateSettingsPreferences() {
     onError: (error) => logSettingsError('save failed', error),
   });
 }
-

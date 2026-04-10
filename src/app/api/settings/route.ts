@@ -62,14 +62,13 @@ function parseStoredSettings(raw: string | null): StoredSettings {
   try {
     const parsed = JSON.parse(raw) as { [SETTINGS_KEY]?: Partial<SettingsPayload>; legacyCertifications?: string | null };
     const stored = parsed?.[SETTINGS_KEY];
+    const parsedNotifications = notificationsSchema.safeParse(stored?.notifications);
     return {
       settings: {
         automations: Array.isArray(stored?.automations) && stored.automations.length === 5
           ? stored.automations
           : defaultSettings.automations,
-        notifications: notificationsSchema.safeParse(stored?.notifications).success
-          ? stored!.notifications as z.infer<typeof notificationsSchema>
-          : defaultSettings.notifications,
+        notifications: parsedNotifications.success ? parsedNotifications.data : defaultSettings.notifications,
       },
       legacyCertifications: parsed.legacyCertifications ?? null,
     };
@@ -127,6 +126,8 @@ export async function PATCH(req: NextRequest) {
 
     const payloadToStore = JSON.stringify({
       [SETTINGS_KEY]: next,
+      // Keep any pre-existing free-form certifications text so this endpoint
+      // does not overwrite unrelated Activity data.
       legacyCertifications: current.legacyCertifications,
     });
 
