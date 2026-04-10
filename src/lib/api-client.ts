@@ -325,6 +325,16 @@ export interface CreateActionTaskInput {
   strategyId?: string;
 }
 
+export interface UpdateActionTaskInput {
+  title?:       string;
+  description?: string;
+  platform?:    string;
+  dueDate?:     string;
+  status?:      string;
+  priority?:    string;
+  strategyId?:  string;
+}
+
 export const actionTasksApi = {
   list: () =>
     apiFetch<{ tasks: ActionTask[] }>('/action-tasks').then(r => r.tasks),
@@ -333,7 +343,7 @@ export const actionTasksApi = {
       method: 'POST',
       body:   JSON.stringify(data),
     }),
-  update: (id: string, data: Partial<ActionTask>) =>
+  update: (id: string, data: UpdateActionTaskInput) =>
     apiFetch<{ task: ActionTask }>(`/action-tasks/${id}`, {
       method: 'PATCH',
       body:   JSON.stringify(data),
@@ -366,6 +376,16 @@ export interface CreateCompetitorInput {
   avgEngagement?: number;
 }
 
+export interface UpdateCompetitorInput {
+  name?:          string;
+  platform?:      string;
+  handle?:        string;
+  followers?:     number;
+  postsPerWeek?:  number;
+  avgEngagement?: number;
+  lastSynced?:    string;
+}
+
 export const competitorsApi = {
   list: () =>
     apiFetch<{ competitors: Competitor[] }>('/competitors').then(r => r.competitors),
@@ -374,7 +394,7 @@ export const competitorsApi = {
       method: 'POST',
       body:   JSON.stringify(data),
     }),
-  update: (id: string, data: Partial<Competitor>) =>
+  update: (id: string, data: UpdateCompetitorInput) =>
     apiFetch<{ competitor: Competitor }>(`/competitors/${id}`, {
       method: 'PATCH',
       body:   JSON.stringify(data),
@@ -408,6 +428,16 @@ export interface CreateStrategyInput {
   periodEndDate?:   string;
 }
 
+export interface UpdateStrategyInput {
+  name?:            string;
+  goal?:            string;
+  platforms?:       string;
+  weekCount?:       number;
+  status?:          string;
+  periodStartDate?: string;
+  periodEndDate?:   string;
+}
+
 export const strategyApi = {
   list: () =>
     apiFetch<{ strategies: Strategy[] }>('/strategies').then(r => r.strategies),
@@ -418,7 +448,7 @@ export const strategyApi = {
       method: 'POST',
       body:   JSON.stringify(data),
     }),
-  update: (id: string, data: Partial<Strategy>) =>
+  update: (id: string, data: UpdateStrategyInput) =>
     apiFetch<{ strategy: Strategy }>(`/strategies/${id}`, {
       method: 'PATCH',
       body:   JSON.stringify(data),
