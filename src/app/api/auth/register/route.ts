@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { generateOTP, errorResponse } from '@/lib/auth-guard';
 import { sendVerificationEmail } from '@/lib/email';
 import { startFreeTrial } from '@/lib/subscription-guard';
+import { ensureN8nUserById } from '@/lib/sync-n8n';
 
 const schema = z.object({
   name: z.string().min(2),
@@ -71,6 +72,9 @@ export async function POST(request: NextRequest) {
 
     // Start free trial for new users (non-blocking)
     startFreeTrial(user.id).catch(console.error);
+
+    // Fire-and-forget: create user in datatest so n8n sync always works
+    ensureN8nUserById(user.id).catch(() => {});
 
     // Send verification email (don't block the response)
     sendVerificationEmail(email, name, code).catch(console.error);
