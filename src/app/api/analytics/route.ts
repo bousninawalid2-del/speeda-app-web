@@ -131,12 +131,12 @@ export async function GET(req: NextRequest) {
     },
     {
       name: 'Platform Coverage', weight: 15, pct: covPct,
-      pts: `${Math.round(covPct * 15 / 100)}/15`,
+      pts: `${(covPct * 15 / 100).toFixed(1)}/15`,
       desc: 'How many platforms you are active on',
     },
     {
       name: 'Campaign Performance', weight: 20, pct: campPct,
-      pts: `${Math.round(campPct * 20 / 100)}/20`,
+      pts: `${(campPct * 20 / 100).toFixed(1)}/20`,
       desc: 'Performance of your active advertising campaigns',
     },
   ];
