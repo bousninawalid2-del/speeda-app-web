@@ -1,0 +1,42 @@
+Problème de favicon
+Corriger le problème d’affichage du favicon (background non transparent).
+Utiliser les fichiers logo SVG et PNG joints pour garantir un affichage transparent correct sur tous les navigateurs.
+2. Problèmes lors de l’inscription
+Quick Link dans l’email
+Corriger le lien “Quick Link” envoyé par email après inscription : actuellement le lien est cassé.
+Si la correction n’est pas immédiate, supprimer temporairement le bouton Quick Link de l’inscription.
+Bouton Google
+Le bouton d’inscription/connexion Google ne fonctionne pas.
+Corriger l’intégration Google OAuth ou supprimer temporairement le bouton.
+Bouton Apple
+Le bouton d’inscription/connexion Apple ne fonctionne pas.
+Corriger l’intégration Apple OAuth ou supprimer temporairement le bouton.
+3. Parcours utilisateur après inscription (Très important)
+Après inscription, l’utilisateur arrive directement sur le dashboard, ce qui est incorrect.
+Le parcours correct doit être :
+Inscription terminée
+Passage obligatoire par l’onboarding
+Création du profil utilisateur
+Accès au dashboard uniquement après création du profil
+Tant que le profil n’est pas créé, l’accès à la plateforme doit être bloqué.
+4. Bug page Settings
+La page “Settings” n’existe pas ou la route est cassée.
+Corriger le routage pour que Settings ouvre bien la page correspondante.
+5. Problème intégration Ayrshare
+La communication avec Ayrshare ne fonctionne pas correctement.
+Impossible de connecter les comptes sociaux via Ayrshare.
+6. MOS Score
+Le MOS Score doit être dynamique.
+Implémenter un calcul réel basé sur les vraies données utilisateur et non des valeurs statiques.
+7. Rubrique Content Studio
+Toute la section Content Studio doit devenir dynamique.
+Tous les boutons/actions doivent être entièrement fonctionnels.
+8. “Platform Disconnected – Reconnect Now”
+Le bouton “Reconnect Now” doit rediriger directement vers le flux de reconnexion Ayrshare.
+9. Page Paiements manquante
+La page de paiement n’existe pas.
+Lorsque l’utilisateur clique sur “Upgrade”, il doit être redirigé vers la page Paiements avant toute autre étape.
+Créer et connecter correctement cette page.
+10. Social Media → Account → Connect
+Dans la rubrique Social Media / Account / Connect :
+Le bouton Connect doit rediriger directement vers la page de connexion Ayrshare.
