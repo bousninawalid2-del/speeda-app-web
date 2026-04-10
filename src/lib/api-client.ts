@@ -279,6 +279,152 @@ export const aiApi = {
     }),
 };
 
+// ─── Billing API ─────────────────────────────────────────────────────────────
+export interface BillingPayment {
+  id:          string;
+  amount:      number;
+  currency:    string;
+  status:      string;
+  type:        string;
+  description: string | null;
+  createdAt:   string;
+  metadata:    Record<string, unknown> | null;
+}
+
+export const billingApi = {
+  getHistory: () =>
+    apiFetch<{ payments: BillingPayment[] }>('/billing').then(r => r.payments),
+  purchaseTokens: (packageId: string) =>
+    apiFetch<{ checkoutUrl: string }>('/billing/token-purchase', {
+      method: 'POST',
+      body:   JSON.stringify({ packageId }),
+    }),
+};
+
+// ─── ActionTasks API ──────────────────────────────────────────────────────────
+export interface ActionTask {
+  id:          string;
+  userId:      string;
+  strategyId:  string | null;
+  title:       string;
+  description: string | null;
+  platform:    string | null;
+  dueDate:     string | null;
+  status:      string;
+  priority:    string;
+  createdAt:   string;
+  updatedAt:   string;
+}
+
+export interface CreateActionTaskInput {
+  title:       string;
+  description?: string;
+  platform?:   string;
+  dueDate?:    string;
+  priority?:   string;
+  strategyId?: string;
+}
+
+export const actionTasksApi = {
+  list: () =>
+    apiFetch<{ tasks: ActionTask[] }>('/action-tasks').then(r => r.tasks),
+  create: (data: CreateActionTaskInput) =>
+    apiFetch<{ task: ActionTask }>('/action-tasks', {
+      method: 'POST',
+      body:   JSON.stringify(data),
+    }),
+  update: (id: string, data: Partial<ActionTask>) =>
+    apiFetch<{ task: ActionTask }>(`/action-tasks/${id}`, {
+      method: 'PATCH',
+      body:   JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    apiFetch<{ ok: boolean }>(`/action-tasks/${id}`, { method: 'DELETE' }),
+};
+
+// ─── Competitors API ──────────────────────────────────────────────────────────
+export interface Competitor {
+  id:            string;
+  userId:        string;
+  name:          string;
+  platform:      string;
+  handle:        string;
+  followers:     number;
+  postsPerWeek:  number;
+  avgEngagement: number;
+  lastSynced:    string | null;
+  createdAt:     string;
+  updatedAt:     string;
+}
+
+export interface CreateCompetitorInput {
+  name:           string;
+  platform:       string;
+  handle:         string;
+  followers?:     number;
+  postsPerWeek?:  number;
+  avgEngagement?: number;
+}
+
+export const competitorsApi = {
+  list: () =>
+    apiFetch<{ competitors: Competitor[] }>('/competitors').then(r => r.competitors),
+  create: (data: CreateCompetitorInput) =>
+    apiFetch<{ competitor: Competitor }>('/competitors', {
+      method: 'POST',
+      body:   JSON.stringify(data),
+    }),
+  update: (id: string, data: Partial<Competitor>) =>
+    apiFetch<{ competitor: Competitor }>(`/competitors/${id}`, {
+      method: 'PATCH',
+      body:   JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    apiFetch<{ ok: boolean }>(`/competitors/${id}`, { method: 'DELETE' }),
+};
+
+// ─── Strategy API ─────────────────────────────────────────────────────────────
+export interface Strategy {
+  id:              string;
+  userId:          string;
+  name:            string | null;
+  status:          string;
+  periodStartDate: string | null;
+  periodEndDate:   string | null;
+  weekCount:       number;
+  goal:            string | null;
+  platforms:       string | null;
+  n8nSessionId:    string | null;
+  createdAt:       string;
+  updatedAt:       string;
+}
+
+export interface CreateStrategyInput {
+  name?:            string;
+  goal?:            string;
+  platforms?:       string;
+  weekCount?:       number;
+  periodStartDate?: string;
+  periodEndDate?:   string;
+}
+
+export const strategyApi = {
+  list: () =>
+    apiFetch<{ strategies: Strategy[] }>('/strategies').then(r => r.strategies),
+  get: (id: string) =>
+    apiFetch<{ strategy: Strategy }>(`/strategies/${id}`),
+  create: (data: CreateStrategyInput) =>
+    apiFetch<{ strategy: Strategy }>('/strategies', {
+      method: 'POST',
+      body:   JSON.stringify(data),
+    }),
+  update: (id: string, data: Partial<Strategy>) =>
+    apiFetch<{ strategy: Strategy }>(`/strategies/${id}`, {
+      method: 'PATCH',
+      body:   JSON.stringify(data),
+    }),
+};
+
 // ─── Social API ───────────────────────────────────────────────────────────────
 export const socialApi = {
   getAccounts: () =>
