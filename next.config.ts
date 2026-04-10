@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
     // from the Vite migration and are safe at runtime.
     ignoreBuildErrors: true,
   },
+  experimental: {
+    instrumentationHook: true,
+  },
 };
 
 export default nextConfig;
