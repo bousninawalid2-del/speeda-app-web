@@ -48,7 +48,11 @@ DATABASE_N8N_URL=postgresql://postgres@host.docker.internal:5432/datatest
 ```
 
 > **Note:** The `datatest` database currently has no password for the `postgres`
-> user. Update the URL if a password is added later.
+> user. This is a **temporary** configuration. Before going to production, secure
+> the `postgres` account and update `DATABASE_N8N_URL` with the password:
+> ```
+> DATABASE_N8N_URL=postgresql://postgres:YOUR_PASSWORD@host.docker.internal:5432/datatest
+> ```
 
 ### Step 2 — Install the triggers on `datatest` (once only)
 
@@ -75,7 +79,7 @@ docker compose build --no-cache
 docker compose up -d
 ```
 
-### Step 4 — Verify
+### Step 4 — Verify (Optional)
 
 ```bash
 # Check the app started and listener is active
