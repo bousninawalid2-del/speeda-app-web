@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, User, Shield, CreditCard, Globe2, Wifi, Brain, Bell, BellDot, BellRing, Languages, HelpCircle, MessageCircle, Sparkles, Info, Gift, MoreVertical, Rss, ExternalLink, Pause, Play, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User, Shield, CreditCard, Globe2, Wifi, Brain, Bell, BellDot, BellRing, Languages, HelpCircle, MessageCircle, Sparkles, Info, Gift, MoreVertical, Rss, ExternalLink, Pause, Play, Trash2, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   InstagramLogo, TikTokLogo, SnapchatLogo, FacebookLogo, XLogo, YouTubeLogo, LinkedInLogo, GoogleLogo,
@@ -15,9 +15,10 @@ import { useSubscription } from '../hooks/useSubscription';
 interface SettingsScreenProps {
   onBack: () => void;
   onNavigate?: (screen: string) => void;
+  onLogout?: () => void | Promise<void>;
 }
 
-export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
+export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenProps) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { data: tokensData } = useTokens();
@@ -443,6 +444,17 @@ export const SettingsScreen = ({ onBack, onNavigate }: SettingsScreenProps) => {
             </div>
           </div>
         </Section>
+
+        <div className="pt-5 border-t border-border-light mb-5">
+          <div className="bg-card rounded-2xl border border-border-light overflow-hidden">
+            <button onClick={() => void onLogout?.()} className="w-full flex items-center gap-3 px-4 py-3.5 text-left">
+              <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
+                <LogOut size={16} className="text-destructive" />
+              </div>
+              <span className="text-[14px] text-destructive flex-1">Log Out</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <ComingSoonModal feature={comingSoonFeature || ''} open={!!comingSoonFeature} onClose={() => setComingSoonFeature(null)} />
