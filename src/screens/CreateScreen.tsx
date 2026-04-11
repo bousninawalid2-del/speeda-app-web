@@ -255,14 +255,19 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
       const scheduledAt = scheduleMode === 'later' && schedDate
         ? new Date(`${schedDate}T${schedTime || '12:00'}`).toISOString()
         : undefined;
+      const uploadedMediaUrls = mediaFiles.map(file => file.url).filter((url): url is string => Boolean(url));
       const payload: CreatePostInput = {
         platform: selectedPlatforms.join(','),
         caption: generatedCaption.trim(),
         hashtags: currentHashtags.join(' ') || undefined,
-        mediaUrls: mediaFiles.map(file => file.url).filter((url): url is string => Boolean(url)),
+        mediaUrls: uploadedMediaUrls,
         scheduledAt,
         status: scheduleMode === 'now' ? 'Published' : 'Scheduled',
       };
+      const skippedMediaCount = mediaFiles.length - uploadedMediaUrls.length;
+      if (skippedMediaCount > 0) {
+        toast.warning(`${skippedMediaCount} media item(s) were not uploaded and will be skipped.`);
+      }
       if (onPublish) {
         await onPublish(payload);
       } else {

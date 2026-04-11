@@ -29,7 +29,7 @@ export default function Page() {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Failed to upload media' }));
+      const error = await response.json().catch(() => ({ error: `Failed to upload media (HTTP ${response.status})` }));
       throw new Error(error.error ?? 'Upload failed');
     }
 
