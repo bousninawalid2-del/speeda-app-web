@@ -209,7 +209,13 @@ export async function publishPost(input: AyrsharePostInput): Promise<AyrsharePos
 
     if (!res.ok) {
       const errBody = await res.text().catch(() => '');
-      console.error(`[ayrshare:publishPost] ${res.status} ${res.statusText}`, errBody);
+      console.error('[ayrshare:publishPost] failed', {
+        status: res.status,
+        statusText: res.statusText,
+        platforms: input.platforms,
+        scheduleDate: input.scheduleDate ?? null,
+        responseText: errBody,
+      });
       return null;
     }
 

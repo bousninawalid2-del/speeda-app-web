@@ -1,6 +1,7 @@
 import { type ChangeEvent, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, X, ChevronDown, ChevronRight, Calendar as CalendarIcon, FolderOpen } from 'lucide-react';
+import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
 import { InstagramLogo, TikTokLogo, SnapchatLogo, FacebookLogo, XLogo, YouTubeLogo, LinkedInLogo, GoogleLogo, PinterestLogo, ThreadsLogo } from '../components/PlatformLogos';
 import { toast } from 'sonner';
@@ -77,6 +78,24 @@ const PlatformIcon = ({ id, size = 16 }: { id: string; size?: number }) => {
   const p = platforms.find(pl => pl.id === id);
   return p ? <p.Logo size={size} /> : null;
 };
+
+function parseMediaUrls(mediaUrls: unknown): string[] {
+  if (!mediaUrls) return [];
+  if (Array.isArray(mediaUrls)) {
+    return mediaUrls.filter((url): url is string => typeof url === 'string' && url.length > 0);
+  }
+  if (typeof mediaUrls === 'string') {
+    try {
+      const parsed = JSON.parse(mediaUrls);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((url): url is string => typeof url === 'string' && url.length > 0);
+      }
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
 
 const Chip = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => (
   <button onClick={onClick} className={`rounded-3xl px-5 py-[9px] text-[13px] font-semibold transition-all duration-200 whitespace-nowrap ${
@@ -915,7 +934,7 @@ function mapPostToCalendarPost(post: Post): (CalendarPost & { day?: number }) | 
   const mediaUrls = parseMediaUrls(post.mediaUrls);
 
   const status = post.status.toLowerCase();
-  const normalizedStatus = status === 'scheduled' || status === 'draft' || status === 'published'
+  const normalizedStatus = status === 'scheduled' || status === 'draft' || status === 'published' || status === 'failed'
     ? status
     : 'draft';
 

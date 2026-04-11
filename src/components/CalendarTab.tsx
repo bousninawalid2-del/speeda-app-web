@@ -15,6 +15,7 @@ const statusBadge = (status: string) => {
     case 'draft': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-soft text-orange-accent">Draft 📝</span>;
     case 'ai-generated': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-soft text-purple">AI Generated ✦</span>;
     case 'published': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-muted text-muted-foreground">Published</span>;
+    case 'failed': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-red-50 text-red-600">Failed</span>;
     case 'boosted': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md gradient-hero text-primary-foreground">🚀 Boosted</span>;
     default: return null;
   }
@@ -26,6 +27,7 @@ const statusBadgeSmall = (status: string) => {
     case 'draft': return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-soft text-orange-accent">Draft</span>;
     case 'ai-generated': return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-soft text-purple">✦ AI</span>;
     case 'published': return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Published</span>;
+    case 'failed': return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-50 text-red-600">Failed</span>;
     default: return null;
   }
 };

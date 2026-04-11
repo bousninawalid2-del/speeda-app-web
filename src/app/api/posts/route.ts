@@ -98,6 +98,8 @@ export async function POST(req: NextRequest) {
     .filter(Boolean)
     .map(url => toAbsoluteUrl(url, origin));
   const resolvedStatus = status ?? (scheduledAt ? 'Scheduled' : 'Draft');
+  const ayrshareMediaUrls = (mediaUrls ?? []).map(url => toAbsoluteMediaUrl(url, req));
+  let publishError: string | null = null;
 
   // Build full caption with hashtags
   const fullCaption = hashtags
@@ -153,9 +155,16 @@ export async function POST(req: NextRequest) {
           where: { id: post.id },
           data: { status: 'Failed' },
         });
+        post = await markPostFailed(post.id);
       }
+    } else {
+      publishError = 'No connected Ayrshare profile found for this user.';
+      post = await markPostFailed(post.id);
     }
   }
 
-  return Response.json({ post }, { status: 201 });
+  return Response.json(
+    publishError ? { post, publishError } : { post },
+    { status: 201 },
+  );
 }
