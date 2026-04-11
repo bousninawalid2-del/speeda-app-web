@@ -20,6 +20,7 @@ import { useTokens } from '../hooks/useTokens';
 import { useCreatePost, type CreatePostInput, type Post } from '../hooks/usePosts';
 import type { SocialAccount } from '@/services/social.service';
 import type { CalendarPost } from '@/components/CalendarData';
+import { getAccessToken } from '@/lib/api-client';
 
 const platforms = [
   { id: 'instagram', name: 'Instagram', Logo: InstagramLogo },
@@ -103,8 +104,49 @@ const LangSelector = ({ selected, setSelected }: { selected: string[]; setSelect
   );
 };
 
+function parseMediaUrls(mediaUrls: unknown): string[] {
+  if (!mediaUrls) return [];
+  if (Array.isArray(mediaUrls)) {
+    return mediaUrls.filter((url): url is string => typeof url === 'string' && url.trim().length > 0);
+  }
+  if (typeof mediaUrls === 'string') {
+    const trimmedMediaUrls = mediaUrls.trim();
+    if (!trimmedMediaUrls) return [];
+    try {
+      const parsedMediaUrls = JSON.parse(trimmedMediaUrls);
+      if (Array.isArray(parsedMediaUrls)) {
+        return parsedMediaUrls.filter((url): url is string => typeof url === 'string' && url.trim().length > 0);
+      }
+    } catch {
+      return [trimmedMediaUrls];
+    }
+  }
+  return [];
+}
+
+function getSafeMediaSrc(url?: string): string | null {
+  if (!url) return null;
+  if (url.startsWith('blob:')) return url;
+  if (url.startsWith('/api/media?id=')) return url;
+  return null;
+}
+
+function revokeObjectUrl(url?: string): void {
+  if (url?.startsWith('blob:')) {
+    URL.revokeObjectURL(url);
+  }
+}
+
+interface UploadedMedia {
+  id?: string;
+  name: string;
+  size: string;
+  url?: string;
+  localPreview?: string;
+}
+
 // ── Media upload area with Library access ──
-const MediaUpload = ({ files, add, remove, onOpenLibrary }: { files: { name: string; size: string }[]; add: () => void; remove: (i: number) => void; onOpenLibrary?: () => void }) => (
+const MediaUpload = ({ files, add, remove, onOpenLibrary }: { files: UploadedMedia[]; add: () => void; remove: (i: number) => void; onOpenLibrary?: () => void }) => (
   <div className="mt-2">
     {files.length === 0 ? (
       <div className="flex gap-2">
@@ -120,12 +162,25 @@ const MediaUpload = ({ files, add, remove, onOpenLibrary }: { files: { name: str
     ) : (
       <div className="bg-card rounded-2xl p-3 border border-border-light">
         <div className="flex gap-2 overflow-x-auto">
-          {files.map((_, i) => (
-            <div key={i} className="relative flex-shrink-0">
-              <div className="w-20 h-20 rounded-xl gradient-hero flex items-center justify-center"><span className="text-2xl">📷</span></div>
-              <button onClick={() => remove(i)} className="absolute -top-1.5 -end-1.5 w-5 h-5 rounded-full bg-red-accent text-primary-foreground flex items-center justify-center"><X size={10} /></button>
-            </div>
-          ))}
+          {files.map((file, i) => {
+            const mediaSrc = getSafeMediaSrc(file.localPreview || file.url);
+            return (
+              <div key={i} className="relative flex-shrink-0">
+                <div className="w-20 h-20 rounded-xl gradient-hero flex items-center justify-center overflow-hidden">
+                  {mediaSrc ? (
+                    <img
+                      src={mediaSrc}
+                      alt={file.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-2xl">📷</span>
+                  )}
+                </div>
+                <button onClick={() => remove(i)} className="absolute -top-1.5 -end-1.5 w-5 h-5 rounded-full bg-red-accent text-primary-foreground flex items-center justify-center"><X size={10} /></button>
+              </div>
+            );
+          })}
           {files.length < 4 && (
             <div className="flex gap-1.5 flex-shrink-0">
               <button onClick={add} className="w-20 h-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center">
@@ -142,13 +197,6 @@ const MediaUpload = ({ files, add, remove, onOpenLibrary }: { files: { name: str
 // ═══════════════════════════════════════
 //  QUICK POST MODE
 // ═══════════════════════════════════════
-interface UploadedMedia {
-  id?: string;
-  name: string;
-  size: string;
-  url?: string;
-}
-
 interface QuickPostModeProps {
   scheduledDate?: string;
   scheduledTime?: string;
@@ -194,11 +242,39 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
     if (mediaFiles.length >= 4) return;
     fileInputRef.current?.click();
   };
+  const uploadMediaFile = async (file: File): Promise<{ id: string; url: string }> => {
+    if (onUploadMedia) {
+      return onUploadMedia(file);
+    }
+
+    const token = getAccessToken();
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch('/api/media', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: `Failed to upload media (HTTP ${response.status})` }));
+      throw new Error(error.error ?? 'Upload failed');
+    }
+
+    return response.json() as Promise<{ id: string; url: string }>;
+  };
   const appendLibraryMedia = (items: { id: string; name: string; size: string }[]) => {
     setMediaFiles(prev => {
       const slots = Math.max(0, 4 - prev.length);
       if (slots === 0) return prev;
-      const next = items.slice(0, slots).map(item => ({ id: item.id, name: item.name, size: item.size }));
+      const next = items.slice(0, slots).map(item => ({
+        id: item.id,
+        name: item.name,
+        size: item.size,
+        url: `/api/media?id=${item.id}`,
+      }));
       return [...prev, ...next];
     });
   };
@@ -210,21 +286,43 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
     const selected = files.slice(0, slots);
 
     for (const file of selected) {
+      const tempId = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `upload-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const localPreview = URL.createObjectURL(file);
+      const nextMediaItem: UploadedMedia = {
+        id: tempId,
+        name: file.name,
+        size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+        localPreview,
+      };
+      setMediaFiles(prev => [...prev, nextMediaItem]);
+
       try {
-        const uploaded = onUploadMedia ? await onUploadMedia(file) : null;
-        setMediaFiles(prev => [...prev, {
-          id: uploaded?.id,
-          url: uploaded?.url,
-          name: file.name,
-          size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-        }]);
+        const uploaded = await uploadMediaFile(file);
+        setMediaFiles(prev => prev.map(item => {
+          if (item.id !== tempId) return item;
+          revokeObjectUrl(item.localPreview);
+          return { ...item, id: uploaded.id, url: uploaded.url, localPreview: undefined };
+        }));
       } catch (err: unknown) {
+        setMediaFiles(prev => {
+          const failedItem = prev.find(item => item.id === tempId);
+          revokeObjectUrl(failedItem?.localPreview);
+          return prev.filter(item => item.id !== tempId);
+        });
         toast.error(err instanceof Error ? err.message : 'Failed to upload media');
       }
     }
     event.target.value = '';
   };
-  const removeMedia = (i: number) => setMediaFiles(p => p.filter((_, idx) => idx !== i));
+  const removeMedia = (i: number) => {
+    setMediaFiles(prev => {
+      const item = prev[i];
+      revokeObjectUrl(item?.localPreview);
+      return prev.filter((_, idx) => idx !== i);
+    });
+  };
   const { isFree } = useFreeTier();
   const [showUpgrade, setShowUpgrade] = useState(false);
   const handleGenerate = () => {
@@ -456,9 +554,22 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
 
               {mediaFiles.length > 0 && (
                 <div className="flex gap-2 mt-3">
-                  {mediaFiles.map((_, i) => (
-                    <div key={i} className="w-16 h-16 rounded-xl gradient-hero flex items-center justify-center flex-shrink-0"><span className="text-lg">📷</span></div>
-                  ))}
+                  {mediaFiles.map((file, i) => {
+                    const mediaSrc = getSafeMediaSrc(file.localPreview || file.url);
+                    return (
+                      <div key={i} className="w-16 h-16 rounded-xl gradient-hero flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {mediaSrc ? (
+                          <img
+                            src={mediaSrc}
+                            alt={file.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-lg">📷</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
@@ -801,6 +912,7 @@ interface CreateScreenProps {
 function mapPostToCalendarPost(post: Post): (CalendarPost & { day?: number }) | null {
   const date = post.scheduledAt ? new Date(post.scheduledAt) : new Date(post.createdAt);
   if (Number.isNaN(date.getTime())) return null;
+  const mediaUrls = parseMediaUrls(post.mediaUrls);
 
   const status = post.status.toLowerCase();
   const normalizedStatus = status === 'scheduled' || status === 'draft' || status === 'published'
@@ -817,6 +929,7 @@ function mapPostToCalendarPost(post: Post): (CalendarPost & { day?: number }) | 
     status: normalizedStatus,
     caption: post.caption,
     hashtags: post.hashtags ?? undefined,
+    mediaUrls,
   };
 }
 
