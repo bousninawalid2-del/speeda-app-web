@@ -28,6 +28,27 @@ export interface CreatePostInput {
   status?:     'Draft' | 'Scheduled' | 'Published';
 }
 
+export interface BulkCreatePostItem {
+  platform: string;
+  caption: string;
+  hashtags?: string;
+  mediaUrls?: string[];
+  scheduledLocalDate: string;
+  scheduledLocalTime: string;
+}
+
+export interface BulkCreatePostInput {
+  timeZone: string;
+  items: BulkCreatePostItem[];
+}
+
+export interface BulkCreatePostResponse {
+  created: number;
+  scheduled: number;
+  failed: number;
+  failures: Array<{ index: number; platform: string; reason: string; postId?: string }>;
+}
+
 const POSTS_FALLBACK: PostsResponse = {
   posts: [
     {
@@ -97,6 +118,18 @@ export function useCreatePost() {
   return useMutation({
     mutationFn: (data: CreatePostInput) =>
       apiFetch<{ post: Post }>('/posts', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['posts'] }),
+  });
+}
+
+export function useCreateBulkPosts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: BulkCreatePostInput) =>
+      apiFetch<BulkCreatePostResponse>('/posts/bulk', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
