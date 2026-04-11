@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { SubscriptionScreen } from '@/screens/SubscriptionScreen';
 import { usePlans } from '@/hooks/usePlans';
 import { useSubscription, useCreateSubscription } from '@/hooks/useSubscription';
+import { PAYMENT_GATEWAY_NOT_CONFIGURED_MESSAGE } from '@/lib/constants/payment';
 
 function SubscriptionContent() {
   const router  = useRouter();
@@ -38,7 +39,7 @@ function SubscriptionContent() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to start checkout';
       if (message.includes('Payment gateway not configured')) {
-        toast.error('Payment gateway not configured. Contact support.');
+        toast.error(PAYMENT_GATEWAY_NOT_CONFIGURED_MESSAGE);
       } else {
         toast.error(message);
       }

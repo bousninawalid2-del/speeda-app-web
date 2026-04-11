@@ -153,7 +153,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
       animate={{ opacity: 1, y: 0 }}
       className="min-h-screen bg-background px-6 pt-12 pb-8"
     >
-        {mode === 'forgot' && (
+      {mode === 'forgot' && (
         <button onClick={() => { setMode('signin'); setFormError(null); }} className="flex items-center gap-1 text-brand-blue text-[14px] font-medium mb-4">
           <ChevronLeft size={18} /> {t('auth.backToSignIn')}
         </button>
