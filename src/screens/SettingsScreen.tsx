@@ -48,11 +48,12 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
       YouTube: false, 'Google Business': false, LinkedIn: false, Pinterest: false, Threads: false,
     };
 
-    const accounts = Array.isArray(socialData)
-      ? socialData
-      : Array.isArray((socialData as any)?.accounts)
-        ? (socialData as any).accounts
-        : [];
+    let accounts: any[] = [];
+    if (Array.isArray(socialData)) {
+      accounts = socialData;
+    } else if (Array.isArray((socialData as any)?.accounts)) {
+      accounts = (socialData as any).accounts;
+    }
 
     const normalizePlatform = (platform: string) => {
       const p = platform.toLowerCase();
@@ -81,9 +82,11 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
     const methods = Array.isArray((billingData as any)?.paymentMethods) ? (billingData as any).paymentMethods : [];
     return methods.map((method: any) => {
       const brand = String(method?.brand ?? method?.type ?? '').toLowerCase();
+      const displayBrand = brand ? brand.charAt(0).toUpperCase() + brand.slice(1) : '';
       return {
         id: String(method?.id ?? `${brand}-${method?.last4 ?? ''}`),
         brand,
+        displayBrand,
         last4: String(method?.last4 ?? ''),
         isDefault: !!(method?.isDefault ?? method?.default),
       };
@@ -96,6 +99,12 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
     if (platform === 'LinkedIn') return 'linkedin';
     if (platform === 'YouTube') return 'youtube';
     return platform.toLowerCase();
+  };
+
+  const paymentLogo = (brand: string) => {
+    if (brand.includes('visa')) return <VisaLogo size={24} />;
+    if (brand.includes('mada')) return <MadaLogo size={24} />;
+    return <CreditCard size={24} className="text-muted-foreground" />;
   };
 
   // RSS Feed state
@@ -468,8 +477,8 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
             <>
               {paymentMethods.map((method, index) => (
                 <div key={method.id} className={`flex items-center gap-3 px-4 py-3.5 ${index < paymentMethods.length - 1 ? 'border-b border-border-light' : ''}`}>
-                  {method.brand.includes('visa') ? <VisaLogo size={24} /> : method.brand.includes('mada') ? <MadaLogo size={24} /> : <CreditCard size={24} className="text-muted-foreground" />}
-                  <span className="text-[14px] text-foreground flex-1">{method.brand ? `${method.brand} ····${method.last4}` : `····${method.last4}`}</span>
+                  {paymentLogo(method.brand)}
+                  <span className="text-[14px] text-foreground flex-1">{method.displayBrand ? `${method.displayBrand} ····${method.last4}` : `····${method.last4}`}</span>
                   {method.isDefault && <span className="text-[11px] text-green-accent font-semibold">Default ✓</span>}
                 </div>
               ))}
@@ -559,8 +568,10 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
                   method: 'POST',
                   body: JSON.stringify({ platform: toApiPlatform(disconnectPlatform) }),
                 });
-              } catch {}
-              await refetchSocial();
+                await refetchSocial();
+              } catch (error) {
+                console.error('Failed to disconnect platform', disconnectPlatform, error);
+              }
               setDisconnectPlatform(null);
             }}
             onCancel={() => setDisconnectPlatform(null)}
