@@ -18,6 +18,7 @@ export interface AnalyticsData {
     byPlatform: Record<string, number>;
   };
   social: Record<string, unknown> | null;
+  chartData?: Array<{ week: string; score: number }>;
   factors?: Array<{ name: string; weight: number; pct: number; pts: string; desc: string }>;
   scoreHistory?: Array<{ week: string; score: number }>;
 }
@@ -47,6 +48,18 @@ const ANALYTICS_FALLBACK: AnalyticsData = {
     tiktok: { followers: 8200, impressions: 15400, engagementRate: 10.1 },
     facebook: { followers: 5600, impressions: 12010, engagementRate: 6.3 },
   },
+  chartData: [
+    { week: 'Week 1', score: 58 },
+    { week: 'Week 2', score: 63 },
+    { week: 'Week 3', score: 69 },
+    { week: 'Week 4', score: 74 },
+  ],
+  scoreHistory: [
+    { week: 'Week 1', score: 58 },
+    { week: 'Week 2', score: 63 },
+    { week: 'Week 3', score: 69 },
+    { week: 'Week 4', score: 74 },
+  ],
 };
 
 export function useAnalytics(period: AnalyticsPeriod = '7d', platform?: string) {
