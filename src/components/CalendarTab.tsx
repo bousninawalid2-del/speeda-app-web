@@ -52,11 +52,13 @@ const EmptyDayIndicator = () => (
 interface CalendarTabProps {
   onCreatePost?: (date?: string, time?: string) => void;
   onCreateStrategy?: () => void;
-  strategyPosts?: CalendarPost[];
+  strategyPosts?: (CalendarPost & { day?: number })[];
   onEditPost?: (post: CalendarPost) => void;
+  onDeletePost?: (post: CalendarPost) => Promise<void> | void;
+  postsLoading?: boolean;
 }
 
-export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts = [], onEditPost }: CalendarTabProps) => {
+export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onEditPost, onDeletePost, postsLoading = false }: CalendarTabProps) => {
   const [view, setView] = useState<'week' | 'month'>('week');
   const [weekStart, setWeekStart] = useState(new Date(2026, 2, 17));
   const [selectedDay, setSelectedDay] = useState(17);
@@ -79,7 +81,15 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts = []
     return `${MONTH_NAMES[weekStart.getMonth()]} ${weekStart.getDate()} — ${end.getDate()}, ${weekStart.getFullYear()}`;
   }, [weekStart]);
 
-  const dayPosts = getPostsForDay(selectedDay);
+  const hasExternalPosts = strategyPosts !== undefined;
+  const getPostsForCalendarDay = (day: number) => {
+    if (hasExternalPosts) {
+      return (strategyPosts ?? []).filter(post => post.day === day);
+    }
+    return getPostsForDay(day);
+  };
+
+  const dayPosts = getPostsForCalendarDay(selectedDay);
   const daySuggestions = getSuggestionsForDay(selectedDay);
 
   const timelineItems = useMemo(() => {
@@ -115,7 +125,7 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts = []
           const day = date.getDate();
           const isToday = isSameDay(date, TODAY);
           const isSelected = day === selectedDay;
-          const posts = getPostsForDay(day);
+          const posts = getPostsForCalendarDay(day);
           const platformIds = [...new Set(posts.map(p => p.platform))];
 
           return (
@@ -394,7 +404,7 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts = []
           {/* Cells */}
           {cells.map((day, i) => {
             if (day === null) return <div key={i} className="bg-card min-h-[72px] md:min-h-[100px]" />;
-            const posts = getPostsForDay(day);
+            const posts = getPostsForCalendarDay(day);
             const isToday = month === 2 && day === 17;
             const isEmpty = posts.length === 0;
             const platformIds = [...new Set(posts.map(p => p.platform))];
@@ -463,18 +473,22 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts = []
         {selectedPost && !isMobile && (
           <div className="fixed inset-0 z-40 flex justify-end pointer-events-none">
             <div className="pointer-events-auto">
-              <PostDetailPanel post={selectedPost} onClose={() => setSelectedPost(null)} onEditPost={onEditPost} />
+               <PostDetailPanel post={selectedPost} onClose={() => setSelectedPost(null)} onEditPost={onEditPost} onDeletePost={onDeletePost} />
             </div>
           </div>
         )}
       </AnimatePresence>
       <AnimatePresence>
         {selectedPost && isMobile && (
-          <PostDetailPanel post={selectedPost} onClose={() => setSelectedPost(null)} onEditPost={onEditPost} />
+          <PostDetailPanel post={selectedPost} onClose={() => setSelectedPost(null)} onEditPost={onEditPost} onDeletePost={onDeletePost} />
         )}
       </AnimatePresence>
 
       {view === 'month' ? <MonthView /> : <WeekView />}
+
+      {postsLoading && (
+        <p className="mt-3 text-[12px] text-muted-foreground text-center">Loading posts...</p>
+      )}
 
       {/* Schedule Post button */}
       <motion.button

@@ -23,11 +23,13 @@ interface PostDetailPanelProps {
   onClose: () => void;
   onBoostComplete?: () => void;
   onEditPost?: (post: CalendarPost) => void;
+  onDeletePost?: (post: CalendarPost) => Promise<void> | void;
 }
 
-export const PostDetailPanel = ({ post, onClose, onBoostComplete, onEditPost }: PostDetailPanelProps) => {
+export const PostDetailPanel = ({ post, onClose, onBoostComplete, onEditPost, onDeletePost }: PostDetailPanelProps) => {
   const [showBoost, setShowBoost] = useState(false);
   const [boosted, setBoosted] = useState(post.status === 'boosted');
+  const [deleting, setDeleting] = useState(false);
   const isMobile = useIsMobile();
   const PlatformLogo = platformLogoMap[post.platform];
 
@@ -175,7 +177,20 @@ export const PostDetailPanel = ({ post, onClose, onBoostComplete, onEditPost }: 
                   </>
                 )}
 
-                <button className="w-full text-center text-[13px] text-red-accent font-medium py-2 flex items-center justify-center gap-1">
+                <button
+                  onClick={async () => {
+                    if (!onDeletePost || deleting) return;
+                    setDeleting(true);
+                    try {
+                      await onDeletePost(post);
+                      onClose();
+                    } finally {
+                      setDeleting(false);
+                    }
+                  }}
+                  disabled={!onDeletePost || deleting}
+                  className="w-full text-center text-[13px] text-red-accent font-medium py-2 flex items-center justify-center gap-1 disabled:opacity-50"
+                >
                   <Trash2 size={13} /> Delete
                 </button>
               </div>

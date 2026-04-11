@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { type ChangeEvent, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, X, ChevronDown, ChevronRight, Calendar as CalendarIcon, FolderOpen } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -17,7 +17,9 @@ import { CaptionTemplateEngine } from '../components/CaptionTemplateEngine';
 import { IndustryHashtags } from '../components/IndustryHashtags';
 import { useSocialAccounts } from '../hooks/useSocialAccounts';
 import { useTokens } from '../hooks/useTokens';
-import { useCreatePost } from '../hooks/usePosts';
+import { useCreatePost, type CreatePostInput, type Post } from '../hooks/usePosts';
+import type { SocialAccount } from '@/services/social.service';
+import type { CalendarPost } from '@/components/CalendarData';
 
 const platforms = [
   { id: 'instagram', name: 'Instagram', Logo: InstagramLogo },
@@ -140,13 +142,30 @@ const MediaUpload = ({ files, add, remove, onOpenLibrary }: { files: { name: str
 // ═══════════════════════════════════════
 //  QUICK POST MODE
 // ═══════════════════════════════════════
-const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled }: { scheduledDate?: string; scheduledTime?: string; onScheduled?: () => void }) => {
+interface UploadedMedia {
+  id?: string;
+  name: string;
+  size: string;
+  url?: string;
+}
+
+interface QuickPostModeProps {
+  scheduledDate?: string;
+  scheduledTime?: string;
+  onScheduled?: () => void;
+  onPublish?: (data: CreatePostInput) => Promise<unknown>;
+  onUploadMedia?: (file: File) => Promise<{ id: string; url: string }>;
+  connectedPlatforms?: SocialAccount[];
+  isPublishing?: boolean;
+}
+
+const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, onUploadMedia, connectedPlatforms, isPublishing: externalPublishing }: QuickPostModeProps) => {
   const { t } = useTranslation();
   const { data: socialAccounts } = useSocialAccounts();
   const { data: tokensData } = useTokens();
   const createPost = useCreatePost();
 
-  const connectedPlatforms = socialAccounts?.filter(a => a.connected) ?? [];
+  const availablePlatforms = connectedPlatforms ?? (socialAccounts?.filter(a => a.connected) ?? []);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const togglePlatform = (id: string) => {
     setSelectedPlatforms(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
@@ -156,7 +175,7 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled }: { schedule
   const [langs, setLangs] = useState<string[]>(['saudi']);
   const [desc, setDesc] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
-  const [mediaFiles, setMediaFiles] = useState<{ name: string; size: string }[]>([]);
+  const [mediaFiles, setMediaFiles] = useState<UploadedMedia[]>([]);
   const [generated, setGenerated] = useState(false);
   const [loading, setLoading] = useState(false);
   const [scheduleMode, setScheduleMode] = useState<'now' | 'later'>(scheduledDate ? 'later' : 'now');
@@ -167,9 +186,44 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled }: { schedule
   const [showTemplateEngine, setShowTemplateEngine] = useState(false);
   const [currentHashtags, setCurrentHashtags] = useState<string[]>(['#FoodLovers', '#Riyadh', '#SaudiFood', '#ChickenShawarma']);
   const [generatedCaption, setGeneratedCaption] = useState('Discover our signature Chicken Shawarma — marinated for 24 hours, grilled to perfection, and wrapped with fresh vegetables and our secret garlic sauce. 🔥\n\nVisit us today and get 20% off your first order! 🎉');
-  const [isPublishing, setIsPublishing] = useState(false);
+  const [localIsPublishing, setLocalIsPublishing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const isPublishing = externalPublishing ?? localIsPublishing;
 
-  const addMedia = () => { if (mediaFiles.length < 4) setMediaFiles(p => [...p, { name: `photo_${p.length + 1}.jpg`, size: '2.4 MB' }]); };
+  const addMedia = () => {
+    if (mediaFiles.length >= 4) return;
+    fileInputRef.current?.click();
+  };
+  const appendLibraryMedia = (items: { id: string; name: string; size: string }[]) => {
+    setMediaFiles(prev => {
+      const slots = Math.max(0, 4 - prev.length);
+      if (slots === 0) return prev;
+      const next = items.slice(0, slots).map(item => ({ id: item.id, name: item.name, size: item.size }));
+      return [...prev, ...next];
+    });
+  };
+  const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    if (files.length === 0) return;
+    const slots = Math.max(0, 4 - mediaFiles.length);
+    if (slots === 0) return;
+    const selected = files.slice(0, slots);
+
+    for (const file of selected) {
+      try {
+        const uploaded = onUploadMedia ? await onUploadMedia(file) : null;
+        setMediaFiles(prev => [...prev, {
+          id: uploaded?.id,
+          url: uploaded?.url,
+          name: file.name,
+          size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+        }]);
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : 'Failed to upload media');
+      }
+    }
+    event.target.value = '';
+  };
   const removeMedia = (i: number) => setMediaFiles(p => p.filter((_, idx) => idx !== i));
   const { isFree } = useFreeTier();
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -194,25 +248,35 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled }: { schedule
       toast.error('No caption to publish');
       return;
     }
-    setIsPublishing(true);
+    if (externalPublishing === undefined) {
+      setLocalIsPublishing(true);
+    }
     try {
       const scheduledAt = scheduleMode === 'later' && schedDate
         ? new Date(`${schedDate}T${schedTime || '12:00'}`).toISOString()
         : undefined;
-      await createPost.mutateAsync({
+      const payload: CreatePostInput = {
         platform: selectedPlatforms.join(','),
         caption: generatedCaption.trim(),
         hashtags: currentHashtags.join(' ') || undefined,
+        mediaUrls: mediaFiles.map(file => file.url).filter((url): url is string => Boolean(url)),
         scheduledAt,
         status: scheduleMode === 'now' ? 'Published' : 'Scheduled',
-      });
+      };
+      if (onPublish) {
+        await onPublish(payload);
+      } else {
+        await createPost.mutateAsync(payload);
+      }
       const timeLabel = scheduleMode === 'later' && schedDate ? `${schedDate} ${schedTime || ''}`.trim() : 'now';
       toast.success(`Post scheduled ${scheduleMode === 'now' ? 'for immediate publish' : `for ${timeLabel}`} ✓`, { duration: 2000 });
       setTimeout(() => onScheduled?.(), 500);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to publish');
     } finally {
-      setIsPublishing(false);
+      if (externalPublishing === undefined) {
+        setLocalIsPublishing(false);
+      }
     }
   };
 
@@ -260,11 +324,11 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled }: { schedule
 
       {/* Platform */}
       <Section label="Platform">
-        {connectedPlatforms.length === 0 ? (
+        {availablePlatforms.length === 0 ? (
           <p className="text-[13px] text-muted-foreground">No platforms connected. Go to Settings to connect your social media accounts.</p>
         ) : (
           <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
-            {connectedPlatforms.map(account => {
+            {availablePlatforms.map(account => {
               const p = platforms.find(pl => pl.id === account.platform);
               if (!p) return null;
               const isSelected = selectedPlatforms.includes(account.platform);
@@ -322,12 +386,13 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled }: { schedule
       {/* Media with Library access */}
       <Section label="Upload Media">
         <MediaUpload files={mediaFiles} add={addMedia} remove={removeMedia} onOpenLibrary={() => setShowMediaLibrary(true)} />
+        <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileUpload} />
         {/* Image resize notice */}
         <ImageResizeNotice selectedPlatforms={selectedPlatforms} hasImage={mediaFiles.length > 0} />
       </Section>
 
       {/* Description */}
-      <Section label="What's this post about?">
+      <Section label="What&apos;s this post about?">
         <div className="flex gap-2 items-center mb-2">
           <button onClick={() => setShowTemplateEngine(true)} className="text-[12px] font-bold text-brand-blue bg-brand-blue/10 px-3 py-1.5 rounded-lg">✦ Help Me Write</button>
         </div>
@@ -371,7 +436,7 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled }: { schedule
 
             {mediaFiles.length > 0 && (
               <div className="bg-purple-soft rounded-2xl p-3 mt-2 mb-3">
-                <p className="text-[13px] text-purple font-medium">✦ I've analyzed your photo and created content optimized for {selectedPlatform?.name} {type} format.</p>
+                <p className="text-[13px] text-purple font-medium">✦ I&apos;ve analyzed your photo and created content optimized for {selectedPlatform?.name} {type} format.</p>
               </div>
             )}
 
@@ -441,7 +506,7 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled }: { schedule
             <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} className="fixed inset-x-0 bottom-0 z-50 bg-card rounded-t-3xl max-h-[85vh] overflow-y-auto p-5">
               <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted" />
               <MediaLibrary mode="picker" multiSelect onSelect={(items) => {
-                items.forEach(() => addMedia());
+                appendLibraryMedia(items.map(item => ({ id: item.id, name: item.name, size: item.size })));
                 setShowMediaLibrary(false);
                 toast.success(`${items.length} media added`);
               }} onClose={() => setShowMediaLibrary(false)} />
@@ -718,7 +783,39 @@ const Section = ({ label, children }: { label: string; children: React.ReactNode
 // ═══════════════════════════════════════
 //  MAIN CREATE SCREEN
 // ═══════════════════════════════════════
-export const CreateScreen = () => {
+interface CreateScreenProps {
+  posts?: Post[];
+  postsLoading?: boolean;
+  onPublish?: (data: CreatePostInput) => Promise<unknown>;
+  onUploadMedia?: (file: File) => Promise<{ id: string; url: string }>;
+  connectedPlatforms?: SocialAccount[];
+  onDeletePost?: (postId: string) => Promise<void>;
+  isPublishing?: boolean;
+}
+
+function mapPostToCalendarPost(post: Post): (CalendarPost & { day?: number }) | null {
+  const date = post.scheduledAt ? new Date(post.scheduledAt) : new Date(post.createdAt);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const status = post.status.toLowerCase();
+  const normalizedStatus = status === 'scheduled' || status === 'draft' || status === 'published'
+    ? status
+    : 'draft';
+
+  return {
+    id: post.id,
+    day: date.getDate(),
+    time: date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+    platform: post.platform.split(',')[0]?.trim() || 'instagram',
+    title: post.caption.slice(0, 40) || 'Post',
+    type: 'Post',
+    status: normalizedStatus,
+    caption: post.caption,
+    hashtags: post.hashtags ?? undefined,
+  };
+}
+
+export const CreateScreen = ({ posts, postsLoading, onPublish, onUploadMedia, connectedPlatforms, onDeletePost, isPublishing }: CreateScreenProps = {}) => {
   const { t } = useTranslation();
   const [mode, setMode] = useState<'calendar' | 'quick' | 'strategy' | 'media'>('calendar');
   const [quickPostDate, setQuickPostDate] = useState<string | undefined>();
@@ -770,10 +867,24 @@ export const CreateScreen = () => {
           <motion.div key={mode} initial={{ opacity: 0, x: mode === 'calendar' ? -20 : mode === 'quick' ? 0 : 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
             className="mt-4">
             {mode === 'calendar' && (
-              <CalendarTab onCreatePost={handleCreatePost} onCreateStrategy={handleCreateStrategy} />
+              <CalendarTab
+                onCreatePost={handleCreatePost}
+                onCreateStrategy={handleCreateStrategy}
+                strategyPosts={posts?.map(mapPostToCalendarPost).filter((post): post is CalendarPost & { day?: number } => post !== null)}
+                postsLoading={postsLoading}
+                onDeletePost={onDeletePost ? (post) => onDeletePost(post.id) : undefined}
+              />
             )}
             {mode === 'quick' && (
-              <QuickPostMode scheduledDate={quickPostDate} scheduledTime={quickPostTime} onScheduled={handlePostScheduled} />
+              <QuickPostMode
+                scheduledDate={quickPostDate}
+                scheduledTime={quickPostTime}
+                onScheduled={handlePostScheduled}
+                onPublish={onPublish}
+                onUploadMedia={onUploadMedia}
+                connectedPlatforms={connectedPlatforms}
+                isPublishing={isPublishing}
+              />
             )}
             {mode === 'strategy' && (
               <StrategyMode onPreviewInCalendar={handlePreviewInCalendar} />
