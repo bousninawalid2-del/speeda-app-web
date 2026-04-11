@@ -55,7 +55,10 @@ export async function GET(req: NextRequest) {
     select: { id: true, userId: true, filename: true, mimetype: true, data: true },
   });
   if (!media || media.userId !== user.sub) return errorResponse('Not found', 404);
-  const safeFilename = media.filename.replace(/[\r\n"]/g, '_');
+  const safeFilename = media.filename
+    .replace(/[^a-zA-Z0-9._-]/g, '_')
+    .replace(/_+/g, '_')
+    .slice(0, 255) || 'media';
 
   return new Response(media.data, {
     headers: {
