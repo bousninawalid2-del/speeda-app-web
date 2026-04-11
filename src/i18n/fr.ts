@@ -291,6 +291,7 @@ export const fr = {
     termsOfService: 'Conditions d\'utilisation',
     privacyPolicy: 'Politique de confidentialité',
     referralProgram: 'Programme de parrainage',
+    logout: 'Se déconnecter',
   },
   tokens: {
     title: '✦ Mes Tokens',

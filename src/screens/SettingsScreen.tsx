@@ -447,11 +447,19 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
 
         <div className="pt-5 border-t border-border-light mb-5">
           <div className="bg-card rounded-2xl border border-border-light overflow-hidden">
-            <button onClick={() => void onLogout?.()} className="w-full flex items-center gap-3 px-4 py-3.5 text-left">
+            <button
+              onClick={async () => {
+                try {
+                  await onLogout?.();
+                } catch {}
+              }}
+              aria-label={t('settings.logout', 'Log Out')}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-inset"
+            >
               <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
                 <LogOut size={16} className="text-destructive" />
               </div>
-              <span className="text-[14px] text-destructive flex-1">Log Out</span>
+              <span className="text-[14px] text-destructive flex-1">{t('settings.logout', 'Log Out')}</span>
             </button>
           </div>
         </div>

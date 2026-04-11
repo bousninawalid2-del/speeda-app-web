@@ -291,6 +291,7 @@ export const ar = {
     termsOfService: 'شروط الخدمة',
     privacyPolicy: 'سياسة الخصوصية',
     referralProgram: 'برنامج الإحالة',
+    logout: 'تسجيل الخروج',
   },
   tokens: {
     title: '✦ التوكنز',
