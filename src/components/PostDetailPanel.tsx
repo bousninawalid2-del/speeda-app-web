@@ -75,7 +75,7 @@ export const PostDetailPanel = ({ post, onClose, onBoostComplete, onEditPost, on
               {/* Media thumbnail */}
               <div className="w-full h-[180px] rounded-xl overflow-hidden relative">
                 {post.mediaUrls?.[0] ? (
-                  <Image src={post.mediaUrls[0]} alt={post.title} fill className="object-cover" sizes="400px" unoptimized />
+                  <Image src={post.mediaUrls[0]} alt={post.title} fill className="object-cover" sizes="400px" />
                 ) : (
                   <div className="w-full h-full gradient-hero flex items-center justify-center">
                     <span className="text-4xl">📷</span>

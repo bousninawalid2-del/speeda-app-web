@@ -143,7 +143,7 @@ const MediaUpload = ({ files, add, remove, onOpenLibrary }: { files: { name: str
             <div key={i} className="relative flex-shrink-0">
               <div className="w-20 h-20 rounded-xl overflow-hidden relative">
                 {file.url ? (
-                  <Image src={file.url} alt={file.name} fill className="object-cover" sizes="80px" unoptimized />
+                  <Image src={file.url} alt={file.name} fill className="object-cover" sizes="80px" />
                 ) : (
                   <div className="w-full h-full gradient-hero flex items-center justify-center"><span className="text-2xl">📷</span></div>
                 )}
@@ -484,7 +484,7 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
                   {mediaFiles.map((file, i) => (
                     <div key={i} className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 relative">
                       {file.url ? (
-                        <Image src={file.url} alt={file.name} fill className="object-cover" sizes="64px" unoptimized />
+                        <Image src={file.url} alt={file.name} fill className="object-cover" sizes="64px" />
                       ) : (
                         <div className="w-full h-full gradient-hero flex items-center justify-center"><span className="text-lg">📷</span></div>
                       )}

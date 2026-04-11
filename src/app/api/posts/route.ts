@@ -34,8 +34,14 @@ function toAbsoluteMediaUrl(url: string, req: NextRequest): string {
   if (/^https?:\/\//i.test(url)) return url;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
   const origin = appUrl ? appUrl.replace(/\/$/, '') : new URL(req.url).origin;
-  if (url.startsWith('/')) return `${origin}${url}`;
-  return `${origin}/${url}`;
+  return new URL(url, `${origin}/`).toString();
+}
+
+async function markPostFailed(postId: string) {
+  return prisma.post.update({
+    where: { id: postId },
+    data: { status: 'Failed' },
+  });
 }
 
 // ─── GET /api/posts ───────────────────────────────────────────────────────────
@@ -154,17 +160,11 @@ export async function POST(req: NextRequest) {
           platforms,
           scheduleDate: scheduledAt ?? null,
         });
-        post = await prisma.post.update({
-          where: { id: post.id },
-          data: { status: 'Failed' },
-        });
+        post = await markPostFailed(post.id);
       }
     } else {
       publishError = 'No connected Ayrshare profile found for this user.';
-      post = await prisma.post.update({
-        where: { id: post.id },
-        data: { status: 'Failed' },
-      });
+      post = await markPostFailed(post.id);
     }
   }
 
