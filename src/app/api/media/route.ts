@@ -44,7 +44,31 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get('id');
-  if (!id) return errorResponse('Missing id', 400);
+  if (!id) {
+    const auth = requireAuth(req);
+    if (auth instanceof Response) return auth;
+    const { user } = auth;
+
+    const type = req.nextUrl.searchParams.get('type');
+    const where: { userId: string; mimetype?: { startsWith: string } } = { userId: user.sub };
+    if (type === 'photo') where.mimetype = { startsWith: 'image/' };
+    if (type === 'video') where.mimetype = { startsWith: 'video/' };
+
+    const items = await prisma.dataImage.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: {
+        id: true,
+        filename: true,
+        mimetype: true,
+        size: true,
+        createdAt: true,
+      },
+    });
+
+    return Response.json({ items });
+  }
 
   const media = await prisma.dataImage.findUnique({
     where: { id },

@@ -55,8 +55,16 @@ export const MediaDetailPanel = ({ item, mode, isMobile, onClose, onSelect }: Me
               </div>
 
               {/* Preview */}
-              <div className="w-full aspect-square rounded-xl gradient-hero flex items-center justify-center text-5xl">
-                {typeIcon(item.type)}
+              <div className="w-full aspect-square rounded-xl gradient-hero flex items-center justify-center text-5xl overflow-hidden">
+                {item.url ? (
+                  item.type === 'video' ? (
+                    <video src={item.url} className="w-full h-full object-cover" controls playsInline preload="metadata" />
+                  ) : (
+                    <img src={item.url} alt={item.name} className="w-full h-full object-cover" />
+                  )
+                ) : (
+                  typeIcon(item.type)
+                )}
               </div>
 
               {/* Info */}
@@ -64,7 +72,7 @@ export const MediaDetailPanel = ({ item, mode, isMobile, onClose, onSelect }: Me
                 {[
                   { label: t('media.filename', 'Filename'), value: item.name },
                   { label: t('media.fileSize', 'File size'), value: item.size },
-                  { label: t('media.dimensions', 'Dimensions'), value: item.dimensions },
+                  { label: t('media.dimensions', 'Dimensions'), value: item.dimensions ?? '—' },
                   { label: t('media.uploaded', 'Uploaded'), value: item.date },
                   { label: t('media.type', 'Type'), value: typeLabel(item.type) },
                 ].map((row, i) => (
