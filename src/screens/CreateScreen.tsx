@@ -124,6 +124,19 @@ function parseMediaUrls(mediaUrls: unknown): string[] {
   return [];
 }
 
+function getSafeMediaSrc(url?: string): string | null {
+  if (!url) return null;
+  if (url.startsWith('blob:')) return url;
+  if (url.startsWith('/api/media?id=')) return url;
+  return null;
+}
+
+function revokeObjectUrl(url?: string): void {
+  if (url?.startsWith('blob:')) {
+    URL.revokeObjectURL(url);
+  }
+}
+
 interface UploadedMedia {
   id?: string;
   name: string;
@@ -149,22 +162,25 @@ const MediaUpload = ({ files, add, remove, onOpenLibrary }: { files: UploadedMed
     ) : (
       <div className="bg-card rounded-2xl p-3 border border-border-light">
         <div className="flex gap-2 overflow-x-auto">
-          {files.map((file, i) => (
-            <div key={i} className="relative flex-shrink-0">
-              <div className="w-20 h-20 rounded-xl gradient-hero flex items-center justify-center overflow-hidden">
-                {file.localPreview || file.url ? (
-                  <img
-                    src={file.localPreview || file.url}
-                    alt={file.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-2xl">📷</span>
-                )}
+          {files.map((file, i) => {
+            const mediaSrc = getSafeMediaSrc(file.localPreview || file.url);
+            return (
+              <div key={i} className="relative flex-shrink-0">
+                <div className="w-20 h-20 rounded-xl gradient-hero flex items-center justify-center overflow-hidden">
+                  {mediaSrc ? (
+                    <img
+                      src={mediaSrc}
+                      alt={file.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-2xl">📷</span>
+                  )}
+                </div>
+                <button onClick={() => remove(i)} className="absolute -top-1.5 -end-1.5 w-5 h-5 rounded-full bg-red-accent text-primary-foreground flex items-center justify-center"><X size={10} /></button>
               </div>
-              <button onClick={() => remove(i)} className="absolute -top-1.5 -end-1.5 w-5 h-5 rounded-full bg-red-accent text-primary-foreground flex items-center justify-center"><X size={10} /></button>
-            </div>
-          ))}
+            );
+          })}
           {files.length < 4 && (
             <div className="flex gap-1.5 flex-shrink-0">
               <button onClick={add} className="w-20 h-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center">
@@ -270,7 +286,9 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
     const selected = files.slice(0, slots);
 
     for (const file of selected) {
-      const tempId = `upload-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const tempId = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `upload-${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const localPreview = URL.createObjectURL(file);
       const nextMediaItem: UploadedMedia = {
         id: tempId,
@@ -284,17 +302,13 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
         const uploaded = await uploadMediaFile(file);
         setMediaFiles(prev => prev.map(item => {
           if (item.id !== tempId) return item;
-          if (item.localPreview) {
-            URL.revokeObjectURL(item.localPreview);
-          }
+          revokeObjectUrl(item.localPreview);
           return { ...item, id: uploaded.id, url: uploaded.url, localPreview: undefined };
         }));
       } catch (err: unknown) {
         setMediaFiles(prev => {
           const failedItem = prev.find(item => item.id === tempId);
-          if (failedItem?.localPreview) {
-            URL.revokeObjectURL(failedItem.localPreview);
-          }
+          revokeObjectUrl(failedItem?.localPreview);
           return prev.filter(item => item.id !== tempId);
         });
         toast.error(err instanceof Error ? err.message : 'Failed to upload media');
@@ -305,9 +319,7 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
   const removeMedia = (i: number) => {
     setMediaFiles(prev => {
       const item = prev[i];
-      if (item?.localPreview) {
-        URL.revokeObjectURL(item.localPreview);
-      }
+      revokeObjectUrl(item?.localPreview);
       return prev.filter((_, idx) => idx !== i);
     });
   };
@@ -542,19 +554,22 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
 
               {mediaFiles.length > 0 && (
                 <div className="flex gap-2 mt-3">
-                  {mediaFiles.map((file, i) => (
-                    <div key={i} className="w-16 h-16 rounded-xl gradient-hero flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      {file.localPreview || file.url ? (
-                        <img
-                          src={file.localPreview || file.url}
-                          alt={file.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-lg">📷</span>
-                      )}
-                    </div>
-                  ))}
+                  {mediaFiles.map((file, i) => {
+                    const mediaSrc = getSafeMediaSrc(file.localPreview || file.url);
+                    return (
+                      <div key={i} className="w-16 h-16 rounded-xl gradient-hero flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {mediaSrc ? (
+                          <img
+                            src={mediaSrc}
+                            alt={file.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-lg">📷</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 

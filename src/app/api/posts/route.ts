@@ -27,9 +27,11 @@ function toAyrsharePlatform(platform: string): string {
 }
 
 function toAbsoluteUrl(url: string, origin: string): string {
-  if (/^https?:\/\//i.test(url)) return url;
+  const trimmedUrl = url.trim();
+  if (!trimmedUrl) return '';
+  if (/^https?:\/\//i.test(trimmedUrl)) return trimmedUrl;
   const baseOrigin = (process.env.NEXT_PUBLIC_APP_URL?.trim() || origin).replace(/\/$/, '');
-  const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+  const normalizedPath = trimmedUrl.startsWith('/') ? trimmedUrl : `/${trimmedUrl}`;
   return `${baseOrigin}${normalizedPath}`;
 }
 
@@ -91,7 +93,10 @@ export async function POST(req: NextRequest) {
 
   const platforms = platform.split(',').map(p => p.trim()).filter(Boolean);
   const mappedPlatforms = platforms.map(toAyrsharePlatform);
-  const absoluteMediaUrls = mediaUrls?.map(url => toAbsoluteUrl(url, origin));
+  const absoluteMediaUrls = mediaUrls
+    ?.map(url => url.trim())
+    .filter(Boolean)
+    .map(url => toAbsoluteUrl(url, origin));
   const resolvedStatus = status ?? (scheduledAt ? 'Scheduled' : 'Draft');
 
   // Build full caption with hashtags
@@ -138,7 +143,11 @@ export async function POST(req: NextRequest) {
         });
       } else {
         if (result === null) {
-          console.error('[api/posts] publishPost returned null', { platforms: mappedPlatforms });
+          console.error('[api/posts] publishPost returned null', {
+            platforms: mappedPlatforms,
+            scheduleDate: scheduledAt ?? null,
+            mediaUrls: absoluteMediaUrls ?? [],
+          });
         }
         post = await prisma.post.update({
           where: { id: post.id },
