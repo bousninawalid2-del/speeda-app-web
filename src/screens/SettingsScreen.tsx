@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, User, Shield, CreditCard, Globe2, Wifi, Brain, Bell, BellDot, BellRing, Languages, HelpCircle, MessageCircle, Sparkles, Info, Gift, MoreVertical, Rss, ExternalLink, Pause, Play, Trash2, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +11,9 @@ import { PlatformConnectFlow, DisconnectDialog, PlatformManageMenu } from '../co
 import { useAuth } from '../contexts/AuthContext';
 import { useTokens } from '../hooks/useTokens';
 import { useSubscription } from '../hooks/useSubscription';
+import { useSocialAccounts } from '../hooks/useSocialAccounts';
+import { useBilling } from '../hooks/useBilling';
+import { apiFetch } from '@/lib/api-client';
 
 interface SettingsScreenProps {
   onBack: () => void;
@@ -23,6 +26,8 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
   const { user } = useAuth();
   const { data: tokensData } = useTokens();
   const { data: subData } = useSubscription();
+  const { data: socialData, refetch: refetchSocial } = useSocialAccounts();
+  const { data: billingData } = useBilling();
 
   const tokenBalance = tokensData?.balance ?? 0;
   const tokenTotal = tokensData?.total ?? 500;
@@ -36,9 +41,62 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
   const [connectingPlatform, setConnectingPlatform] = useState<{ name: string; Logo: any } | null>(null);
   const [managePlatform, setManagePlatform] = useState<string | null>(null);
   const [disconnectPlatform, setDisconnectPlatform] = useState<string | null>(null);
-  const [connectedPlatforms, setConnectedPlatforms] = useState<Record<string, boolean>>({
-    Instagram: true, TikTok: true, Snapchat: true, Facebook: true, X: true, YouTube: true, 'Google Business': true, LinkedIn: false, Pinterest: false, Threads: false,
-  });
+
+  const connectedPlatforms = useMemo(() => {
+    const map: Record<string, boolean> = {
+      Instagram: false, TikTok: false, Snapchat: false, Facebook: false, X: false,
+      YouTube: false, 'Google Business': false, LinkedIn: false, Pinterest: false, Threads: false,
+    };
+
+    const accounts = Array.isArray(socialData)
+      ? socialData
+      : Array.isArray((socialData as any)?.accounts)
+        ? (socialData as any).accounts
+        : [];
+
+    const normalizePlatform = (platform: string) => {
+      const p = platform.toLowerCase();
+      if (p === 'instagram') return 'Instagram';
+      if (p === 'tiktok' || p === 'tik_tok') return 'TikTok';
+      if (p === 'snapchat') return 'Snapchat';
+      if (p === 'facebook') return 'Facebook';
+      if (p === 'x' || p === 'twitter') return 'X';
+      if (p === 'youtube') return 'YouTube';
+      if (p === 'google' || p === 'googlebusiness' || p === 'google_business' || p === 'google business') return 'Google Business';
+      if (p === 'linkedin') return 'LinkedIn';
+      if (p === 'pinterest') return 'Pinterest';
+      if (p === 'threads') return 'Threads';
+      return platform;
+    };
+
+    accounts.forEach((acc: any) => {
+      const key = normalizePlatform(String(acc?.platform ?? ''));
+      if (key in map) map[key] = !!acc?.connected;
+    });
+
+    return map;
+  }, [socialData]);
+
+  const paymentMethods = useMemo(() => {
+    const methods = Array.isArray((billingData as any)?.paymentMethods) ? (billingData as any).paymentMethods : [];
+    return methods.map((method: any) => {
+      const brand = String(method?.brand ?? method?.type ?? '').toLowerCase();
+      return {
+        id: String(method?.id ?? `${brand}-${method?.last4 ?? ''}`),
+        brand,
+        last4: String(method?.last4 ?? ''),
+        isDefault: !!(method?.isDefault ?? method?.default),
+      };
+    });
+  }, [billingData]);
+
+  const toApiPlatform = (platform: string) => {
+    if (platform === 'Google Business') return 'google';
+    if (platform === 'TikTok') return 'tiktok';
+    if (platform === 'LinkedIn') return 'linkedin';
+    if (platform === 'YouTube') return 'youtube';
+    return platform.toLowerCase();
+  };
 
   // RSS Feed state
   const [rssFeeds, setRssFeeds] = useState<Array<{ url: string; title: string; active: boolean; postsCount: number; lastPost: string }>>([
@@ -406,15 +464,21 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
 
         {/* Payment Methods */}
         <Section title={i18n.language === 'ar' ? 'طرق الدفع' : i18n.language === 'fr' ? 'Moyens de paiement' : 'Payment Methods'}>
-          <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border-light">
-            <VisaLogo size={24} />
-            <span className="text-[14px] text-foreground flex-1">Visa ····4242</span>
-            <span className="text-[11px] text-green-accent font-semibold">Default ✓</span>
-          </div>
-          <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border-light">
-            <MadaLogo size={24} />
-            <span className="text-[14px] text-foreground flex-1">mada ····8888</span>
-          </div>
+          {paymentMethods.length > 0 ? (
+            <>
+              {paymentMethods.map((method, index) => (
+                <div key={method.id} className={`flex items-center gap-3 px-4 py-3.5 ${index < paymentMethods.length - 1 ? 'border-b border-border-light' : ''}`}>
+                  {method.brand.includes('visa') ? <VisaLogo size={24} /> : method.brand.includes('mada') ? <MadaLogo size={24} /> : <CreditCard size={24} className="text-muted-foreground" />}
+                  <span className="text-[14px] text-foreground flex-1">{method.brand ? `${method.brand} ····${method.last4}` : `····${method.last4}`}</span>
+                  {method.isDefault && <span className="text-[11px] text-green-accent font-semibold">Default ✓</span>}
+                </div>
+              ))}
+            </>
+          ) : (
+            <div className="px-4 py-6 text-center border-b border-border-light">
+              <p className="text-[13px] text-muted-foreground">No payment methods added yet</p>
+            </div>
+          )}
           <div className="px-4 py-3">
             <button className="text-brand-blue text-[13px] font-semibold">+ {i18n.language === 'ar' ? 'إضافة طريقة دفع' : i18n.language === 'fr' ? 'Ajouter un moyen de paiement' : 'Add Payment Method'}</button>
           </div>
@@ -472,9 +536,9 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
           <PlatformConnectFlow
             platformName={connectingPlatform.name}
             platformLogo={<connectingPlatform.Logo size={64} />}
-            onComplete={() => {
-              setConnectedPlatforms(p => ({ ...p, [connectingPlatform.name]: true }));
+            onComplete={async () => {
               setConnectingPlatform(null);
+              await refetchSocial();
             }}
             onCancel={() => setConnectingPlatform(null)}
           />
@@ -489,8 +553,14 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
         {disconnectPlatform && (
           <DisconnectDialog
             platformName={disconnectPlatform}
-            onConfirm={() => {
-              setConnectedPlatforms(p => ({ ...p, [disconnectPlatform]: false }));
+            onConfirm={async () => {
+              try {
+                await apiFetch('/social/disconnect', {
+                  method: 'POST',
+                  body: JSON.stringify({ platform: toApiPlatform(disconnectPlatform) }),
+                });
+              } catch {}
+              await refetchSocial();
               setDisconnectPlatform(null);
             }}
             onCancel={() => setDisconnectPlatform(null)}
