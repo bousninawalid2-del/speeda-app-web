@@ -23,45 +23,6 @@ export interface AnalyticsData {
   scoreHistory?: Array<{ week: string; score: number }>;
 }
 
-const ANALYTICS_FALLBACK: AnalyticsData = {
-  period: '30d',
-  platform: null,
-  mosScore: 74,
-  reach: 15420,
-  impressions: 47210,
-  clicks: 1890,
-  spent: 2350,
-  engagement: 8.6,
-  posts: 24,
-  followers: {
-    total: 34500,
-    byPlatform: {
-      instagram: 12400,
-      tiktok: 8200,
-      facebook: 5600,
-      x: 2800,
-      youtube: 1500,
-    },
-  },
-  social: {
-    instagram: { followers: 12400, impressions: 19800, engagementRate: 9.2 },
-    tiktok: { followers: 8200, impressions: 15400, engagementRate: 10.1 },
-    facebook: { followers: 5600, impressions: 12010, engagementRate: 6.3 },
-  },
-  chartData: [
-    { week: 'Week 1', score: 58 },
-    { week: 'Week 2', score: 63 },
-    { week: 'Week 3', score: 69 },
-    { week: 'Week 4', score: 74 },
-  ],
-  scoreHistory: [
-    { week: 'Week 1', score: 58 },
-    { week: 'Week 2', score: 63 },
-    { week: 'Week 3', score: 69 },
-    { week: 'Week 4', score: 74 },
-  ],
-};
-
 export function useAnalytics(period: AnalyticsPeriod = '7d', platform?: string) {
   const params = new URLSearchParams({ period });
   if (platform) params.set('platform', platform);
@@ -72,7 +33,21 @@ export function useAnalytics(period: AnalyticsPeriod = '7d', platform?: string) 
       try {
         return await apiFetch<AnalyticsData>(`/analytics?${params}`);
       } catch {
-        return { ...ANALYTICS_FALLBACK, period, platform: platform ?? null };
+        return {
+          period,
+          platform: platform ?? null,
+          mosScore: 0,
+          reach: 0,
+          impressions: 0,
+          clicks: 0,
+          spent: 0,
+          engagement: 0,
+          posts: 0,
+          followers: { total: 0, byPlatform: {} },
+          social: null,
+          chartData: [],
+          scoreHistory: [],
+        };
       }
     },
     staleTime: 5 * 60 * 1000,  // 5 min

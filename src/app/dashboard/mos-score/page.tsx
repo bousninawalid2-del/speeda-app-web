@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { MosScoreScreen } from '@/screens/MosScoreScreen';
+import type { MosScoreData } from '@/screens/MosScoreScreen';
 import { resolveScreen } from '@/lib/navigation';
 import { useAnalytics } from '@/hooks/useAnalytics';
 
@@ -36,16 +37,16 @@ function buildWeightedFactors(score: number) {
 
 export default function Page() {
   const router = useRouter();
-  const { data: analytics, isLoading } = useAnalytics();
+  const { data: analytics, isLoading } = useAnalytics('30d');
 
-  const liveData = analytics ? {
-    score:       analytics.mosScore,
-    ...getTierInfo(analytics.mosScore),
+  const liveData: MosScoreData = {
+    score:       analytics?.mosScore ?? 0,
+    ...getTierInfo(analytics?.mosScore ?? 0),
     questsDone:  0,
     questsTotal: 5,
-    factors:     buildWeightedFactors(analytics.mosScore),
-    history:     analytics.chartData ?? analytics.scoreHistory,
-  } : undefined;
+    factors:     buildWeightedFactors(analytics?.mosScore ?? 0),
+    history:     analytics?.scoreHistory ?? analytics?.chartData ?? [],
+  };
 
   return (
     <MosScoreScreen

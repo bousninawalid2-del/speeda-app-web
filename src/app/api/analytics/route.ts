@@ -168,7 +168,7 @@ export async function GET(req: NextRequest) {
     period,
     platform: platform ?? null,
     mosScore,
-    chartData: scoreHistory,
+    chartData: scoreHistory ?? [],
     factors,
     scoreHistory,
     reach:       totalReach,
