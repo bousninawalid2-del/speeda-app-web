@@ -1,13 +1,13 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, X, Download, Trash2, Plus } from 'lucide-react';
+import { Plus, Upload, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useIsMobile } from '../hooks/use-mobile';
+import { useMedia, useUploadMedia } from '@/hooks/useMedia';
+import type { MediaTypeFilter } from '@/services/media.service';
 import { MediaGrid } from './media/MediaGrid';
 import { MediaDetailPanel } from './media/MediaDetailPanel';
-import { MediaUploadModal } from './media/MediaUploadModal';
-import { BrandKitSection } from './media/BrandKitSection';
 
 export interface MediaItem {
   id: string;
@@ -15,29 +15,21 @@ export interface MediaItem {
   type: 'photo' | 'video' | 'logo' | 'brand';
   url?: string;
   size: string;
-  dimensions: string;
+  dimensions?: string;
   date: string;
   description?: string;
   usedIn?: string[];
 }
 
-const demoMedia: MediaItem[] = [
-  { id: '1', name: 'shawarma_hero.jpg', type: 'photo', size: '2.4 MB', dimensions: '1080x1080', date: 'Mar 18', usedIn: ['Instagram Reel'] },
-  { id: '2', name: 'smash_burger.jpg', type: 'photo', size: '3.1 MB', dimensions: '1080x1350', date: 'Mar 17', usedIn: ['Instagram Post'] },
-  { id: '3', name: 'kitchen_bts.mp4', type: 'video', size: '24.5 MB', dimensions: '1080x1920', date: 'Mar 16' },
-  { id: '4', name: 'logo_gradient.png', type: 'logo', size: '156 KB', dimensions: '512x512', date: 'Mar 15' },
-  { id: '5', name: 'brand_pattern.png', type: 'brand', size: '890 KB', dimensions: '2048x2048', date: 'Mar 14' },
-  { id: '6', name: 'kunafa_close.jpg', type: 'photo', size: '1.8 MB', dimensions: '1080x1080', date: 'Mar 14' },
-  { id: '7', name: 'team_photo.jpg', type: 'photo', size: '2.9 MB', dimensions: '1920x1080', date: 'Mar 13' },
-  { id: '8', name: 'promo_video.mp4', type: 'video', size: '18.2 MB', dimensions: '1080x1080', date: 'Mar 12' },
-  { id: '9', name: 'menu_photo.jpg', type: 'photo', size: '3.4 MB', dimensions: '1080x1350', date: 'Mar 11' },
-  { id: '10', name: 'interior_shot.jpg', type: 'photo', size: '4.1 MB', dimensions: '1920x1280', date: 'Mar 10' },
-  { id: '11', name: 'logo_white.svg', type: 'logo', size: '12 KB', dimensions: '256x256', date: 'Mar 9' },
-  { id: '12', name: 'brunch_reel.mp4', type: 'video', size: '32.1 MB', dimensions: '1080x1920', date: 'Mar 8' },
-];
-
 const filters = ['All', 'Photos', 'Videos', 'Logos', 'Brand Kit'];
-const filterMap: Record<string, string | null> = { All: null, Photos: 'photo', Videos: 'video', Logos: 'logo', 'Brand Kit': 'brand' };
+const UNKNOWN_VALUE = '—';
+const queryFilterMap: Record<string, MediaTypeFilter | undefined> = {
+  All: undefined,
+  Photos: 'photo',
+  Videos: 'video',
+  Logos: undefined,
+  'Brand Kit': undefined,
+};
 
 interface MediaLibraryProps {
   mode?: 'tab' | 'picker';
@@ -50,17 +42,44 @@ export const MediaLibrary = ({ mode = 'tab', onSelect, multiSelect = false, onCl
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [activeFilter, setActiveFilter] = useState('All');
-  const [media] = useState<MediaItem[]>(demoMedia);
   const [selectedDetail, setSelectedDetail] = useState<MediaItem | null>(null);
-  const [showUpload, setShowUpload] = useState(false);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadMedia = useUploadMedia();
+  const currentTypeFilter = queryFilterMap[activeFilter];
+  const { data, isLoading, isError, error } = useMedia(currentTypeFilter);
 
-  const filtered = activeFilter === 'Brand Kit'
-    ? media.filter(m => m.type === 'brand' || m.type === 'logo')
-    : filterMap[activeFilter]
-      ? media.filter(m => m.type === filterMap[activeFilter])
-      : media;
+  const media = useMemo<MediaItem[]>(
+    () => (data?.items ?? []).map(item => ({
+      id: item.id,
+      name: item.filename,
+      type: item.mimetype.startsWith('video/') ? 'video' : 'photo',
+      url: `/api/media?id=${item.id}`,
+      size: formatBytes(item.size),
+      dimensions: UNKNOWN_VALUE,
+      date: formatDate(item.createdAt),
+    })),
+    [data?.items],
+  );
+
+  const filtered = useMemo(() => {
+    if (activeFilter === 'Logos' || activeFilter === 'Brand Kit') return [];
+    return media;
+  }, [activeFilter, media]);
+
+  const uploadFiles = useCallback(async (files: File[]) => {
+    if (files.length === 0) return;
+    const results = await Promise.allSettled(files.map(file => uploadMedia.mutateAsync(file)));
+    const uploadedCount = results.filter(result => result.status === 'fulfilled').length;
+    const failedCount = results.length - uploadedCount;
+
+    if (uploadedCount > 0) toast.success(t('media.uploadedCount', `${uploadedCount} file(s) uploaded ✓`));
+    if (failedCount > 0) toast.error(t('media.uploadFailedCount', `Failed to upload ${failedCount} file(s)`));
+    if (activeFilter === 'Logos' || activeFilter === 'Brand Kit') {
+      toast.info(t('media.logosBrandKitUploadInfo', 'Uploaded files are available in All/Photos/Videos.'));
+    }
+  }, [activeFilter, t, uploadMedia]);
 
   const toggleSelect = (id: string) => {
     if (multiSelect) {
@@ -87,11 +106,15 @@ export const MediaLibrary = ({ mode = 'tab', onSelect, multiSelect = false, onCl
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      toast.success(`${files.length} file(s) uploaded ✓`);
-    }
-  }, []);
+    const files = Array.from(e.dataTransfer.files ?? []);
+    void uploadFiles(files);
+  }, [uploadFiles]);
+
+  const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    void uploadFiles(files);
+    event.target.value = '';
+  };
 
   return (
     <div className="space-y-4" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
@@ -117,9 +140,21 @@ export const MediaLibrary = ({ mode = 'tab', onSelect, multiSelect = false, onCl
           </h3>
           <p className="text-[14px] text-muted-foreground">{filtered.length} {t('media.files', 'files')}</p>
         </div>
-        <button onClick={() => setShowUpload(true)} className="h-9 px-4 rounded-xl gradient-btn text-primary-foreground text-[12px] font-bold flex items-center gap-1.5">
-          <Plus size={14} /> {t('media.upload', 'Upload')}
-        </button>
+        <div className="flex items-center gap-2">
+          {mode === 'picker' && onClose && (
+            <button onClick={onClose} className="h-9 w-9 rounded-xl border border-border text-muted-foreground flex items-center justify-center">
+              <X size={16} />
+            </button>
+          )}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="h-9 px-4 rounded-xl gradient-btn text-primary-foreground text-[12px] font-bold flex items-center gap-1.5 disabled:opacity-60"
+            disabled={uploadMedia.isPending}
+          >
+            <Plus size={14} /> {uploadMedia.isPending ? t('media.uploading', 'Uploading...') : t('media.upload', 'Upload')}
+          </button>
+          <input ref={fileInputRef} type="file" multiple accept="image/*,video/*" className="hidden" onChange={handleFileUpload} />
+        </div>
       </div>
 
       {/* Filter chips */}
@@ -134,18 +169,35 @@ export const MediaLibrary = ({ mode = 'tab', onSelect, multiSelect = false, onCl
         ))}
       </div>
 
-      {/* Brand Kit section when that filter is active */}
-      {activeFilter === 'Brand Kit' && <BrandKitSection />}
-
-      {/* Media grid */}
-      <MediaGrid
-        items={filtered}
-        isMobile={isMobile}
-        mode={mode}
-        selectedItems={selectedItems}
-        onItemClick={(item) => mode === 'picker' ? toggleSelect(item.id) : setSelectedDetail(item)}
-        onUseInPost={(item) => { onSelect?.([item]); toast.success('Added to post'); }}
-      />
+      {activeFilter === 'Logos' || activeFilter === 'Brand Kit' ? (
+        <div className="rounded-2xl border border-border bg-card p-6 text-center">
+          <p className="text-[14px] font-semibold text-foreground">
+            {t('media.categoryComingSoonTitle', 'Category tabs are not available yet')}
+          </p>
+          <p className="text-[12px] text-muted-foreground mt-1">
+            {t('media.categoryComingSoonDescription', 'Use All / Photos / Videos for now.')}
+          </p>
+        </div>
+      ) : isLoading ? (
+        <div className="rounded-2xl border border-border bg-card p-6 text-center text-[13px] text-muted-foreground">
+          {t('common.loading', 'Loading...')}
+        </div>
+      ) : isError ? (
+        <div className="rounded-2xl border border-border bg-card p-6 text-center">
+          <p className="text-[13px] text-red-accent">
+            {error instanceof Error ? error.message : t('common.error', 'Something went wrong')}
+          </p>
+        </div>
+      ) : (
+        <MediaGrid
+          items={filtered}
+          isMobile={isMobile}
+          mode={mode}
+          selectedItems={selectedItems}
+          onItemClick={(item) => mode === 'picker' ? toggleSelect(item.id) : setSelectedDetail(item)}
+          onUseInPost={(item) => { onSelect?.([item]); toast.success('Added to post'); }}
+        />
+      )}
 
       {/* Picker confirm button */}
       {mode === 'picker' && selectedItems.length > 0 && (
@@ -156,9 +208,6 @@ export const MediaLibrary = ({ mode = 'tab', onSelect, multiSelect = false, onCl
           </button>
         </div>
       )}
-
-      {/* Upload modal */}
-      <MediaUploadModal open={showUpload} onClose={() => setShowUpload(false)} />
 
       {/* Detail view */}
       <MediaDetailPanel
@@ -171,3 +220,21 @@ export const MediaLibrary = ({ mode = 'tab', onSelect, multiSelect = false, onCl
     </div>
   );
 };
+
+function formatBytes(size: number): string {
+  if (size < 1024) return `${Math.floor(size)} B`;
+  const units = ['KB', 'MB', 'GB'];
+  let current = size / 1024;
+  let unitIndex = 0;
+  while (current >= 1024 && unitIndex < units.length - 1) {
+    current /= 1024;
+    unitIndex += 1;
+  }
+  return `${current.toFixed(1)} ${units[unitIndex]}`;
+}
+
+function formatDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}

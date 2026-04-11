@@ -34,6 +34,14 @@ export const MediaGrid = ({ items, isMobile, mode, selectedItems, onItemClick, o
   const { t } = useTranslation();
   const [hovered, setHovered] = useState<string | null>(null);
 
+  if (items.length === 0) {
+    return (
+      <div className="rounded-2xl border border-border bg-card p-6 text-center text-[13px] text-muted-foreground">
+        {t('media.empty', 'No media yet')}
+      </div>
+    );
+  }
+
   return (
     <div className={`grid gap-3 ${isMobile ? 'grid-cols-3' : 'grid-cols-4'}`}>
       {items.map(item => (
@@ -49,9 +57,17 @@ export const MediaGrid = ({ items, isMobile, mode, selectedItems, onItemClick, o
           <div className={`aspect-square rounded-xl bg-gradient-to-br from-muted to-muted/50 overflow-hidden border-2 transition-all ${
             selectedItems.includes(item.id) ? 'border-brand-blue shadow-md' : 'border-transparent'
           }`}>
-            <div className="w-full h-full gradient-hero flex items-center justify-center text-3xl">
-              {typeIcon(item.type)}
-            </div>
+            {item.url ? (
+              item.type === 'video' ? (
+                <video src={item.url} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+              ) : (
+                <img src={item.url} alt={item.name} className="w-full h-full object-cover" />
+              )
+            ) : (
+              <div className="w-full h-full gradient-hero flex items-center justify-center text-3xl">
+                {typeIcon(item.type)}
+              </div>
+            )}
           </div>
 
           {/* Used indicator */}
