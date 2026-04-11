@@ -14,7 +14,7 @@ function getTierInfo(score: number): { tierLabel: string; tierColor: string } {
 
 export default function Page() {
   const router = useRouter();
-  const { data: analytics, isLoading } = useAnalytics('30d');
+  const { data: analytics, isLoading } = useAnalytics('7d');
 
   const liveData = analytics ? {
     score:       analytics.mosScore,

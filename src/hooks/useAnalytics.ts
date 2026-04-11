@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/api-client';
+import { deriveMosFactors, deriveMosHistory } from '@/lib/mos-score';
 
 export type AnalyticsPeriod = '7d' | '30d' | '90d' | '1y';
 
@@ -18,8 +19,8 @@ export interface AnalyticsData {
     byPlatform: Record<string, number>;
   };
   social: Record<string, unknown> | null;
-  factors?: Array<{ name: string; weight: number; pct: number; pts: string; desc: string }>;
-  scoreHistory?: Array<{ week: string; score: number }>;
+  factors: Array<{ name: string; weight: number; pct: number; pts: string; desc: string }>;
+  scoreHistory: Array<{ week: string; score: number }>;
 }
 
 const ANALYTICS_FALLBACK: AnalyticsData = {
@@ -47,6 +48,8 @@ const ANALYTICS_FALLBACK: AnalyticsData = {
     tiktok: { followers: 8200, impressions: 15400, engagementRate: 10.1 },
     facebook: { followers: 5600, impressions: 12010, engagementRate: 6.3 },
   },
+  factors: deriveMosFactors(74),
+  scoreHistory: deriveMosHistory(74),
 };
 
 export function useAnalytics(period: AnalyticsPeriod = '7d', platform?: string) {
