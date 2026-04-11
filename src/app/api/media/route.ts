@@ -55,11 +55,12 @@ export async function GET(req: NextRequest) {
     select: { id: true, userId: true, filename: true, mimetype: true, data: true },
   });
   if (!media || media.userId !== user.sub) return errorResponse('Not found', 404);
+  const safeFilename = media.filename.replace(/[\r\n"]/g, '_');
 
   return new Response(media.data, {
     headers: {
       'Content-Type': media.mimetype,
-      'Content-Disposition': `inline; filename="${media.filename}"`,
+      'Content-Disposition': `inline; filename="${safeFilename}"`,
       'Cache-Control': 'private, max-age=3600',
       'X-Content-Type-Options': 'nosniff',
     },
