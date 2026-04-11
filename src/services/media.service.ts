@@ -31,7 +31,7 @@ export const mediaService = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: `Failed to upload media (HTTP ${response.status})` }));
+      const error = await response.json().catch(() => ({ error: `Failed to upload file (HTTP ${response.status})` }));
       throw new Error(error.error ?? 'Upload failed');
     }
 

@@ -22,6 +22,7 @@ export interface MediaItem {
 }
 
 const filters = ['All', 'Photos', 'Videos', 'Logos', 'Brand Kit'];
+const UNKNOWN_VALUE = '—';
 const queryFilterMap: Record<string, MediaTypeFilter | undefined> = {
   All: undefined,
   Photos: 'photo',
@@ -56,7 +57,7 @@ export const MediaLibrary = ({ mode = 'tab', onSelect, multiSelect = false, onCl
       type: item.mimetype.startsWith('video/') ? 'video' : 'photo',
       url: `/api/media?id=${item.id}`,
       size: formatBytes(item.size),
-      dimensions: '—',
+      dimensions: UNKNOWN_VALUE,
       date: formatDate(item.createdAt),
     })),
     [data?.items],
@@ -69,16 +70,16 @@ export const MediaLibrary = ({ mode = 'tab', onSelect, multiSelect = false, onCl
 
   const uploadFiles = useCallback(async (files: File[]) => {
     if (files.length === 0) return;
-    let uploadedCount = 0;
-    for (const file of files) {
-      await uploadMedia.mutateAsync(file);
-      uploadedCount += 1;
-    }
-    toast.success(`${uploadedCount} file(s) uploaded ✓`);
+    const results = await Promise.allSettled(files.map(file => uploadMedia.mutateAsync(file)));
+    const uploadedCount = results.filter(result => result.status === 'fulfilled').length;
+    const failedCount = results.length - uploadedCount;
+
+    if (uploadedCount > 0) toast.success(t('media.uploadedCount', `${uploadedCount} file(s) uploaded ✓`));
+    if (failedCount > 0) toast.error(t('media.uploadFailedCount', `Failed to upload ${failedCount} file(s)`));
     if (activeFilter === 'Logos' || activeFilter === 'Brand Kit') {
-      toast.info('Uploaded files are available in All/Photos/Videos.');
+      toast.info(t('media.logosBrandKitUploadInfo', 'Uploaded files are available in All/Photos/Videos.'));
     }
-  }, [activeFilter, uploadMedia]);
+  }, [activeFilter, t, uploadMedia]);
 
   const toggleSelect = (id: string) => {
     if (multiSelect) {
@@ -106,16 +107,12 @@ export const MediaLibrary = ({ mode = 'tab', onSelect, multiSelect = false, onCl
     e.preventDefault();
     setIsDragOver(false);
     const files = Array.from(e.dataTransfer.files ?? []);
-    void uploadFiles(files).catch((err: unknown) => {
-      toast.error(err instanceof Error ? err.message : 'Failed to upload media');
-    });
+    void uploadFiles(files);
   }, [uploadFiles]);
 
   const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
-    void uploadFiles(files).catch((err: unknown) => {
-      toast.error(err instanceof Error ? err.message : 'Failed to upload media');
-    });
+    void uploadFiles(files);
     event.target.value = '';
   };
 
@@ -154,7 +151,7 @@ export const MediaLibrary = ({ mode = 'tab', onSelect, multiSelect = false, onCl
             className="h-9 px-4 rounded-xl gradient-btn text-primary-foreground text-[12px] font-bold flex items-center gap-1.5 disabled:opacity-60"
             disabled={uploadMedia.isPending}
           >
-            <Plus size={14} /> {uploadMedia.isPending ? t('common.loading', 'Uploading...') : t('media.upload', 'Upload')}
+            <Plus size={14} /> {uploadMedia.isPending ? t('media.uploading', 'Uploading...') : t('media.upload', 'Upload')}
           </button>
           <input ref={fileInputRef} type="file" multiple accept="image/*,video/*" className="hidden" onChange={handleFileUpload} />
         </div>
@@ -225,7 +222,7 @@ export const MediaLibrary = ({ mode = 'tab', onSelect, multiSelect = false, onCl
 };
 
 function formatBytes(size: number): string {
-  if (size < 1024) return `${size} B`;
+  if (size < 1024) return `${Math.floor(size)} B`;
   const units = ['KB', 'MB', 'GB'];
   let current = size / 1024;
   let unitIndex = 0;
