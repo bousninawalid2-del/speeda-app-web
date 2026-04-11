@@ -6,6 +6,10 @@ import { requireAuth, errorResponse } from '@/lib/auth-guard';
 import { rateLimit } from '@/lib/rate-limit';
 import { publishPost } from '@/lib/ayrshare';
 
+const MAX_BULK_POST_ITEMS = 400;
+const BULK_POST_RATE_LIMIT = 10;
+const BULK_POST_RATE_WINDOW_MS = 60_000;
+
 const bulkSchema = z.object({
   timeZone: z.string().min(1),
   items: z.array(z.object({
@@ -15,7 +19,7 @@ const bulkSchema = z.object({
     mediaUrls: z.array(z.string()).optional(),
     scheduledLocalDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     scheduledLocalTime: z.string().regex(/^\d{2}:\d{2}$/),
-  })).min(1).max(400),
+  })).min(1).max(MAX_BULK_POST_ITEMS),
 });
 
 const PLATFORM_MAP: Record<string, string> = {
@@ -48,7 +52,7 @@ export async function POST(req: NextRequest) {
   if (auth instanceof Response) return auth;
   const { user } = auth;
 
-  if (!rateLimit(`posts:bulk:${user.sub}`, { limit: 10, windowMs: 60_000 })) {
+  if (!rateLimit(`posts:bulk:${user.sub}`, { limit: BULK_POST_RATE_LIMIT, windowMs: BULK_POST_RATE_WINDOW_MS })) {
     return errorResponse('Too many requests. Please wait a moment.', 429);
   }
 

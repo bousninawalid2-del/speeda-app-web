@@ -160,8 +160,18 @@ function parseMediaUrls(mediaUrls: unknown): string[] {
 
 function getSafeMediaSrc(url?: string): string | null {
   if (!url) return null;
-  if (url.startsWith('blob:')) return url;
-  if (url.startsWith('/api/media?id=')) return url;
+  if (url.startsWith('blob:')) {
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol === 'blob:') return url;
+    } catch {
+      return null;
+    }
+  }
+  if (url.startsWith('/api/media?id=')) {
+    const id = url.slice('/api/media?id='.length);
+    if (/^[a-zA-Z0-9_-]+$/.test(id)) return url;
+  }
   return null;
 }
 
