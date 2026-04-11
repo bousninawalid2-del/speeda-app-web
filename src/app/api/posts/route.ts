@@ -16,32 +16,23 @@ const createSchema = z.object({
   status:      z.enum(['Draft', 'Scheduled', 'Published']).optional(),
 });
 
-function normalizeAyrsharePlatform(platform: string): string {
-  const value = platform.trim().toLowerCase();
-  switch (value) {
-    case 'google':
-    case 'google_business':
-    case 'googlebusiness':
-      return 'gmb';
-    case 'x':
-      return 'twitter';
-    default:
-      return value;
-  }
+const PLATFORM_MAP: Record<string, string> = {
+  google: 'gmb',
+  x: 'twitter',
+};
+
+function toAyrsharePlatform(platform: string): string {
+  const normalizedPlatform = platform.trim().toLowerCase();
+  return PLATFORM_MAP[normalizedPlatform] ?? normalizedPlatform;
 }
 
-function toAbsoluteMediaUrl(url: string, req: NextRequest): string {
-  if (/^https?:\/\//i.test(url)) return url;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  const origin = appUrl ? appUrl.replace(/\/$/, '') : new URL(req.url).origin;
-  return new URL(url, `${origin}/`).toString();
-}
-
-async function markPostFailed(postId: string) {
-  return prisma.post.update({
-    where: { id: postId },
-    data: { status: 'Failed' },
-  });
+function toAbsoluteUrl(url: string, origin: string): string {
+  const trimmedUrl = url.trim();
+  if (!trimmedUrl) return '';
+  if (/^https?:\/\//i.test(trimmedUrl)) return trimmedUrl;
+  const baseOrigin = (process.env.NEXT_PUBLIC_APP_URL?.trim() || origin).replace(/\/$/, '');
+  const normalizedPath = trimmedUrl.startsWith('/') ? trimmedUrl : `/${trimmedUrl}`;
+  return `${baseOrigin}${normalizedPath}`;
 }
 
 // ─── GET /api/posts ───────────────────────────────────────────────────────────
@@ -98,15 +89,14 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return errorResponse(parsed.error.issues[0].message, 400);
 
   const { platform, caption, hashtags, mediaUrls, scheduledAt, status } = parsed.data;
+  const origin = new URL(req.url).origin;
 
-  const platforms = Array.from(
-    new Set(
-      platform
-        .split(',')
-        .map(normalizeAyrsharePlatform)
-        .filter(Boolean),
-    ),
-  );
+  const platforms = platform.split(',').map(p => p.trim()).filter(Boolean);
+  const mappedPlatforms = platforms.map(toAyrsharePlatform);
+  const absoluteMediaUrls = mediaUrls
+    ?.map(url => url.trim())
+    .filter(Boolean)
+    .map(url => toAbsoluteUrl(url, origin));
   const resolvedStatus = status ?? (scheduledAt ? 'Scheduled' : 'Draft');
   const ayrshareMediaUrls = (mediaUrls ?? []).map(url => toAbsoluteMediaUrl(url, req));
   let publishError: string | null = null;
@@ -139,8 +129,8 @@ export async function POST(req: NextRequest) {
     if (dbUser?.profileKey) {
       const result = await publishPost({
         post: fullCaption,
-        platforms,
-        mediaUrls: ayrshareMediaUrls.length > 0 ? ayrshareMediaUrls : undefined,
+        platforms: mappedPlatforms,
+        mediaUrls: absoluteMediaUrls ?? undefined,
         scheduleDate: scheduledAt ?? undefined,
         profileKey: dbUser.profileKey,
       });
@@ -154,11 +144,16 @@ export async function POST(req: NextRequest) {
           },
         });
       } else {
-        publishError = 'Failed to publish to Ayrshare. Check logs for details.';
-        console.error('[posts:publish] Ayrshare publish failed', {
-          postId: post.id,
-          platforms,
-          scheduleDate: scheduledAt ?? null,
+        if (result === null) {
+          console.error('[api/posts] publishPost returned null', {
+            platforms: mappedPlatforms,
+            scheduleDate: scheduledAt ?? null,
+            mediaUrls: absoluteMediaUrls ?? [],
+          });
+        }
+        post = await prisma.post.update({
+          where: { id: post.id },
+          data: { status: 'Failed' },
         });
         post = await markPostFailed(post.id);
       }

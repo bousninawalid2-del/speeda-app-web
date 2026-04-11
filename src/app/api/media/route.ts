@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
     headers: {
       'Content-Type': media.mimetype,
       'Content-Disposition': `inline; filename="${safeFilename}"`,
-      'Cache-Control': 'public, max-age=3600',
+      'Cache-Control': 'public, max-age=86400',
       'X-Content-Type-Options': 'nosniff',
     },
   });
