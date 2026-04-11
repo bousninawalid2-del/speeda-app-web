@@ -20,6 +20,7 @@ interface TokensScreenProps {
   scrollToPacks?: boolean;
   liveData?:      LiveTokenData;
   isLoading?:     boolean;
+  isPurchasePending?: boolean;
   onPurchase?:    (packId: string) => Promise<void>;
 }
 
@@ -73,12 +74,12 @@ const formatPerToken = (perToken: string, lang: string): string => {
   return `SAR ${perToken}/token`;
 };
 
-export const TokensScreen = ({ onBack, scrollToPacks, liveData, isLoading, onPurchase }: TokensScreenProps) => {
+export const TokensScreen = ({ onBack, scrollToPacks, liveData, isLoading, isPurchasePending, onPurchase }: TokensScreenProps) => {
   const { t, i18n } = useTranslation();
   const [howOpen, setHowOpen] = useState(false);
   const [autoRecharge, setAutoRecharge] = useState(false);
   const [buyingPack, setBuyingPack] = useState<number | null>(null);
-  const [purchasing, setPurchasing] = useState(false);
+  const [purchasingPackIdx, setPurchasingPackIdx] = useState<number | null>(null);
 
   // Prefer live data; fall back to static mock
   const balance     = liveData?.balance  ?? 342;
@@ -94,13 +95,13 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, isLoading, onPur
       return;
     }
     const packIds = ['pack_200', 'pack_500', 'pack_1500', 'pack_5000'];
-    setPurchasing(true);
+    setPurchasingPackIdx(packIdx);
     try {
       await onPurchase(packIds[packIdx]);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Purchase failed. Please try again.');
     } finally {
-      setPurchasing(false);
+      setPurchasingPackIdx(null);
     }
   };
   const packsRef = useRef<HTMLDivElement>(null);
@@ -172,8 +173,13 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, isLoading, onPur
                     </div>
                     <p className="text-[13px] text-muted-foreground mt-0.5">{formatPrice(pack.price, i18n.language)} · {formatPerToken(pack.perToken, i18n.language)}</p>
                   </div>
-                  <button onClick={() => handlePurchase(i)} disabled={purchasing} className={`h-10 px-5 rounded-xl text-[13px] font-bold btn-press disabled:opacity-60 ${pack.badge === 'popular' ? 'gradient-btn text-primary-foreground shadow-btn' : 'border border-border text-foreground'}`}>
-                    {t('tokens.buy')}
+                  <button onClick={() => handlePurchase(i)} disabled={isPurchasePending || purchasingPackIdx !== null} className={`h-10 px-5 rounded-xl text-[13px] font-bold btn-press disabled:opacity-60 ${pack.badge === 'popular' ? 'gradient-btn text-primary-foreground shadow-btn' : 'border border-border text-foreground'}`}>
+                    {purchasingPackIdx === i ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        Processing…
+                      </span>
+                    ) : t('tokens.buy')}
                   </button>
                 </div>
               </div>

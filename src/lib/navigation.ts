@@ -27,6 +27,7 @@ export const screenToPath: Record<string, string> = {
   tokens: '/dashboard/tokens',
   'tokens-packs': '/dashboard/tokens?scrollToPacks=true',
   referral: '/dashboard/referral',
+  strategy: '/dashboard/strategy',
   aiActivity: '/dashboard/ai-activity',
   helpCenter: '/dashboard/help',
   contactSupport: '/dashboard/support',

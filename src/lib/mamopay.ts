@@ -102,6 +102,7 @@ export async function createSubscriptionLink(opts: {
   billingType: 'monthly' | 'yearly';
   userEmail?: string;
   returnUrl: string;
+  cancelUrl?: string;
   externalId?: string;
 }): Promise<MamoLink> {
   const frequency: 'monthly' | 'annually' = opts.billingType === 'yearly' ? 'annually' : 'monthly';
@@ -112,6 +113,7 @@ export async function createSubscriptionLink(opts: {
     amount:      opts.amount,
     currency:    'SAR',
     return_url:  opts.returnUrl,
+    failure_return_url: opts.cancelUrl ?? opts.returnUrl,
     description: `${opts.planName} plan — billed ${frequency}`,
     subscription: { frequency, frequency_interval: 1, start_date },
     external_id:  opts.externalId,

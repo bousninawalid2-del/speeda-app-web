@@ -61,7 +61,7 @@ const allCountries = [
 
 export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, onQuickLogin }: AuthScreenProps) => {
   const { t } = useTranslation();
-  const [mode, setMode] = useState<AuthMode>('signup');
+  const [mode, setMode] = useState<AuthMode>('signin');
   const [showPass, setShowPass] = useState(false);
   const [countryOpen, setCountryOpen] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState(allCountries[0]);
@@ -73,7 +73,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formError, setFormError] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
   const [quickLoginSent, setQuickLoginSent] = useState(false);
 
   const filtered = allCountries.filter(c =>
@@ -86,18 +86,39 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
   const [showPrivacy, setShowPrivacy] = useState(false);
 
   const handleSubmit = async () => {
-    setFormError('');
+    const emailValue = email.trim();
+    const passwordValue = password.trim();
+    const nameValue = name.trim();
+
+    if (!emailValue) {
+      setFormError('Please enter your email address.');
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(emailValue)) {
+      setFormError('Please enter a valid email address.');
+      return;
+    }
+    if (mode !== 'forgot' && !passwordValue) {
+      setFormError('Please enter your password.');
+      return;
+    }
+    if (mode === 'signup' && !nameValue) {
+      setFormError('Please enter your full name.');
+      return;
+    }
+
+    setFormError(null);
     setIsSubmitting(true);
     try {
       if (mode === 'signup') {
         if (onRegister) {
-          await onRegister({ name, email, password, phone: phone ? `${selectedCountry.code}${phone}` : undefined });
+          await onRegister({ name: nameValue, email: emailValue, password: passwordValue, phone: phone ? `${selectedCountry.code}${phone}` : undefined });
         } else {
           onComplete('signup');
         }
       } else if (mode === 'signin') {
         if (onLogin) {
-          await onLogin(email, password);
+          await onLogin(emailValue, passwordValue);
         } else {
           onComplete('signin');
         }
@@ -112,11 +133,12 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
   };
 
   const handleQuickLogin = async () => {
-    if (!email) { setFormError(t('auth.email') + ' is required'); return; }
-    setFormError('');
+    if (!email.trim()) { setFormError('Please enter your email address.'); return; }
+    if (!/\S+@\S+\.\S+/.test(email.trim())) { setFormError('Please enter a valid email address.'); return; }
+    setFormError(null);
     setIsSubmitting(true);
     try {
-      if (onQuickLogin) await onQuickLogin(email);
+      if (onQuickLogin) await onQuickLogin(email.trim());
       setQuickLoginSent(true);
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : 'Could not send magic link');
@@ -131,8 +153,8 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
       animate={{ opacity: 1, y: 0 }}
       className="min-h-screen bg-background px-6 pt-12 pb-8"
     >
-      {mode === 'forgot' && (
-        <button onClick={() => setMode('signin')} className="flex items-center gap-1 text-brand-blue text-[14px] font-medium mb-4">
+        {mode === 'forgot' && (
+        <button onClick={() => { setMode('signin'); setFormError(null); }} className="flex items-center gap-1 text-brand-blue text-[14px] font-medium mb-4">
           <ChevronLeft size={18} /> {t('auth.backToSignIn')}
         </button>
       )}
@@ -152,12 +174,12 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
         {mode === 'signup' && (
           <div className="relative">
             <User size={18} className="absolute left-4 top-[19px] text-muted-foreground" />
-            <input className={inputClass} placeholder={t('auth.fullName')} value={name} onChange={(e) => setName(e.target.value)} />
+            <input className={inputClass} placeholder={t('auth.fullName')} value={name} onChange={(e) => { setName(e.target.value); setFormError(null); }} />
           </div>
         )}
         <div className="relative">
           <Mail size={18} className="absolute left-4 top-[19px] text-muted-foreground" />
-          <input className={inputClass} placeholder={t('auth.email')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input className={inputClass} placeholder={t('auth.email')} type="email" value={email} onChange={(e) => { setEmail(e.target.value); setFormError(null); setQuickLoginSent(false); }} />
         </div>
         {mode === 'signup' && (
           <div className="flex gap-2">
@@ -168,14 +190,14 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
             </button>
             <div className="relative flex-1">
               <Phone size={18} className="absolute left-4 top-[19px] text-muted-foreground" />
-              <input className="w-full h-[56px] rounded-2xl bg-card border border-border pl-12 pr-4 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" placeholder={t('auth.phoneNumber')} type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <input className="w-full h-[56px] rounded-2xl bg-card border border-border pl-12 pr-4 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" placeholder={t('auth.phoneNumber')} type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); setFormError(null); }} />
             </div>
           </div>
         )}
         {mode !== 'forgot' && (
           <div className="relative">
             <Lock size={18} className="absolute left-4 top-[19px] text-muted-foreground" />
-            <input className={inputClass} placeholder={t('auth.password')} type={showPass ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} />
+            <input className={inputClass} placeholder={t('auth.password')} type={showPass ? 'text' : 'password'} value={password} onChange={(e) => { setPassword(e.target.value); setFormError(null); }} />
             <button onClick={() => setShowPass(!showPass)} className="absolute right-4 top-[18px] text-muted-foreground">
               {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
@@ -190,7 +212,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
 
         {/* Error message */}
         {formError && (
-          <p className="text-[13px] text-destructive text-center font-medium">{formError}</p>
+          <p className="text-red-500 text-sm mt-2">{formError}</p>
         )}
 
         <button
@@ -241,7 +263,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
             )}
             <p className="text-center text-[14px] text-muted-foreground mt-4">
               {mode === 'signup' ? `${t('auth.alreadyHaveAccount')} ` : `${t('auth.dontHaveAccount')} `}
-              <button onClick={() => setMode(mode === 'signup' ? 'signin' : 'signup')} className="text-brand-blue font-semibold">
+              <button onClick={() => { setMode(mode === 'signup' ? 'signin' : 'signup'); setFormError(null); }} className="text-brand-blue font-semibold">
                 {mode === 'signup' ? t('auth.signIn') : t('auth.signUp')}
               </button>
             </p>

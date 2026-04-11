@@ -21,6 +21,8 @@ interface SubscriptionScreenProps {
   isLoading?:       boolean;
   /** Current active plan name (to show "current" badge) */
   currentPlanName?: string | null;
+  /** Active plan being sent to checkout */
+  processingPlanId?: string | null;
   /** Called when user taps upgrade — receives planId + billingType */
   onCheckout?:      (planId: string, billingType: 'monthly' | 'yearly') => Promise<void>;
 }
@@ -88,6 +90,7 @@ export const SubscriptionScreen = ({
   plans: livePlans,
   isLoading,
   currentPlanName,
+  processingPlanId,
   onCheckout,
 }: SubscriptionScreenProps) => {
   const plans = livePlans ?? FALLBACK_PLANS;
@@ -144,16 +147,18 @@ export const SubscriptionScreen = ({
               <button
                 key={plan.id}
                 onClick={() => setSelected(plan.id)}
+                disabled={purchasing}
                 className={`w-full p-5 rounded-2xl border-2 text-left transition-all ${
                   selected === plan.id
                     ? plan.popular ? 'border-brand-blue bg-purple-soft shadow-card' : 'border-brand-blue bg-purple-soft'
                     : 'border-border-light bg-card'
-                }`}
+                } disabled:opacity-70`}
               >
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="text-[16px] font-bold text-foreground">{plan.name}</h3>
+                      {processingPlanId === plan.id && <Loader2 size={14} className="text-brand-blue animate-spin" />}
                       {plan.popular && <span className="text-[10px] font-bold text-primary-foreground gradient-btn px-2 py-0.5 rounded-md">Most Popular</span>}
                       {isCurrent && <span className="text-[10px] font-bold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">Current</span>}
                     </div>
@@ -195,7 +200,7 @@ export const SubscriptionScreen = ({
 
         {selectedPlan?.watermark && (
           <p className="text-[11px] text-muted-foreground text-center mt-3">
-            ⓘ Starter includes "Powered by Speeda AI ✦" watermark on published posts
+            ⓘ Starter includes &quot;Powered by Speeda AI ✦&quot; watermark on published posts
           </p>
         )}
 
@@ -211,7 +216,7 @@ export const SubscriptionScreen = ({
         </button>
 
         <p className="text-[11px] text-muted-foreground text-center mt-3">
-          You'll be redirected to our secure payment page powered by MamoPay
+          You&apos;ll be redirected to our secure payment page powered by MamoPay
         </p>
       </div>
     </motion.div>
