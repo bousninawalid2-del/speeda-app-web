@@ -53,6 +53,17 @@ export const DEMO_SCORE: MosScoreData = {
   ],
 };
 
+const ZERO_SCORE_FALLBACK: MosScoreData = {
+  score: 0,
+  tierLabel: 'Developing',
+  tierColor: 'hsl(var(--orange))',
+  streak: 0,
+  questsDone: 0,
+  questsTotal: 5,
+  factors: [],
+  history: [],
+};
+
 const DEMO_RECOMMENDATIONS = [
   { border: 'hsl(var(--orange))', title: 'Improve Response Time (+5 pts)', desc: 'You have unanswered reviews. Responding within 1 hour improves your score.', cta: 'Reply to Reviews →', nav: 'chat-engagement-reviews' },
   { border: 'hsl(var(--brand-blue))', title: 'Post More on TikTok (+3 pts)', desc: 'Balancing across platforms improves your coverage score.', cta: 'Create TikTok Post →', nav: 'create' },
@@ -128,13 +139,7 @@ export const MosScoreScreen = ({ onBack, onNavigate, liveData, isLoading }: MosS
   const questsRef = useRef<HTMLDivElement>(null);
   const ringSize = isMobile ? 120 : 160;
 
-  const data        = liveData ?? {
-    score: 0,
-    tierLabel: 'Developing',
-    tierColor: 'hsl(var(--orange))',
-    factors: [],
-    history: [],
-  };
+  const data        = liveData ?? ZERO_SCORE_FALLBACK;
   const score       = data.score;
   const tierLabel   = data.tierLabel;
   const tierColor   = data.tierColor ?? 'hsl(var(--green))';
