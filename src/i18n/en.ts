@@ -291,6 +291,7 @@ export const en = {
     termsOfService: 'Terms of Service',
     privacyPolicy: 'Privacy Policy',
     referralProgram: 'Referral Program',
+    logout: 'Log Out',
   },
   tokens: {
     title: '✦ My Tokens',
