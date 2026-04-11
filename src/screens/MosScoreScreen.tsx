@@ -31,7 +31,7 @@ interface MosScoreScreenProps {
   isLoading?:  boolean;
 }
 
-const DEMO_SCORE: MosScoreData = {
+export const DEMO_SCORE: MosScoreData = {
   score:        74,
   tierLabel:    'Strong',
   tierColor:    'hsl(var(--green))',
@@ -128,15 +128,21 @@ export const MosScoreScreen = ({ onBack, onNavigate, liveData, isLoading }: MosS
   const questsRef = useRef<HTMLDivElement>(null);
   const ringSize = isMobile ? 120 : 160;
 
-  const data        = liveData ?? DEMO_SCORE;
+  const data        = liveData ?? {
+    score: 0,
+    tierLabel: 'Developing',
+    tierColor: 'hsl(var(--orange))',
+    factors: [],
+    history: [],
+  };
   const score       = data.score;
   const tierLabel   = data.tierLabel;
   const tierColor   = data.tierColor ?? 'hsl(var(--green))';
   const streak      = data.streak ?? 0;
   const questsDone  = data.questsDone ?? 0;
   const questsTotal = data.questsTotal ?? 5;
-  const factors     = data.factors ?? DEMO_SCORE.factors!;
-  const historyData = data.history ?? DEMO_SCORE.history!;
+  const factors     = data.factors ?? [];
+  const historyData = data.history ?? [];
 
   const handleRecAction = (nav: string) => {
     if (nav === '_quests') {
