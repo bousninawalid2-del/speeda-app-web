@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/api-client';
 
 export interface TokenLog {
@@ -59,3 +59,12 @@ export function useTokens() {
   });
 }
 
+export function usePurchaseTokenPackage() {
+  return useMutation({
+    mutationFn: (packageId: string) =>
+      apiFetch<{ checkoutUrl: string; linkId: string }>('/billing/token-purchase', {
+        method: 'POST',
+        body: JSON.stringify({ packageId }),
+      }),
+  });
+}

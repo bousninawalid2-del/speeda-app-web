@@ -1,16 +1,19 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { SubscriptionScreen } from '@/screens/SubscriptionScreen';
 import { usePlans } from '@/hooks/usePlans';
 import { useSubscription, useCreateSubscription } from '@/hooks/useSubscription';
+import { PAYMENT_GATEWAY_NOT_CONFIGURED_MESSAGE } from '@/lib/constants/payment';
 
 function SubscriptionContent() {
   const router  = useRouter();
   const params  = useSearchParams();
   const success = params.get('success') === '1';
+  const cancelled = params.get('cancelled') === '1';
+  const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
 
   const { data: plans,     isLoading: plansLoading }  = usePlans();
   const { data: subData,   isLoading: subLoading }    = useSubscription();
@@ -21,15 +24,27 @@ function SubscriptionContent() {
       toast.success('Your subscription has been activated!');
       router.replace('/dashboard/subscription');
     }
-  }, [success, router]);
+    if (cancelled) {
+      toast.error('Payment was cancelled.');
+      router.replace('/dashboard/subscription');
+    }
+  }, [success, cancelled, router]);
 
   const handleCheckout = async (planId: string, billingType: 'monthly' | 'yearly') => {
+    setProcessingPlanId(planId);
     try {
       const { checkoutUrl } = await checkout({ planId, billingType });
       // Redirect to MamoPay hosted checkout
       window.location.href = checkoutUrl;
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to start checkout');
+      const message = err instanceof Error ? err.message : 'Failed to start checkout';
+      if (message.includes('Payment gateway not configured')) {
+        toast.error(PAYMENT_GATEWAY_NOT_CONFIGURED_MESSAGE);
+      } else {
+        toast.error(message);
+      }
+    } finally {
+      setProcessingPlanId(null);
     }
   };
 
@@ -39,6 +54,7 @@ function SubscriptionContent() {
       plans={plans}
       isLoading={plansLoading || subLoading}
       currentPlanName={subData?.subscription?.plan.name ?? null}
+      processingPlanId={processingPlanId}
       onCheckout={handleCheckout}
     />
   );

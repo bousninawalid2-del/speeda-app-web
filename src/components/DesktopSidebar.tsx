@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, ChevronLeft, ChevronRight, CreditCard } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -66,7 +65,6 @@ const navItems = [
 ];
 
 export const DesktopSidebar = ({ active, onNavigate, collapsed, onToggleCollapse }: DesktopSidebarProps) => {
-  const router = useRouter();
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { data: subData } = useSubscription();
@@ -177,7 +175,7 @@ export const DesktopSidebar = ({ active, onNavigate, collapsed, onToggleCollapse
         {showSubscriptionNav && (
           <div className="relative">
             <button
-              onClick={() => router.push('/dashboard/subscription')}
+              onClick={() => onNavigate('subscription')}
               onMouseEnter={() => setHoveredItem('subscription')}
               onMouseLeave={() => setHoveredItem(null)}
               className={`w-full flex items-center gap-3 h-12 rounded-xl transition-all duration-150 ${
@@ -202,7 +200,7 @@ export const DesktopSidebar = ({ active, onNavigate, collapsed, onToggleCollapse
         {/* Settings */}
         <div className="relative">
           <button
-            onClick={() => router.push('/setup')}
+            onClick={() => onNavigate('settings')}
             onMouseEnter={() => setHoveredItem('settings')}
             onMouseLeave={() => setHoveredItem(null)}
             className={`w-full flex items-center gap-3 h-12 rounded-xl transition-all duration-150 ${

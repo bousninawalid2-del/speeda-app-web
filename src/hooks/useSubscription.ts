@@ -39,16 +39,11 @@ export function useSubscription() {
 export function useCreateSubscription() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { planId: string; billingType: 'monthly' | 'yearly' }) => {
-      try {
-        return await apiFetch<{ checkoutUrl: string; linkId: string }>('/subscriptions', {
-          method: 'POST',
-          body:   JSON.stringify(data),
-        });
-      } catch {
-        return { checkoutUrl: '/dashboard/subscription?success=1', linkId: 'fallback-link' };
-      }
-    },
+    mutationFn: (data: { planId: string; billingType: 'monthly' | 'yearly' }) =>
+      apiFetch<{ checkoutUrl: string; linkId: string }>('/subscriptions', {
+        method: 'POST',
+        body:   JSON.stringify(data),
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['subscription'] });
       qc.invalidateQueries({ queryKey: ['tokens'] });
@@ -61,22 +56,5 @@ export function useCancelSubscription() {
   return useMutation({
     mutationFn: () => apiFetch<{ ok: boolean }>('/subscriptions', { method: 'DELETE' }),
     onSuccess:  () => qc.invalidateQueries({ queryKey: ['subscription'] }),
-  });
-}
-
-export function usePurchaseTokenPackage() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (packageId: string) => {
-      try {
-        return await apiFetch<{ checkoutUrl: string }>('/billing/token-purchase', {
-          method: 'POST',
-          body:   JSON.stringify({ packageId }),
-        });
-      } catch {
-        return { checkoutUrl: '/dashboard/tokens' };
-      }
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tokens'] }),
   });
 }

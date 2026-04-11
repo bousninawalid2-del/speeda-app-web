@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireAuth, errorResponse } from '@/lib/auth-guard';
 import { prisma } from '@/lib/db';
 import { createTokenPurchaseLink } from '@/lib/mamopay';
+import { PAYMENT_GATEWAY_NOT_CONFIGURED_MESSAGE } from '@/lib/constants/payment';
 
 const purchaseSchema = z.object({
   packageId: z.string().min(1),
@@ -31,6 +32,9 @@ export async function POST(req: NextRequest) {
   if (!pack) return errorResponse('Token package not found', 404);
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+  if (!process.env.MAMOPAY_API_KEY) {
+    return errorResponse(PAYMENT_GATEWAY_NOT_CONFIGURED_MESSAGE, 502);
+  }
 
   try {
     const link = await createTokenPurchaseLink({
