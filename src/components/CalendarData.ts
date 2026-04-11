@@ -1,6 +1,6 @@
 // Calendar demo data and types
 
-export type PostStatus = 'scheduled' | 'draft' | 'ai-generated' | 'published' | 'boosted' | 'pending-approval';
+export type PostStatus = 'scheduled' | 'draft' | 'ai-generated' | 'published' | 'boosted' | 'pending-approval' | 'failed';
 
 export interface CalendarPost {
   id: string;
@@ -11,6 +11,7 @@ export interface CalendarPost {
   status: PostStatus;
   caption?: string;
   hashtags?: string;
+  mediaUrls?: string[];
   brandMatch?: number;
   boostMetrics?: { reach: string; clicks: string; roas: string };
   fromStrategy?: boolean;

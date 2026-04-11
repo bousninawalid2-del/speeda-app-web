@@ -16,6 +16,28 @@ const createSchema = z.object({
   status:      z.enum(['Draft', 'Scheduled', 'Published']).optional(),
 });
 
+function normalizeAyrsharePlatform(platform: string): string {
+  const value = platform.trim().toLowerCase();
+  switch (value) {
+    case 'google':
+    case 'google_business':
+    case 'googlebusiness':
+      return 'gmb';
+    case 'x':
+      return 'twitter';
+    default:
+      return value;
+  }
+}
+
+function toAbsoluteMediaUrl(url: string, req: NextRequest): string {
+  if (/^https?:\/\//i.test(url)) return url;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  const origin = appUrl ? appUrl.replace(/\/$/, '') : new URL(req.url).origin;
+  if (url.startsWith('/')) return `${origin}${url}`;
+  return `${origin}/${url}`;
+}
+
 // ─── GET /api/posts ───────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
@@ -71,8 +93,17 @@ export async function POST(req: NextRequest) {
 
   const { platform, caption, hashtags, mediaUrls, scheduledAt, status } = parsed.data;
 
-  const platforms = platform.split(',').map(p => p.trim()).filter(Boolean);
+  const platforms = Array.from(
+    new Set(
+      platform
+        .split(',')
+        .map(normalizeAyrsharePlatform)
+        .filter(Boolean),
+    ),
+  );
   const resolvedStatus = status ?? (scheduledAt ? 'Scheduled' : 'Draft');
+  const ayrshareMediaUrls = (mediaUrls ?? []).map(url => toAbsoluteMediaUrl(url, req));
+  let publishError: string | null = null;
 
   // Build full caption with hashtags
   const fullCaption = hashtags
@@ -103,7 +134,7 @@ export async function POST(req: NextRequest) {
       const result = await publishPost({
         post: fullCaption,
         platforms,
-        mediaUrls: mediaUrls ?? undefined,
+        mediaUrls: ayrshareMediaUrls.length > 0 ? ayrshareMediaUrls : undefined,
         scheduleDate: scheduledAt ?? undefined,
         profileKey: dbUser.profileKey,
       });
@@ -117,13 +148,28 @@ export async function POST(req: NextRequest) {
           },
         });
       } else {
+        publishError = 'Failed to publish to Ayrshare. Check logs for details.';
+        console.error('[posts:publish] Ayrshare publish failed', {
+          postId: post.id,
+          platforms,
+          scheduleDate: scheduledAt ?? null,
+        });
         post = await prisma.post.update({
           where: { id: post.id },
           data: { status: 'Failed' },
         });
       }
+    } else {
+      publishError = 'No connected Ayrshare profile found for this user.';
+      post = await prisma.post.update({
+        where: { id: post.id },
+        data: { status: 'Failed' },
+      });
     }
   }
 
-  return Response.json({ post }, { status: 201 });
+  return Response.json(
+    publishError ? { post, publishError } : { post },
+    { status: 201 },
+  );
 }

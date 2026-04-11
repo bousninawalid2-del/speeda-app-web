@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Pencil, Trash2, BarChart3, RefreshCw, Rocket, Pause, DollarSign } from 'lucide-react';
-import { CalendarPost, platformDotColors } from './CalendarData';
+import Image from 'next/image';
+import { CalendarPost } from './CalendarData';
 import { platformLogoMap } from './PlatformLogos';
 import { BoostFlow } from './BoostFlow';
 import { useIsMobile } from '../hooks/use-mobile';
@@ -12,6 +13,7 @@ const statusBadge = (status: string) => {
     case 'draft': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-soft text-orange-accent">Draft 📝</span>;
     case 'ai-generated': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-soft text-purple">AI Generated ✦</span>;
     case 'published': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-muted text-muted-foreground">Published ✓</span>;
+    case 'failed': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-red-50 text-red-600">Failed</span>;
     case 'boosted': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md text-primary-foreground gradient-hero">Boosted 🚀</span>;
     case 'pending-approval': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-soft text-purple border border-purple/30">✦ Pending Approval</span>;
     default: return null;
@@ -70,9 +72,15 @@ export const PostDetailPanel = ({ post, onClose, onBoostComplete, onEditPost, on
                 {boosted ? statusBadge('boosted') : statusBadge(post.status)}
               </div>
 
-              {/* Media placeholder */}
-              <div className="w-full h-[180px] rounded-xl gradient-hero flex items-center justify-center">
-                <span className="text-4xl">📷</span>
+              {/* Media thumbnail */}
+              <div className="w-full h-[180px] rounded-xl overflow-hidden relative">
+                {post.mediaUrls?.[0] ? (
+                  <Image src={post.mediaUrls[0]} alt={post.title} fill className="object-cover" sizes="400px" unoptimized />
+                ) : (
+                  <div className="w-full h-full gradient-hero flex items-center justify-center">
+                    <span className="text-4xl">📷</span>
+                  </div>
+                )}
               </div>
 
               {/* Caption */}

@@ -1,6 +1,7 @@
 import { type ChangeEvent, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, X, ChevronDown, ChevronRight, Calendar as CalendarIcon, FolderOpen } from 'lucide-react';
+import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
 import { InstagramLogo, TikTokLogo, SnapchatLogo, FacebookLogo, XLogo, YouTubeLogo, LinkedInLogo, GoogleLogo, PinterestLogo, ThreadsLogo } from '../components/PlatformLogos';
 import { toast } from 'sonner';
@@ -77,6 +78,24 @@ const PlatformIcon = ({ id, size = 16 }: { id: string; size?: number }) => {
   return p ? <p.Logo size={size} /> : null;
 };
 
+function parseMediaUrls(mediaUrls: unknown): string[] {
+  if (!mediaUrls) return [];
+  if (Array.isArray(mediaUrls)) {
+    return mediaUrls.filter((url): url is string => typeof url === 'string' && url.length > 0);
+  }
+  if (typeof mediaUrls === 'string') {
+    try {
+      const parsed = JSON.parse(mediaUrls);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((url): url is string => typeof url === 'string' && url.length > 0);
+      }
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 const Chip = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => (
   <button onClick={onClick} className={`rounded-3xl px-5 py-[9px] text-[13px] font-semibold transition-all duration-200 whitespace-nowrap ${
     active ? 'bg-brand-blue text-primary-foreground' : 'bg-card text-muted-foreground border border-border'
@@ -104,7 +123,7 @@ const LangSelector = ({ selected, setSelected }: { selected: string[]; setSelect
 };
 
 // ── Media upload area with Library access ──
-const MediaUpload = ({ files, add, remove, onOpenLibrary }: { files: { name: string; size: string }[]; add: () => void; remove: (i: number) => void; onOpenLibrary?: () => void }) => (
+const MediaUpload = ({ files, add, remove, onOpenLibrary }: { files: { name: string; size: string; url?: string }[]; add: () => void; remove: (i: number) => void; onOpenLibrary?: () => void }) => (
   <div className="mt-2">
     {files.length === 0 ? (
       <div className="flex gap-2">
@@ -120,9 +139,15 @@ const MediaUpload = ({ files, add, remove, onOpenLibrary }: { files: { name: str
     ) : (
       <div className="bg-card rounded-2xl p-3 border border-border-light">
         <div className="flex gap-2 overflow-x-auto">
-          {files.map((_, i) => (
+          {files.map((file, i) => (
             <div key={i} className="relative flex-shrink-0">
-              <div className="w-20 h-20 rounded-xl gradient-hero flex items-center justify-center"><span className="text-2xl">📷</span></div>
+              <div className="w-20 h-20 rounded-xl overflow-hidden relative">
+                {file.url ? (
+                  <Image src={file.url} alt={file.name} fill className="object-cover" sizes="80px" unoptimized />
+                ) : (
+                  <div className="w-full h-full gradient-hero flex items-center justify-center"><span className="text-2xl">📷</span></div>
+                )}
+              </div>
               <button onClick={() => remove(i)} className="absolute -top-1.5 -end-1.5 w-5 h-5 rounded-full bg-red-accent text-primary-foreground flex items-center justify-center"><X size={10} /></button>
             </div>
           ))}
@@ -456,8 +481,14 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
 
               {mediaFiles.length > 0 && (
                 <div className="flex gap-2 mt-3">
-                  {mediaFiles.map((_, i) => (
-                    <div key={i} className="w-16 h-16 rounded-xl gradient-hero flex items-center justify-center flex-shrink-0"><span className="text-lg">📷</span></div>
+                  {mediaFiles.map((file, i) => (
+                    <div key={i} className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 relative">
+                      {file.url ? (
+                        <Image src={file.url} alt={file.name} fill className="object-cover" sizes="64px" unoptimized />
+                      ) : (
+                        <div className="w-full h-full gradient-hero flex items-center justify-center"><span className="text-lg">📷</span></div>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
@@ -803,7 +834,7 @@ function mapPostToCalendarPost(post: Post): (CalendarPost & { day?: number }) | 
   if (Number.isNaN(date.getTime())) return null;
 
   const status = post.status.toLowerCase();
-  const normalizedStatus = status === 'scheduled' || status === 'draft' || status === 'published'
+  const normalizedStatus = status === 'scheduled' || status === 'draft' || status === 'published' || status === 'failed'
     ? status
     : 'draft';
 
@@ -817,6 +848,7 @@ function mapPostToCalendarPost(post: Post): (CalendarPost & { day?: number }) | 
     status: normalizedStatus,
     caption: post.caption,
     hashtags: post.hashtags ?? undefined,
+    mediaUrls: parseMediaUrls(post.mediaUrls),
   };
 }
 
