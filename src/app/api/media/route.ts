@@ -43,18 +43,14 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const auth = requireAuth(req);
-  if (auth instanceof Response) return auth;
-  const { user } = auth;
-
   const id = req.nextUrl.searchParams.get('id');
   if (!id) return errorResponse('Missing id', 400);
 
   const media = await prisma.dataImage.findUnique({
     where: { id },
-    select: { id: true, userId: true, filename: true, mimetype: true, data: true },
+    select: { id: true, filename: true, mimetype: true, data: true },
   });
-  if (!media || media.userId !== user.sub) return errorResponse('Not found', 404);
+  if (!media) return errorResponse('Not found', 404);
   const baseFilename = (media.filename.split(/[/\\]/).pop() ?? 'media').replace(/^\.+/, '');
   const safeFilename = baseFilename
     .replace(/[^a-zA-Z0-9._-]/g, '_')
@@ -65,7 +61,7 @@ export async function GET(req: NextRequest) {
     headers: {
       'Content-Type': media.mimetype,
       'Content-Disposition': `inline; filename="${safeFilename}"`,
-      'Cache-Control': 'private, max-age=3600',
+      'Cache-Control': 'public, max-age=86400',
       'X-Content-Type-Options': 'nosniff',
     },
   });

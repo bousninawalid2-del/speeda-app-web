@@ -16,6 +16,23 @@ const createSchema = z.object({
   status:      z.enum(['Draft', 'Scheduled', 'Published']).optional(),
 });
 
+const PLATFORM_MAP: Record<string, string> = {
+  google: 'gmb',
+  x: 'twitter',
+};
+
+function toAyrsharePlatform(platform: string): string {
+  const normalizedPlatform = platform.trim().toLowerCase();
+  return PLATFORM_MAP[normalizedPlatform] ?? normalizedPlatform;
+}
+
+function toAbsoluteUrl(url: string, origin: string): string {
+  if (/^https?:\/\//i.test(url)) return url;
+  const baseOrigin = (process.env.NEXT_PUBLIC_APP_URL?.trim() || origin).replace(/\/$/, '');
+  const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+  return `${baseOrigin}${normalizedPath}`;
+}
+
 // ─── GET /api/posts ───────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
@@ -70,8 +87,11 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return errorResponse(parsed.error.issues[0].message, 400);
 
   const { platform, caption, hashtags, mediaUrls, scheduledAt, status } = parsed.data;
+  const origin = new URL(req.url).origin;
 
   const platforms = platform.split(',').map(p => p.trim()).filter(Boolean);
+  const mappedPlatforms = platforms.map(toAyrsharePlatform);
+  const absoluteMediaUrls = mediaUrls?.map(url => toAbsoluteUrl(url, origin));
   const resolvedStatus = status ?? (scheduledAt ? 'Scheduled' : 'Draft');
 
   // Build full caption with hashtags
@@ -102,8 +122,8 @@ export async function POST(req: NextRequest) {
     if (dbUser?.profileKey) {
       const result = await publishPost({
         post: fullCaption,
-        platforms,
-        mediaUrls: mediaUrls ?? undefined,
+        platforms: mappedPlatforms,
+        mediaUrls: absoluteMediaUrls ?? undefined,
         scheduleDate: scheduledAt ?? undefined,
         profileKey: dbUser.profileKey,
       });
@@ -117,6 +137,9 @@ export async function POST(req: NextRequest) {
           },
         });
       } else {
+        if (result === null) {
+          console.error('[api/posts] publishPost returned null', { platforms: mappedPlatforms });
+        }
         post = await prisma.post.update({
           where: { id: post.id },
           data: { status: 'Failed' },
