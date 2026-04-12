@@ -17,6 +17,13 @@ export interface TokensData {
   byAgent:  Record<string, number>;
 }
 
+export interface TokenPackage {
+  id: string;
+  name: string;
+  tokenCount: number;
+  price: number;
+}
+
 const TOKENS_FALLBACK: TokensData = {
   balance: 32,
   used: 18,
@@ -45,6 +52,13 @@ const TOKENS_FALLBACK: TokensData = {
   },
 };
 
+const TOKEN_PACKAGES_FALLBACK: TokenPackage[] = [
+  { id: 'pack_200', name: 'Starter Pack', tokenCount: 200, price: 199 },
+  { id: 'pack_500', name: 'Growth Pack', tokenCount: 500, price: 449 },
+  { id: 'pack_1500', name: 'Pro Pack', tokenCount: 1500, price: 1199 },
+  { id: 'pack_5000', name: 'Scale Pack', tokenCount: 5000, price: 3499 },
+];
+
 export function useTokens() {
   return useQuery({
     queryKey: ['tokens'],
@@ -66,5 +80,20 @@ export function usePurchaseTokenPackage() {
         method: 'POST',
         body: JSON.stringify({ packageId }),
       }),
+  });
+}
+
+export function useTokenPackages() {
+  return useQuery({
+    queryKey: ['token-packages'],
+    queryFn: async () => {
+      try {
+        const response = await apiFetch<{ packs: TokenPackage[] }>('/token-packages');
+        return response.packs;
+      } catch {
+        return TOKEN_PACKAGES_FALLBACK;
+      }
+    },
+    staleTime: 5 * 60 * 1000,
   });
 }

@@ -28,12 +28,16 @@ export async function POST(request: NextRequest) {
         userId,
         code,
         used: false,
-        expiresAt: { gt: new Date() },
       },
+      orderBy: { createdAt: 'desc' },
     });
 
     if (!record) {
-      return errorResponse('Invalid or expired verification code', 400);
+      return errorResponse('Invalid verification code', 400);
+    }
+
+    if (record.expiresAt <= new Date()) {
+      return errorResponse('Verification code has expired. Please request a new code.', 400);
     }
 
     // Mark token used and activate user
@@ -103,7 +107,7 @@ export async function PUT(request: NextRequest) {
     const { sendVerificationEmail } = await import('@/lib/email');
     const code = generateOTP();
     await prisma.verifyToken.create({
-      data: { code, userId, expiresAt: new Date(Date.now() + 15 * 60 * 1000) },
+      data: { code, userId, expiresAt: new Date(Date.now() + 60 * 60 * 1000) },
     });
     sendVerificationEmail(user.email, user.name ?? '', code).catch(console.error);
 

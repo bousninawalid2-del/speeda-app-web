@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { PaymentFlow } from '../components/PaymentFlow';
+import type { TokenPackage } from '@/hooks/useTokens';
 import _speedaLogoWhite from '../assets/speeda-logo-white.png';
 const speedaLogoWhite = (typeof _speedaLogoWhite === 'string' ? _speedaLogoWhite : (_speedaLogoWhite as { src: string }).src);
 
@@ -19,16 +20,17 @@ interface TokensScreenProps {
   onBack:         () => void;
   scrollToPacks?: boolean;
   liveData?:      LiveTokenData;
+  tokenPackages?: TokenPackage[];
   isLoading?:     boolean;
   isPurchasePending?: boolean;
   onPurchase?:    (packId: string) => Promise<void>;
 }
 
-const tokenPacks = [
-  { amount: 200, price: 99, perToken: '0.50', discount: null, badge: null },
-  { amount: 500, price: 199, perToken: '0.40', discount: '20', badge: null },
-  { amount: 1500, price: 499, perToken: '0.33', discount: '33', badge: 'popular' },
-  { amount: 5000, price: 1299, perToken: '0.26', discount: '48', badge: 'bestValue' },
+const fallbackTokenPacks: TokenPackage[] = [
+  { id: 'pack_200', name: 'Starter Pack', tokenCount: 200, price: 199 },
+  { id: 'pack_500', name: 'Growth Pack', tokenCount: 500, price: 449 },
+  { id: 'pack_1500', name: 'Pro Pack', tokenCount: 1500, price: 1199 },
+  { id: 'pack_5000', name: 'Scale Pack', tokenCount: 5000, price: 3499 },
 ];
 
 type AgentType = 'Content' | 'Strategy' | 'Engagement' | 'Analytics' | 'Ads' | 'Brand';
@@ -69,17 +71,19 @@ const formatPrice = (price: number, lang: string): string => {
   return `SAR ${price.toLocaleString()}`;
 };
 
-const formatPerToken = (perToken: string, lang: string): string => {
+const formatPerToken = (perToken: number, lang: string): string => {
   if (lang === 'ar') return `${perToken} ريال/توكن`;
   return `SAR ${perToken}/token`;
 };
 
-export const TokensScreen = ({ onBack, scrollToPacks, liveData, isLoading, isPurchasePending, onPurchase }: TokensScreenProps) => {
+export const TokensScreen = ({ onBack, scrollToPacks, liveData, tokenPackages, isLoading, isPurchasePending, onPurchase }: TokensScreenProps) => {
   const { t, i18n } = useTranslation();
   const [howOpen, setHowOpen] = useState(false);
   const [autoRecharge, setAutoRecharge] = useState(false);
   const [buyingPack, setBuyingPack] = useState<number | null>(null);
   const [purchasingPackIdx, setPurchasingPackIdx] = useState<number | null>(null);
+  const packs = tokenPackages?.length ? tokenPackages : fallbackTokenPacks;
+  const basePricePerToken = packs[0] ? packs[0].price / packs[0].tokenCount : 0;
 
   // Prefer live data; fall back to static mock
   const balance     = liveData?.balance  ?? 342;
@@ -89,15 +93,14 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, isLoading, isPur
   const liveByAgent = liveData?.byAgent;
 
   const handlePurchase = async (packIdx: number) => {
-    const pack = tokenPacks[packIdx];
+    const pack = packs[packIdx];
     if (!pack || !onPurchase) {
       setBuyingPack(packIdx);
       return;
     }
-    const packIds = ['pack_200', 'pack_500', 'pack_1500', 'pack_5000'];
     setPurchasingPackIdx(packIdx);
     try {
-      await onPurchase(packIds[packIdx]);
+      await onPurchase(pack.id);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Purchase failed. Please try again.');
     } finally {
@@ -161,19 +164,23 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, isLoading, isPur
             <h2 className="text-[18px] font-bold text-foreground">{t('tokens.needMore')}</h2>
           </div>
           <div className="space-y-3">
-            {tokenPacks.map((pack, i) => (
-              <div key={i} className="bg-card rounded-2xl border border-border-light p-4">
+            {packs.map((pack, i) => {
+              const perToken = pack.tokenCount > 0 ? pack.price / pack.tokenCount : 0;
+              const discount = basePricePerToken > 0 ? Math.max(0, Math.round((1 - (perToken / basePricePerToken)) * 100)) : 0;
+              const badge = i === 2 ? 'popular' : i === packs.length - 1 ? 'bestValue' : null;
+              return (
+              <div key={pack.id} className="bg-card rounded-2xl border border-border-light p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[18px] font-bold text-foreground">{pack.amount.toLocaleString()} {t('common.tokens')}</span>
-                      {pack.discount && <span className="text-[10px] font-bold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">{t('tokens.off', { percent: pack.discount })}</span>}
-                      {pack.badge === 'popular' && <span className="text-[10px] font-bold text-primary-foreground gradient-btn px-2 py-0.5 rounded-md">{t('tokens.popular')}</span>}
-                      {pack.badge === 'bestValue' && <span className="text-[10px] font-bold text-primary-foreground bg-brand-blue px-2 py-0.5 rounded-md">{t('tokens.bestValue')}</span>}
+                      <span className="text-[18px] font-bold text-foreground">{pack.tokenCount.toLocaleString()} {t('common.tokens')}</span>
+                      {discount > 0 && <span className="text-[10px] font-bold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">{t('tokens.off', { percent: discount })}</span>}
+                      {badge === 'popular' && <span className="text-[10px] font-bold text-primary-foreground gradient-btn px-2 py-0.5 rounded-md">{t('tokens.popular')}</span>}
+                      {badge === 'bestValue' && <span className="text-[10px] font-bold text-primary-foreground bg-brand-blue px-2 py-0.5 rounded-md">{t('tokens.bestValue')}</span>}
                     </div>
-                    <p className="text-[13px] text-muted-foreground mt-0.5">{formatPrice(pack.price, i18n.language)} · {formatPerToken(pack.perToken, i18n.language)}</p>
+                    <p className="text-[13px] text-muted-foreground mt-0.5">{formatPrice(pack.price, i18n.language)} · {formatPerToken(Number(perToken.toFixed(2)), i18n.language)}</p>
                   </div>
-                  <button onClick={() => handlePurchase(i)} disabled={isPurchasePending || purchasingPackIdx !== null} className={`h-10 px-5 rounded-xl text-[13px] font-bold btn-press disabled:opacity-60 ${pack.badge === 'popular' ? 'gradient-btn text-primary-foreground shadow-btn' : 'border border-border text-foreground'}`}>
+                  <button type="button" onClick={() => handlePurchase(i)} disabled={isPurchasePending || purchasingPackIdx !== null} className={`h-10 px-5 rounded-xl text-[13px] font-bold btn-press disabled:opacity-60 ${badge === 'popular' ? 'gradient-btn text-primary-foreground shadow-btn' : 'border border-border text-foreground'}`}>
                     {purchasingPackIdx === i ? (
                       <span className="flex items-center gap-2">
                         <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -183,7 +190,8 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, isLoading, isPur
                   </button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Auto-Recharge */}
@@ -262,13 +270,13 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, isLoading, isPur
       <AnimatePresence>
         {buyingPack !== null && (
           <PaymentFlow
-            redirectTitle={`Purchasing ${tokenPacks[buyingPack].amount.toLocaleString()} tokens…`}
-            redirectSubtitle="You'll be redirected to our secure payment page"
-            summaryLabel={`${tokenPacks[buyingPack].amount.toLocaleString()} Tokens`}
-            summaryValue={formatPrice(tokenPacks[buyingPack].price, i18n.language)}
-            successTitle="Tokens Added! ✦"
-            successSubtitle={`${tokenPacks[buyingPack].amount.toLocaleString()} tokens have been added to your account`}
-            successDetail={`New balance: ${balance + tokenPacks[buyingPack].amount} tokens`}
+             redirectTitle={`Purchasing ${packs[buyingPack].tokenCount.toLocaleString()} tokens…`}
+             redirectSubtitle="You'll be redirected to our secure payment page"
+             summaryLabel={`${packs[buyingPack].tokenCount.toLocaleString()} Tokens`}
+             summaryValue={formatPrice(packs[buyingPack].price, i18n.language)}
+             successTitle="Tokens Added! ✦"
+             successSubtitle={`${packs[buyingPack].tokenCount.toLocaleString()} tokens have been added to your account`}
+             successDetail={`New balance: ${balance + packs[buyingPack].tokenCount} tokens`}
             successButton="Continue"
             variant="tokens"
             onComplete={() => setBuyingPack(null)}

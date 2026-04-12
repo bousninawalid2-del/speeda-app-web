@@ -145,6 +145,7 @@ export const fr = {
     fullName: 'Nom complet',
     email: 'E-mail',
     phoneNumber: 'Numéro de téléphone',
+    phoneWhatsappHint: 'Utilisez le même numéro de téléphone que celui lié à notre service WhatsApp.',
     password: 'Mot de passe',
     forgotPassword: 'Mot de passe oublié ?',
     createAccount: 'Créer un compte',

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Phone, Lock, Eye, EyeOff, ChevronLeft, ChevronDown, Search, X } from 'lucide-react';
+import { User, Mail, Phone, Lock, Eye, EyeOff, ChevronLeft, ChevronDown, X } from 'lucide-react';
 import { SpeedaLogo } from '../components/PlatformLogos';
 import { useTranslation } from 'react-i18next';
 
@@ -63,9 +63,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
   const { t } = useTranslation();
   const [mode, setMode] = useState<AuthMode>('signin');
   const [showPass, setShowPass] = useState(false);
-  const [countryOpen, setCountryOpen] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState(allCountries[0]);
-  const [countrySearch, setCountrySearch] = useState('');
+  const [selectedCountryCode, setSelectedCountryCode] = useState(allCountries[0].code);
 
   // Controlled form fields
   const [name, setName] = useState('');
@@ -76,9 +74,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
   const [formError, setFormError] = useState<string | null>(null);
   const [quickLoginSent, setQuickLoginSent] = useState(false);
 
-  const filtered = allCountries.filter(c =>
-    c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.code.includes(countrySearch)
-  );
+  const selectedCountry = allCountries.find((country) => country.code === selectedCountryCode) ?? allCountries[0];
 
   const inputClass = "w-full h-[56px] rounded-2xl bg-card border border-border pl-12 pr-4 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors";
 
@@ -154,7 +150,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
       className="min-h-screen bg-background px-6 pt-12 pb-8"
     >
       {mode === 'forgot' && (
-        <button onClick={() => { setMode('signin'); setFormError(null); }} className="flex items-center gap-1 text-brand-blue text-[14px] font-medium mb-4">
+        <button type="button" onClick={() => { setMode('signin'); setFormError(null); }} className="flex items-center gap-1 text-brand-blue text-[14px] font-medium mb-4">
           <ChevronLeft size={18} /> {t('auth.backToSignIn')}
         </button>
       )}
@@ -183,14 +179,24 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
         </div>
         {mode === 'signup' && (
           <div className="flex gap-2">
-            <button onClick={() => setCountryOpen(true)} className="h-[56px] rounded-2xl bg-card border border-border px-3 flex items-center gap-1.5 flex-shrink-0 min-w-[110px]">
-              <span className="text-[16px]">{selectedCountry.flag}</span>
-              <span className="text-[13px] font-medium text-foreground">{selectedCountry.code}</span>
-              <ChevronDown size={14} className="text-muted-foreground" />
-            </button>
+            <div className="relative h-[56px] rounded-2xl bg-card border border-border px-3 flex items-center gap-1.5 flex-shrink-0 min-w-[110px]">
+              <select
+                className="appearance-none bg-transparent text-[13px] font-medium text-foreground pr-5 focus:outline-none w-full h-full cursor-pointer"
+                value={selectedCountryCode}
+                onChange={(e) => { setSelectedCountryCode(e.target.value); setFormError(null); }}
+              >
+                {allCountries.map((country) => (
+                  <option key={`${country.code}-${country.name}`} value={country.code}>
+                    {country.flag} {country.code}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="text-muted-foreground absolute right-3 pointer-events-none" />
+            </div>
             <div className="relative flex-1">
               <Phone size={18} className="absolute left-4 top-[19px] text-muted-foreground" />
               <input className="w-full h-[56px] rounded-2xl bg-card border border-border pl-12 pr-4 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" placeholder={t('auth.phoneNumber')} type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); setFormError(null); }} />
+              <p className="text-[11px] text-muted-foreground mt-1.5">{t('auth.phoneWhatsappHint')}</p>
             </div>
           </div>
         )}
@@ -198,14 +204,14 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
           <div className="relative">
             <Lock size={18} className="absolute left-4 top-[19px] text-muted-foreground" />
             <input className={inputClass} placeholder={t('auth.password')} type={showPass ? 'text' : 'password'} value={password} onChange={(e) => { setPassword(e.target.value); setFormError(null); }} />
-            <button onClick={() => setShowPass(!showPass)} className="absolute right-4 top-[18px] text-muted-foreground">
+            <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-[18px] text-muted-foreground">
               {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
         )}
 
         {mode === 'signin' && (
-          <button onClick={() => setMode('forgot')} className="block ml-auto text-brand-blue text-[13px] font-medium">
+          <button type="button" onClick={() => setMode('forgot')} className="block ml-auto text-brand-blue text-[13px] font-medium">
             {t('auth.forgotPassword')}
           </button>
         )}
@@ -244,8 +250,9 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
                 ✓ Magic link sent! Check your inbox.
               </div>
             ) : (
-              <button
-                onClick={handleQuickLogin}
+                <button
+                  type="button"
+                  onClick={handleQuickLogin}
                 disabled={isSubmitting}
                 className="w-full h-[56px] rounded-2xl bg-card border border-border text-foreground font-semibold text-[14px] card-tap flex items-center justify-center gap-2"
               >
@@ -256,14 +263,14 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
             {mode === 'signup' && (
               <p className="text-center text-[11px] text-muted-foreground mt-4">
                 {t('auth.byCreatingAccount')}{' '}
-                <button onClick={() => setShowTerms(true)} className="text-brand-blue font-medium underline">{t('auth.termsOfService')}</button>
+                <button type="button" onClick={() => setShowTerms(true)} className="text-brand-blue font-medium underline">{t('auth.termsOfService')}</button>
                 {' '}{t('auth.and')}{' '}
-                <button onClick={() => setShowPrivacy(true)} className="text-brand-blue font-medium underline">{t('auth.privacyPolicy')}</button>
+                <button type="button" onClick={() => setShowPrivacy(true)} className="text-brand-blue font-medium underline">{t('auth.privacyPolicy')}</button>
               </p>
             )}
             <p className="text-center text-[14px] text-muted-foreground mt-4">
               {mode === 'signup' ? `${t('auth.alreadyHaveAccount')} ` : `${t('auth.dontHaveAccount')} `}
-              <button onClick={() => { setMode(mode === 'signup' ? 'signin' : 'signup'); setFormError(null); }} className="text-brand-blue font-semibold">
+              <button type="button" onClick={() => { setMode(mode === 'signup' ? 'signin' : 'signup'); setFormError(null); }} className="text-brand-blue font-semibold">
                 {mode === 'signup' ? t('auth.signIn') : t('auth.signUp')}
               </button>
             </p>
@@ -279,7 +286,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
             <motion.div initial={{ y: 300 }} animate={{ y: 0 }} exit={{ y: 300 }} className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl shadow-xl max-w-[430px] mx-auto max-h-[70vh] flex flex-col">
               <div className="p-5 pb-3 flex items-center justify-between border-b border-border-light">
                 <h3 className="text-[16px] font-bold text-foreground">{t('auth.termsOfService')}</h3>
-                <button onClick={() => setShowTerms(false)}><X size={20} className="text-muted-foreground" /></button>
+                <button type="button" onClick={() => setShowTerms(false)}><X size={20} className="text-muted-foreground" /></button>
               </div>
               <div className="flex-1 overflow-y-auto p-5">
                 <p className="text-[13px] text-muted-foreground leading-relaxed">{t('auth.termsBody')}</p>
@@ -297,7 +304,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
             <motion.div initial={{ y: 300 }} animate={{ y: 0 }} exit={{ y: 300 }} className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl shadow-xl max-w-[430px] mx-auto max-h-[70vh] flex flex-col">
               <div className="p-5 pb-3 flex items-center justify-between border-b border-border-light">
                 <h3 className="text-[16px] font-bold text-foreground">{t('auth.privacyPolicy')}</h3>
-                <button onClick={() => setShowPrivacy(false)}><X size={20} className="text-muted-foreground" /></button>
+                <button type="button" onClick={() => setShowPrivacy(false)}><X size={20} className="text-muted-foreground" /></button>
               </div>
               <div className="flex-1 overflow-y-auto p-5">
                 <p className="text-[13px] text-muted-foreground leading-relaxed">{t('auth.privacyBody')}</p>
@@ -307,35 +314,6 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
         )}
       </AnimatePresence>
 
-      {/* Country Code Modal */}
-      <AnimatePresence>
-        {countryOpen && (
-          <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setCountryOpen(false)} className="fixed inset-0 bg-foreground/30 z-40" />
-            <motion.div initial={{ y: 400 }} animate={{ y: 0 }} exit={{ y: 400 }} className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl shadow-xl max-w-[430px] mx-auto max-h-[70vh] flex flex-col">
-              <div className="p-5 pb-3 flex items-center justify-between border-b border-border-light">
-                <h3 className="text-[16px] font-bold text-foreground">{t('auth.selectCountry')}</h3>
-                <button onClick={() => setCountryOpen(false)}><X size={20} className="text-muted-foreground" /></button>
-              </div>
-              <div className="px-5 py-3">
-                <div className="relative">
-                  <Search size={16} className="absolute left-3 top-[13px] text-muted-foreground" />
-                  <input className="w-full h-[42px] rounded-xl bg-muted border-none pl-10 pr-4 text-[14px] focus:outline-none" placeholder={t('auth.searchCountry')} value={countrySearch} onChange={e => setCountrySearch(e.target.value)} autoFocus />
-                </div>
-              </div>
-              <div className="flex-1 overflow-y-auto px-2 pb-5">
-                {filtered.map(c => (
-                  <button key={c.code + c.name} onClick={() => { setSelectedCountry(c); setCountryOpen(false); setCountrySearch(''); }} className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-start transition-colors ${selectedCountry.code === c.code ? 'bg-purple-soft' : 'hover:bg-muted'}`}>
-                    <span className="text-[18px]">{c.flag}</span>
-                    <span className="text-[14px] font-medium text-foreground flex-1">{c.name}</span>
-                    <span className="text-[13px] text-muted-foreground">{c.code}</span>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 };

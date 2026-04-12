@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     // Generate & save OTP
     const code = generateOTP();
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 60 min
     await prisma.verifyToken.create({
       data: { code, userId: user.id, expiresAt },
     });
