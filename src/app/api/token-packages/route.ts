@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   if (auth instanceof NextResponse) return auth;
 
   const packs = await prisma.tokenPackage.findMany({
-    where: { active: true },
+    where: { active: true, tokenCount: { gt: 0 }, price: { gt: 0 } },
     orderBy: [{ sortOrder: 'asc' }, { tokenCount: 'asc' }],
     select: { id: true, name: true, tokenCount: true, price: true },
   });

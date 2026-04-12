@@ -72,9 +72,13 @@ const formatPrice = (price: number, lang: string): string => {
 };
 
 const formatPerToken = (perToken: number, lang: string): string => {
-  if (lang === 'ar') return `${perToken} ريال/توكن`;
-  return `SAR ${perToken}/token`;
+  const value = perToken.toFixed(2);
+  if (lang === 'ar') return `${value} ريال/توكن`;
+  return `SAR ${value}/token`;
 };
+
+const getPerTokenPrice = (pack: TokenPackage): number =>
+  pack.price / Math.max(pack.tokenCount, 1);
 
 export const TokensScreen = ({ onBack, scrollToPacks, liveData, tokenPackages, isLoading, isPurchasePending, onPurchase }: TokensScreenProps) => {
   const { t, i18n } = useTranslation();
@@ -83,7 +87,7 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, tokenPackages, i
   const [buyingPack, setBuyingPack] = useState<number | null>(null);
   const [purchasingPackIdx, setPurchasingPackIdx] = useState<number | null>(null);
   const packs = tokenPackages?.length ? tokenPackages : fallbackTokenPacks;
-  const basePricePerToken = packs[0] ? packs[0].price / packs[0].tokenCount : 0;
+  const basePricePerToken = packs[0] ? getPerTokenPrice(packs[0]) : 0;
 
   // Prefer live data; fall back to static mock
   const balance     = liveData?.balance  ?? 342;
@@ -165,7 +169,8 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, tokenPackages, i
           </div>
           <div className="space-y-3">
             {packs.map((pack, i) => {
-              const perToken = pack.tokenCount > 0 ? pack.price / pack.tokenCount : 0;
+              const perToken = getPerTokenPrice(pack);
+              const roundedPerToken = Math.round(perToken * 100) / 100;
               const discount = basePricePerToken > 0 ? Math.max(0, Math.round((1 - (perToken / basePricePerToken)) * 100)) : 0;
               const badge = i === 2 ? 'popular' : i === packs.length - 1 ? 'bestValue' : null;
               return (
@@ -178,7 +183,7 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, tokenPackages, i
                       {badge === 'popular' && <span className="text-[10px] font-bold text-primary-foreground gradient-btn px-2 py-0.5 rounded-md">{t('tokens.popular')}</span>}
                       {badge === 'bestValue' && <span className="text-[10px] font-bold text-primary-foreground bg-brand-blue px-2 py-0.5 rounded-md">{t('tokens.bestValue')}</span>}
                     </div>
-                    <p className="text-[13px] text-muted-foreground mt-0.5">{formatPrice(pack.price, i18n.language)} · {formatPerToken(Number(perToken.toFixed(2)), i18n.language)}</p>
+                    <p className="text-[13px] text-muted-foreground mt-0.5">{formatPrice(pack.price, i18n.language)} · {formatPerToken(roundedPerToken, i18n.language)}</p>
                   </div>
                   <button type="button" onClick={() => handlePurchase(i)} disabled={isPurchasePending || purchasingPackIdx !== null} className={`h-10 px-5 rounded-xl text-[13px] font-bold btn-press disabled:opacity-60 ${badge === 'popular' ? 'gradient-btn text-primary-foreground shadow-btn' : 'border border-border text-foreground'}`}>
                     {purchasingPackIdx === i ? (
