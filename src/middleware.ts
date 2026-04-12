@@ -58,7 +58,10 @@ export function middleware(request: NextRequest) {
 
   // Relaunch onboarding/setup flow explicitly when requested.
   if (isAuthenticated && forceOnboarding && !isSetup) {
-    return NextResponse.redirect(new URL('/setup', request.url));
+    const setupUrl = request.nextUrl.clone();
+    setupUrl.pathname = '/setup';
+    setupUrl.search = '';
+    return NextResponse.redirect(setupUrl);
   }
 
   // If authenticated but setup not done → force /setup before dashboard
