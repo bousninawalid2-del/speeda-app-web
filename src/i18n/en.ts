@@ -161,6 +161,7 @@ export const en = {
     backToSignIn: 'Back to Sign In',
     selectCountry: 'Select Country',
     searchCountry: 'Search country...',
+    whatsappPhoneHint: 'Use the same phone number connected to our WhatsApp service.',
     termsBody: 'By using Speeda AI, you agree to our terms of service. Speeda AI provides AI-powered marketing tools for social media management, content creation, and advertising. All generated content is owned by you. We process data securely and in accordance with applicable laws. For full terms, visit speeda.ai/terms.',
     privacyBody: 'Speeda AI is committed to protecting your privacy. We collect only necessary data to provide our services. Your social media credentials are securely stored using encrypted OAuth tokens. We do not sell your data to third parties. For full privacy details, visit speeda.ai/privacy.',
   },

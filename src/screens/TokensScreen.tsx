@@ -25,10 +25,10 @@ interface TokensScreenProps {
 }
 
 const tokenPacks = [
-  { amount: 200, price: 99, perToken: '0.50', discount: null, badge: null },
-  { amount: 500, price: 199, perToken: '0.40', discount: '20', badge: null },
-  { amount: 1500, price: 499, perToken: '0.33', discount: '33', badge: 'popular' },
-  { amount: 5000, price: 1299, perToken: '0.26', discount: '48', badge: 'bestValue' },
+  { id: 'fallback-1', amount: 200, price: 199, discount: null, badge: null },
+  { id: 'fallback-2', amount: 500, price: 449, discount: '20', badge: null },
+  { id: 'fallback-3', amount: 1500, price: 1199, discount: '33', badge: 'popular' },
+  { id: 'fallback-4', amount: 5000, price: 3499, discount: '48', badge: 'bestValue' },
 ];
 
 type AgentType = 'Content' | 'Strategy' | 'Engagement' | 'Analytics' | 'Ads' | 'Brand';
@@ -87,17 +87,25 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, isLoading, isPur
   const usedTokens  = liveData?.used     ?? 458;
   const liveHistory = liveData?.history;
   const liveByAgent = liveData?.byAgent;
+  const availablePacks = liveData?.packages?.length
+    ? liveData.packages.map((pack, idx) => ({
+        id: pack.id,
+        amount: pack.tokenCount,
+        price: pack.price,
+        discount: idx === 1 ? '20' : idx === 2 ? '33' : idx >= 3 ? '48' : null,
+        badge: idx === 2 ? 'popular' : idx === 3 ? 'bestValue' : null,
+      }))
+    : tokenPacks;
 
   const handlePurchase = async (packIdx: number) => {
-    const pack = tokenPacks[packIdx];
+    const pack = availablePacks[packIdx];
     if (!pack || !onPurchase) {
       setBuyingPack(packIdx);
       return;
     }
-    const packIds = ['pack_200', 'pack_500', 'pack_1500', 'pack_5000'];
     setPurchasingPackIdx(packIdx);
     try {
-      await onPurchase(packIds[packIdx]);
+      await onPurchase(pack.id);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Purchase failed. Please try again.');
     } finally {
@@ -161,8 +169,8 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, isLoading, isPur
             <h2 className="text-[18px] font-bold text-foreground">{t('tokens.needMore')}</h2>
           </div>
           <div className="space-y-3">
-            {tokenPacks.map((pack, i) => (
-              <div key={i} className="bg-card rounded-2xl border border-border-light p-4">
+            {availablePacks.map((pack, i) => (
+              <div key={pack.id} className="bg-card rounded-2xl border border-border-light p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-2">
@@ -171,7 +179,7 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, isLoading, isPur
                       {pack.badge === 'popular' && <span className="text-[10px] font-bold text-primary-foreground gradient-btn px-2 py-0.5 rounded-md">{t('tokens.popular')}</span>}
                       {pack.badge === 'bestValue' && <span className="text-[10px] font-bold text-primary-foreground bg-brand-blue px-2 py-0.5 rounded-md">{t('tokens.bestValue')}</span>}
                     </div>
-                    <p className="text-[13px] text-muted-foreground mt-0.5">{formatPrice(pack.price, i18n.language)} · {formatPerToken(pack.perToken, i18n.language)}</p>
+                    <p className="text-[13px] text-muted-foreground mt-0.5">{formatPrice(pack.price, i18n.language)} · {formatPerToken((pack.price / pack.amount).toFixed(2), i18n.language)}</p>
                   </div>
                   <button onClick={() => handlePurchase(i)} disabled={isPurchasePending || purchasingPackIdx !== null} className={`h-10 px-5 rounded-xl text-[13px] font-bold btn-press disabled:opacity-60 ${pack.badge === 'popular' ? 'gradient-btn text-primary-foreground shadow-btn' : 'border border-border text-foreground'}`}>
                     {purchasingPackIdx === i ? (
@@ -262,13 +270,13 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, isLoading, isPur
       <AnimatePresence>
         {buyingPack !== null && (
           <PaymentFlow
-            redirectTitle={`Purchasing ${tokenPacks[buyingPack].amount.toLocaleString()} tokens…`}
+            redirectTitle={`Purchasing ${availablePacks[buyingPack].amount.toLocaleString()} tokens…`}
             redirectSubtitle="You'll be redirected to our secure payment page"
-            summaryLabel={`${tokenPacks[buyingPack].amount.toLocaleString()} Tokens`}
-            summaryValue={formatPrice(tokenPacks[buyingPack].price, i18n.language)}
+            summaryLabel={`${availablePacks[buyingPack].amount.toLocaleString()} Tokens`}
+            summaryValue={formatPrice(availablePacks[buyingPack].price, i18n.language)}
             successTitle="Tokens Added! ✦"
-            successSubtitle={`${tokenPacks[buyingPack].amount.toLocaleString()} tokens have been added to your account`}
-            successDetail={`New balance: ${balance + tokenPacks[buyingPack].amount} tokens`}
+            successSubtitle={`${availablePacks[buyingPack].amount.toLocaleString()} tokens have been added to your account`}
+            successDetail={`New balance: ${balance + availablePacks[buyingPack].amount} tokens`}
             successButton="Continue"
             variant="tokens"
             onComplete={() => setBuyingPack(null)}

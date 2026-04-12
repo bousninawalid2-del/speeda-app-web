@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { errorResponse } from '@/lib/auth-guard';
+import { EMAIL_VERIFICATION_CODE_TTL_MS } from '@/lib/auth-constants';
 import { issueTokens } from '../login/route';
 
 const verifySchema = z.object({
@@ -103,7 +104,7 @@ export async function PUT(request: NextRequest) {
     const { sendVerificationEmail } = await import('@/lib/email');
     const code = generateOTP();
     await prisma.verifyToken.create({
-      data: { code, userId, expiresAt: new Date(Date.now() + 15 * 60 * 1000) },
+      data: { code, userId, expiresAt: new Date(Date.now() + EMAIL_VERIFICATION_CODE_TTL_MS) },
     });
     sendVerificationEmail(user.email, user.name ?? '', code).catch(console.error);
 

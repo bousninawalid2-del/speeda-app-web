@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { EMAIL_VERIFICATION_CODE_TTL_MINUTES } from './auth-constants';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 const FROM = process.env.EMAIL_FROM ?? 'Speeda <noreply@speeda.ai>';
@@ -29,7 +30,7 @@ export async function sendVerificationEmail(to: string, name: string, code: stri
         <div style="font-size:36px;font-weight:700;letter-spacing:8px;color:#0020d4;margin:24px 0;padding:16px;background:#f0f0ff;border-radius:12px;text-align:center">
           ${code}
         </div>
-        <p style="color:#666">This code expires in <strong>15 minutes</strong>.</p>
+        <p style="color:#666">This code expires in <strong>${EMAIL_VERIFICATION_CODE_TTL_MINUTES} minutes</strong>.</p>
         <hr style="margin:32px 0;border:none;border-top:1px solid #eee"/>
         <p style="font-size:12px;color:#999">If you didn't create a Speeda account, you can safely ignore this email.</p>
       </div>

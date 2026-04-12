@@ -161,6 +161,7 @@ export const fr = {
     backToSignIn: 'Retour à la connexion',
     selectCountry: 'Choisir un pays',
     searchCountry: 'Rechercher un pays...',
+    whatsappPhoneHint: 'Utilisez le même numéro que celui relié à notre service WhatsApp.',
     termsBody: 'En utilisant Speeda AI, vous acceptez nos conditions d\'utilisation. Speeda AI propose des outils marketing alimentés par l\'IA pour la gestion des réseaux sociaux, la création de contenu et la publicité. Tout le contenu généré vous appartient. Nous traitons les données de manière sécurisée et conformément aux lois applicables. Pour les conditions complètes, visitez speeda.ai/terms.',
     privacyBody: 'Speeda AI s\'engage à protéger votre vie privée. Nous collectons uniquement les données nécessaires à nos services. Vos identifiants de réseaux sociaux sont stockés de façon sécurisée via des jetons OAuth chiffrés. Nous ne vendons pas vos données à des tiers. Pour plus de détails, visitez speeda.ai/privacy.',
   },

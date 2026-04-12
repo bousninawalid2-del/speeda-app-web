@@ -8,7 +8,7 @@ function requireEnv(name: string): string {
 
 const ACCESS_SECRET  = requireEnv('JWT_ACCESS_SECRET');
 const REFRESH_SECRET = requireEnv('JWT_REFRESH_SECRET');
-const ACCESS_EXPIRES  = process.env.JWT_ACCESS_EXPIRES  ?? '15m';
+const ACCESS_EXPIRES  = process.env.JWT_ACCESS_EXPIRES  ?? '7d';
 const REFRESH_EXPIRES = process.env.JWT_REFRESH_EXPIRES ?? '7d';
 
 export interface AccessTokenPayload {
@@ -22,7 +22,7 @@ export interface RefreshTokenPayload {
   jti: string;   // refresh token DB id — used for revocation
 }
 
-/** Sign a short-lived access JWT (default 15 min) */
+/** Sign an access JWT (default 7 days) */
 export function signAccessToken(payload: AccessTokenPayload): string {
   return jwt.sign(payload, ACCESS_SECRET, { expiresIn: ACCESS_EXPIRES } as jwt.SignOptions);
 }

@@ -5,11 +5,21 @@ import { BusinessSetupScreen, SetupInitialData } from '@/screens/BusinessSetupSc
 import { setupApi, SetupPayload } from '@/lib/api-client';
 import { socialService } from '@/services/social.service';
 import { toast } from 'sonner';
+import { isOnboardingForcedValue, stripOnboardingParams } from '@/lib/onboarding';
 
 export default function Page() {
   const router = useRouter();
   const [initialData, setInitialData] = useState<SetupInitialData | undefined>();
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const onboardingForced = isOnboardingForcedValue(params.get('onboarding'))
+      || isOnboardingForcedValue(params.get('showOnboarding'));
+    if (!onboardingForced) return;
+    const nextPath = stripOnboardingParams(window.location.pathname, params);
+    router.replace(`/onboarding?next=${encodeURIComponent(nextPath)}`);
+  }, [router]);
 
   useEffect(() => {
     setupApi.get()

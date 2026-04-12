@@ -31,12 +31,19 @@ export async function GET(req: NextRequest) {
     agentMap[log.agent] = (agentMap[log.agent] ?? 0) + log.tokens;
   }
 
+  const packages = await prisma.tokenPackage.findMany({
+    where: { active: true },
+    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    select: { id: true, name: true, tokenCount: true, price: true },
+  });
+
   return Response.json({
     balance: dbUser.tokenBalance,
     used:    dbUser.tokenUsed,
     total:   dbUser.tokenBalance + dbUser.tokenUsed,
     history: logs,
     byAgent: agentMap,
+    packages,
   });
 }
 

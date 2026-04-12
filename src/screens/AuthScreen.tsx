@@ -183,7 +183,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
         </div>
         {mode === 'signup' && (
           <div className="flex gap-2">
-            <button onClick={() => setCountryOpen(true)} className="h-[56px] rounded-2xl bg-card border border-border px-3 flex items-center gap-1.5 flex-shrink-0 min-w-[110px]">
+            <button type="button" onClick={() => setCountryOpen(true)} className="h-[56px] rounded-2xl bg-card border border-border px-3 flex items-center gap-1.5 flex-shrink-0 min-w-[110px]">
               <span className="text-[16px]">{selectedCountry.flag}</span>
               <span className="text-[13px] font-medium text-foreground">{selectedCountry.code}</span>
               <ChevronDown size={14} className="text-muted-foreground" />
@@ -193,6 +193,11 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
               <input className="w-full h-[56px] rounded-2xl bg-card border border-border pl-12 pr-4 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" placeholder={t('auth.phoneNumber')} type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); setFormError(null); }} />
             </div>
           </div>
+        )}
+        {mode === 'signup' && (
+          <p className="text-[12px] text-muted-foreground mt-1">
+            {t('auth.whatsappPhoneHint')}
+          </p>
         )}
         {mode !== 'forgot' && (
           <div className="relative">
@@ -325,7 +330,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
               </div>
               <div className="flex-1 overflow-y-auto px-2 pb-5">
                 {filtered.map(c => (
-                  <button key={c.code + c.name} onClick={() => { setSelectedCountry(c); setCountryOpen(false); setCountrySearch(''); }} className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-start transition-colors ${selectedCountry.code === c.code ? 'bg-purple-soft' : 'hover:bg-muted'}`}>
+                  <button type="button" key={c.code + c.name} onClick={() => { setSelectedCountry(c); setCountryOpen(false); setCountrySearch(''); }} className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-start transition-colors ${selectedCountry.code === c.code && selectedCountry.name === c.name ? 'bg-purple-soft' : 'hover:bg-muted'}`}>
                     <span className="text-[18px]">{c.flag}</span>
                     <span className="text-[14px] font-medium text-foreground flex-1">{c.name}</span>
                     <span className="text-[13px] text-muted-foreground">{c.code}</span>

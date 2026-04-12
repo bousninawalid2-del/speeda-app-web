@@ -3,16 +3,19 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { addOnboardingParam, isOnboardingForcedValue, shouldShowOnboarding } from '@/lib/onboarding';
 
 function MagicLinkContent() {
   const router = useRouter();
   const params = useSearchParams();
   const { loginWithTokens } = useAuth();
   const [status, setStatus] = useState<'loading' | 'error'>('loading');
+  const token = params.get('token');
+  const forceOnboarding = isOnboardingForcedValue(params.get('onboarding'))
+    || isOnboardingForcedValue(params.get('showOnboarding'));
 
   useEffect(() => {
-    const token = params.get('token');
-    if (!token) { setStatus('error'); return; }
+    if (!token) return;
 
     fetch('/api/auth/quick-login', {
       method:      'PUT',
@@ -24,13 +27,30 @@ function MagicLinkContent() {
       .then((data) => {
         if (data.accessToken) {
           loginWithTokens(data);
-          router.replace('/setup');
+          router.replace(addOnboardingParam('/setup', shouldShowOnboarding(forceOnboarding)));
         } else {
           setStatus('error');
         }
       })
       .catch(() => setStatus('error'));
-  }, []);
+  }, [forceOnboarding, loginWithTokens, router, token]);
+
+  if (!token) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center p-8">
+          <p className="text-xl font-semibold text-destructive mb-2">Link expired or invalid</p>
+          <p className="text-muted-foreground mb-6">This magic link has already been used or has expired.</p>
+          <button
+            onClick={() => router.replace('/auth')}
+            className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold"
+          >
+            Back to Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (status === 'error') {
     return (

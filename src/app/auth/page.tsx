@@ -1,23 +1,26 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AuthScreen } from '@/screens/AuthScreen';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { addOnboardingParam, isOnboardingForcedValue, shouldShowOnboarding } from '@/lib/onboarding';
 
 function AuthContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, register, sendMagicLink } = useAuth();
-  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 
   const referralCode = searchParams.get('ref') ?? undefined;
+  const forceOnboarding = isOnboardingForcedValue(searchParams.get('onboarding'))
+    || isOnboardingForcedValue(searchParams.get('showOnboarding'));
 
   const handleLogin = async (email: string, password: string) => {
     try {
       await login(email, password);
       // Check if the user has already completed setup (Activity created)
+      const mustShowOnboarding = shouldShowOnboarding(forceOnboarding);
       try {
         const res = await fetch('/api/setup', { credentials: 'include' });
         if (res.ok) {
@@ -25,14 +28,14 @@ function AuthContent() {
           if (data?.activity) {
             // Setup already done — set the cookie and go to dashboard
             document.cookie = 'speeda_setup_done=1; path=/; max-age=31536000; SameSite=Lax';
-            router.replace('/dashboard');
+            router.replace(addOnboardingParam('/dashboard', mustShowOnboarding));
             return;
           }
         }
       } catch {
         // Ignore check failure — fall through to /setup
       }
-      router.replace('/setup');
+      router.replace(addOnboardingParam('/setup', mustShowOnboarding));
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Login failed');
       throw err;
@@ -42,8 +45,9 @@ function AuthContent() {
   const handleRegister = async (data: { name: string; email: string; password: string; phone?: string }) => {
     try {
       const { userId } = await register({ ...data, referralCode });
-      setPendingUserId(userId);
-      router.push(`/auth/verify?userId=${userId}&email=${encodeURIComponent(data.email)}`);
+      router.push(
+        `/auth/verify?userId=${userId}&email=${encodeURIComponent(data.email)}${shouldShowOnboarding(forceOnboarding) ? '&onboarding=1' : ''}`
+      );
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Registration failed');
       throw err;
