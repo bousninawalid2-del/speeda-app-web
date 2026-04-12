@@ -8,13 +8,14 @@ function requireEnv(name: string): string {
 
 const ACCESS_SECRET  = requireEnv('JWT_ACCESS_SECRET');
 const REFRESH_SECRET = requireEnv('JWT_REFRESH_SECRET');
-const ACCESS_EXPIRES  = process.env.JWT_ACCESS_EXPIRES  ?? '7d';
+const ACCESS_EXPIRES  = process.env.JWT_ACCESS_EXPIRES  ?? '15m';
 const REFRESH_EXPIRES = process.env.JWT_REFRESH_EXPIRES ?? '7d';
 
 export interface AccessTokenPayload {
   sub: string;   // user id
   email: string;
   name?: string;
+  role?: string;  // "client" | "admin"
 }
 
 export interface RefreshTokenPayload {

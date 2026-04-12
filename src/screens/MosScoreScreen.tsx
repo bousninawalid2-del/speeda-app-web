@@ -64,6 +64,7 @@ const ZERO_SCORE_FALLBACK: MosScoreData = {
   history: [],
 };
 
+// TODO: dynamic quests — replace with real data from strategy/analytics
 const DEMO_RECOMMENDATIONS = [
   { border: 'hsl(var(--orange))', title: 'Improve Response Time (+5 pts)', desc: 'You have unanswered reviews. Responding within 1 hour improves your score.', cta: 'Reply to Reviews →', nav: 'chat-engagement-reviews' },
   { border: 'hsl(var(--brand-blue))', title: 'Post More on TikTok (+3 pts)', desc: 'Balancing across platforms improves your coverage score.', cta: 'Create TikTok Post →', nav: 'create' },

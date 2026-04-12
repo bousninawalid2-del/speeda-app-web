@@ -1,33 +1,79 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, X, Upload, Camera } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
+
+export interface BrandVoiceInitialData {
+  tone_of_voice?: string | null;
+  language_preference?: string | null;
+  business_description?: string | null;
+  hashtags?: string | null;
+  emojis?: string | null;
+  other?: string | null;
+}
 
 interface EditBrandVoiceScreenProps {
   onBack: () => void;
+  initialData?: BrandVoiceInitialData;
+  isLoading?: boolean;
+  onSave?: (data: {
+    tone_of_voice?: string;
+    language_preference?: string;
+    business_description?: string;
+    hashtags?: string;
+    other?: string;
+  }) => Promise<void>;
 }
 
 const toneOptions = ['Professional', 'Casual', 'Fun', 'Urgent', 'Inspirational', 'Bold', 'Warm'];
 const langOptions = [
-  { id: 'saudi', label: '🇸🇦 Saudi', name: 'Saudi' },
-  { id: 'arabic', label: 'العربية Arabic', name: 'Arabic' },
-  { id: 'english', label: '🇬🇧 English', name: 'English' },
+  { id: 'saudi', label: '\u{1F1F8}\u{1F1E6} Saudi', name: 'Saudi' },
+  { id: 'arabic', label: '\u0627\u0644\u0639\u0631\u0628\u064A\u0629 Arabic', name: 'Arabic' },
+  { id: 'english', label: '\u{1F1EC}\u{1F1E7} English', name: 'English' },
   { id: 'other', label: 'Other (Choose)', name: 'Other' },
 ];
 
-export const EditBrandVoiceScreen = ({ onBack }: EditBrandVoiceScreenProps) => {
+export const EditBrandVoiceScreen = ({ onBack, initialData, isLoading, onSave }: EditBrandVoiceScreenProps) => {
   const { t } = useTranslation();
-  const [tones, setTones] = useState(['Professional', 'Fun']);
-  const [langs, setLangs] = useState(['saudi', 'english']);
-  const [keywords, setKeywords] = useState(['shawarma', 'brunch', 'Riyadh', 'family']);
+  const [tones, setTones] = useState<string[]>(
+    initialData?.tone_of_voice?.split(', ').filter(Boolean) ?? ['Professional', 'Fun']
+  );
+  const [langs, setLangs] = useState<string[]>(() => {
+    if (!initialData?.language_preference) return ['saudi', 'english'];
+    const parsed = initialData.language_preference.split(', ').filter(Boolean);
+    if (initialData.other) return [...parsed.filter(l => l !== initialData.other), 'other'];
+    return parsed;
+  });
+  const [keywords, setKeywords] = useState<string[]>(
+    initialData?.hashtags?.split(', ').filter(Boolean) ?? ['shawarma', 'brunch', 'Riyadh', 'family']
+  );
   const [newKeyword, setNewKeyword] = useState('');
   const [brandFiles, setBrandFiles] = useState<string[]>([]);
-  const [otherLang, setOtherLang] = useState('');
+  const [otherLang, setOtherLang] = useState(initialData?.other ?? '');
+  const [bizDescription, setBizDescription] = useState(
+    initialData?.business_description ?? 'Modern shawarma restaurant in Riyadh, family-friendly, best garlic sauce in town'
+  );
   const [businessPhotos, setBusinessPhotos] = useState<{ name: string; desc: string }[]>([
     { name: 'kitchen_1.jpg', desc: 'Kitchen interior' },
     { name: 'shawarma_plate.jpg', desc: 'Signature shawarma' },
     { name: 'restaurant_front.jpg', desc: '' },
   ]);
+  const [saving, setSaving] = useState(false);
+
+  // Sync when live data arrives
+  useEffect(() => {
+    if (!initialData) return;
+    if (initialData.tone_of_voice) setTones(initialData.tone_of_voice.split(', ').filter(Boolean));
+    if (initialData.language_preference) {
+      const parsed = initialData.language_preference.split(', ').filter(Boolean);
+      if (initialData.other) setLangs([...parsed.filter(l => l !== initialData.other), 'other']);
+      else setLangs(parsed);
+    }
+    if (initialData.hashtags) setKeywords(initialData.hashtags.split(', ').filter(Boolean));
+    if (initialData.business_description) setBizDescription(initialData.business_description);
+    if (initialData.other) setOtherLang(initialData.other);
+  }, [initialData]);
 
   const toggleTone = (t: string) => setTones(ts => ts.includes(t) ? ts.filter(x => x !== t) : [...ts, t]);
 
@@ -53,6 +99,29 @@ export const EditBrandVoiceScreen = ({ onBack }: EditBrandVoiceScreenProps) => {
   const addBusinessPhoto = () => {
     if (businessPhotos.length < 20) {
       setBusinessPhotos(p => [...p, { name: `photo_${p.length + 1}.jpg`, desc: '' }]);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!onSave) return;
+    setSaving(true);
+    try {
+      const langValue = langs.includes('other')
+        ? [...langs.filter(l => l !== 'other'), otherLang].filter(Boolean).join(', ')
+        : langs.join(', ');
+
+      await onSave({
+        tone_of_voice: tones.join(', ') || undefined,
+        language_preference: langValue || undefined,
+        business_description: bizDescription.trim() || undefined,
+        hashtags: keywords.join(', ') || undefined,
+        other: langs.includes('other') ? otherLang : undefined,
+      });
+      toast.success('Brand voice saved');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -91,7 +160,7 @@ export const EditBrandVoiceScreen = ({ onBack }: EditBrandVoiceScreenProps) => {
         {/* Brand Description */}
         <div className="mb-6">
           <label className="text-[14px] font-bold text-foreground mb-2 block">Brand Description</label>
-          <textarea className="w-full min-h-[100px] rounded-2xl bg-card border border-border p-4 text-[14px] focus:border-primary focus:outline-none resize-none" defaultValue="Modern shawarma restaurant in Riyadh, family-friendly, best garlic sauce in town" />
+          <textarea className="w-full min-h-[100px] rounded-2xl bg-card border border-border p-4 text-[14px] focus:border-primary focus:outline-none resize-none" value={bizDescription} onChange={e => setBizDescription(e.target.value)} />
         </div>
 
         {/* Brand Identity Assets */}
@@ -101,7 +170,7 @@ export const EditBrandVoiceScreen = ({ onBack }: EditBrandVoiceScreenProps) => {
             <div className="flex gap-2 mb-2">
               {brandFiles.map((f, i) => (
                 <div key={i} className="relative">
-                  <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center text-[20px]">📎</div>
+                  <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center text-[20px]">{'\u{1F4CE}'}</div>
                   <button onClick={() => setBrandFiles(bf => bf.filter((_, j) => j !== i))} className="absolute -top-1.5 -end-1.5 w-5 h-5 rounded-full bg-red-accent text-primary-foreground flex items-center justify-center"><X size={10} /></button>
                   <p className="text-[9px] text-muted-foreground text-center mt-0.5 truncate w-16">{f}</p>
                 </div>
@@ -166,7 +235,12 @@ export const EditBrandVoiceScreen = ({ onBack }: EditBrandVoiceScreenProps) => {
           <textarea className="w-full min-h-[80px] rounded-2xl bg-card border border-border p-4 text-[14px] focus:border-primary focus:outline-none resize-none" placeholder="Paste an example of content that represents your brand voice" />
         </div>
 
-        <button className="w-full h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press">
+        <button
+          onClick={handleSave}
+          disabled={saving || isLoading || !onSave}
+          className="w-full h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press disabled:opacity-60 flex items-center justify-center gap-2"
+        >
+          {saving && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
           Save Brand Voice
         </button>
       </div>

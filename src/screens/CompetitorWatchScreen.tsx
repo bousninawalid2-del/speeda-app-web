@@ -6,14 +6,30 @@ import { ComingSoonModal } from '../components/ComingSoon';
 import { useIsMobile } from '../hooks/use-mobile';
 import { FeatureLockOverlay, useFreeTier } from '../components/FreeTier';
 
+export interface CompetitorApiData {
+  id: string;
+  name: string;
+  platform: string;
+  handle: string;
+  followers: number;
+  postsPerWeek: number;
+  avgEngagement: number;
+}
+
 interface CompetitorWatchScreenProps {
   onBack: () => void;
   onNavigate: (screen: string) => void;
+  apiCompetitors?: CompetitorApiData[];
+  isLoadingCompetitors?: boolean;
+  onAddCompetitor?: (data: { name: string; platform: string; handle: string }) => void;
+  onRemoveCompetitor?: (id: string) => void;
 }
 
 type TabKey = 'overview' | 'timeline' | 'trends' | 'content' | 'hashtags';
 
-// ── Sample competitor data ──
+// STATIC: data365 — Phase 2
+// TODO: connect data365 for real competitor data
+// ── Sample competitor data (fallback when no API data) ──
 const competitors = [
   {
     emoji: '🍗', name: 'AlBaik', type: 'Restaurant · Riyadh', avatar: '🍗',
@@ -161,7 +177,7 @@ const TrendChart = ({ data, highlight }: { data: number[]; highlight?: boolean }
   );
 };
 
-export const CompetitorWatchScreen = ({ onBack, onNavigate }: CompetitorWatchScreenProps) => {
+export const CompetitorWatchScreen = ({ onBack, onNavigate, apiCompetitors, isLoadingCompetitors, onAddCompetitor, onRemoveCompetitor }: CompetitorWatchScreenProps) => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const { currentPlan } = useFreeTier();
@@ -258,7 +274,17 @@ export const CompetitorWatchScreen = ({ onBack, onNavigate }: CompetitorWatchScr
                     <label className="text-[12px] font-bold text-foreground">{t('competitor.instagramUsername')}</label>
                     <input value={setupIg} onChange={e => setSetupIg(e.target.value)} placeholder="@albaikiofficial" className="w-full h-10 mt-1 px-4 rounded-xl border border-border bg-background text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-blue/30" />
                   </div>
-                  <button onClick={() => { setSetupMode(false); setShowComingSoon(true); }} className="w-full h-11 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold btn-press">
+                  <button onClick={() => {
+                    if (onAddCompetitor && setupName.trim() && setupIg.trim()) {
+                      onAddCompetitor({ name: setupName.trim(), platform: 'instagram', handle: setupIg.trim() });
+                      setSetupMode(false);
+                      setSetupName('');
+                      setSetupIg('');
+                    } else {
+                      setSetupMode(false);
+                      setShowComingSoon(true);
+                    }
+                  }} className="w-full h-11 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold btn-press">
                     {t('competitor.trackCompetitor')}
                   </button>
                 </div>

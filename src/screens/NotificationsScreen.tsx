@@ -13,6 +13,9 @@ interface NotificationItem {
   nav?: string;
 }
 
+// STATIC: Push notifications — Phase 2
+// TODO: connect notifications API
+
 const notifications: { groupKey: string; items: NotificationItem[] }[] = [
   { groupKey: 'notifications.today', items: [
     { icon: '📢', bg: 'bg-green-soft', title: 'Campaign Milestone', text: 'Your Ramadan campaign reached 15K people today', time: '10m ago', unread: true, nav: 'campaigns' },

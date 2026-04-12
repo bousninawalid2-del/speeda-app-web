@@ -21,6 +21,7 @@ model User {
   trialEndsAt     DateTime?
   mamoCustomerId  String?
   referralCode    String?     @unique
+  role            String      @default("client")  // "client" | "admin"
   referredByCode  String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -63,8 +64,8 @@ model Plan {
   yearlyPrice   Int
   tokenCount    Int
   platformLimit Int      @default(3)
-  features      String
-  locked        String   @default("[]")
+  features      String   // TODO: migrate to Json type
+  locked        String   @default("[]")  // TODO: migrate to Json type
   watermark     Boolean  @default(false)
   popular       Boolean  @default(false)
   active        Boolean  @default(true)
@@ -164,7 +165,7 @@ model Campaign {
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name            String
   status          String   @default("Scheduled")
-  platforms       String
+  platforms       String   // TODO: migrate to Json type
   budget          Int
   spent           Int      @default(0)
   reach           Int      @default(0)
@@ -214,6 +215,7 @@ model Preference {
   hashtags             String?
   emojis               String?
   other                String?
+  logo_url             String?    // URL of the uploaded brand logo image
   createdAt            DateTime @default(now())
   updatedAt            DateTime @default(now())
 }

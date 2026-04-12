@@ -29,6 +29,8 @@ interface WeeklyReportScreenProps {
   isLoading?:   boolean;
 }
 
+// STATIC: Analytics enriched — Phase 2
+// TODO: connect analytics for real metrics/content/platforms
 const DEMO_METRICS = [
   { icon: '👁️', label: 'Total Reach', value: '28.3K', change: '↑ 23%' },
   { icon: '💜', label: 'Engagement', value: '5.1%', change: '↑ 12%' },

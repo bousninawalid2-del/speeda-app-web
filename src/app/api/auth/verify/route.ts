@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { errorResponse } from '@/lib/auth-guard';
 import { issueTokens } from '../login/route';
+import { startFreeTrial } from '@/lib/subscription-guard';
+import { ensureN8nUserById } from '@/lib/sync-n8n';
 
 const verifySchema = z.object({
   userId: z.string(),
@@ -69,6 +71,10 @@ export async function POST(request: NextRequest) {
         }),
       ]);
     }
+
+    // Ensure free trial and n8n user exist (idempotent — safe to call again)
+    startFreeTrial(userId).catch(console.error);
+    ensureN8nUserById(userId).catch(() => {});
 
     // Auto-login after verification
     const user = await prisma.user.findUnique({ where: { id: userId } });

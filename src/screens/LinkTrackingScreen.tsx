@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 import { useIsMobile } from '../hooks/use-mobile';
 import { QRCodeModal } from '../components/QRCodeModal';
 
+// STATIC: Link shortener service — Phase 2
+// TODO: link shortener service
 const linksData = [
   { id: '1', short: 'spda.ai/Xk3m', original: 'malekskitchen.com/menu', Logo: InstagramLogo, platform: 'Instagram', post: 'Weekend Brunch Special — Try our new...', clicks: 142, unique: 98, topSource: 'Instagram Bio', created: 'Mar 18', sources: [{ name: 'Instagram Bio', pct: 45 }, { name: 'Instagram Story', pct: 22 }, { name: 'Facebook Post', pct: 18 }, { name: 'Direct/Other', pct: 15 }], geo: [{ name: 'Saudi Arabia', pct: 62 }, { name: 'UAE', pct: 18 }, { name: 'Egypt', pct: 8 }, { name: 'Other', pct: 12 }], device: [{ name: 'Mobile', pct: 78 }, { name: 'Desktop', pct: 22 }] },
   { id: '2', short: 'spda.ai/B7nw', original: 'malekskitchen.com/order', Logo: TikTokLogo, platform: 'TikTok', post: 'New Burger Drop — Smash Burger is here!', clicks: 87, unique: 65, topSource: 'TikTok Link', created: 'Mar 15', sources: [{ name: 'TikTok Bio', pct: 55 }, { name: 'TikTok Comment', pct: 25 }, { name: 'Direct', pct: 20 }], geo: [{ name: 'Saudi Arabia', pct: 58 }, { name: 'UAE', pct: 22 }, { name: 'Kuwait', pct: 10 }, { name: 'Other', pct: 10 }], device: [{ name: 'Mobile', pct: 88 }, { name: 'Desktop', pct: 12 }] },

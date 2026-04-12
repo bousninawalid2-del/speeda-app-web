@@ -8,6 +8,10 @@ import { useIsMobile } from '../hooks/use-mobile';
 import { toast } from 'sonner';
 import { getSmartReplies, detectMessageType } from '../components/SmartReplyEngine';
 
+// STATIC: Ayrshare engagement API — Phase 2
+// TODO: connect Ayrshare engagement API
+// TODO: connect AI for "Generate Response" feature
+
 // ─── Data ───────────────────────────────────────────────────────
 
 const messages = [

@@ -40,9 +40,15 @@ export function middleware(request: NextRequest) {
   const isAuthenticated = request.cookies.has('speeda_auth');
   const hasSetup = request.cookies.has('speeda_setup_done');
   const isDashboard = pathname.startsWith('/dashboard');
+  const isAdmin = pathname.startsWith('/admin');
   const isSetup = pathname === '/setup';
   const isAuthPath = AUTH_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
   const forceOnboarding = searchParams.get('onboarding') === '1';
+
+  // Protect admin routes — require auth (role check done server-side in API/pages)
+  if (isAdmin && !isAuthenticated) {
+    return NextResponse.redirect(new URL('/auth', request.url));
+  }
 
   // Protect dashboard routes
   if (isDashboard && !isAuthenticated) {

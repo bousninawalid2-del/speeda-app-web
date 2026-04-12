@@ -3,6 +3,8 @@
  *
  * Suitable for single-instance deployments (Vercel Serverless / Node).
  * For multi-instance deployments, replace the Map with a Redis backend.
+ *
+ * WARNING: single-instance only — use Redis for multi-instance
  */
 
 interface Window {

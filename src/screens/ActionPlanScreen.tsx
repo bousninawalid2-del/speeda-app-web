@@ -1,83 +1,96 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, CheckCircle2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+
+export interface ActionTaskData {
+  id: string;
+  title: string;
+  description: string | null;
+  platform: string | null;
+  status: string;
+  priority: string;
+  dueDate: string | null;
+}
 
 interface ActionPlanScreenProps {
   onBack: () => void;
   onNavigate: (screen: string) => void;
+  tasks?: ActionTaskData[];
+  isLoading?: boolean;
+  onMarkDone?: (id: string) => void;
 }
 
-const actions = [
+const priorityConfig: Record<string, { label: string; bgColor: string; borderColor: string }> = {
+  high:   { label: 'Critical',    bgColor: 'bg-red-accent',   borderColor: 'border-l-red-accent' },
+  medium: { label: 'High',        bgColor: 'bg-orange-accent', borderColor: 'border-l-orange-accent' },
+  low:    { label: 'Recommended', bgColor: 'bg-brand-blue',    borderColor: 'border-l-brand-blue' },
+};
+
+const FALLBACK_ACTIONS = [
   {
-    priority: 'Critical',
-    priorityColor: 'bg-red-accent',
-    borderColor: 'border-l-red-accent',
+    id: 'demo-1',
+    priority: 'high',
     title: 'Post Shawarma Reel during peak hour',
-    desc: "Your audience is most active at 8 PM tonight. I've prepared a Reel featuring your Chicken Shawarma. Publishing now could reach 4,200+ people.",
-    impact: '📈 Est. +4,200 reach · +120 engagements',
-    cta: 'Open Content Studio →',
-    nav: 'create',
+    description: "Your audience is most active at 8 PM tonight. I've prepared a Reel featuring your Chicken Shawarma. Publishing now could reach 4,200+ people.",
+    platform: 'instagram',
+    status: 'pending',
+    dueDate: null,
   },
   {
-    priority: 'Critical',
-    priorityColor: 'bg-red-accent',
-    borderColor: 'border-l-red-accent',
+    id: 'demo-2',
+    priority: 'high',
     title: 'Respond to negative review from Sara M.',
-    desc: 'A 1-star Google review was posted 2 hours ago. Quick response can recover the customer and protect your rating.',
-    impact: '⭐ Protect your 4.6 rating · Customer recovery',
-    cta: 'Open Engagement →',
-    nav: 'chat',
+    description: 'A 1-star Google review was posted 2 hours ago. Quick response can recover the customer and protect your rating.',
+    platform: null,
+    status: 'pending',
+    dueDate: null,
   },
   {
-    priority: 'High',
-    priorityColor: 'bg-orange-accent',
-    borderColor: 'border-l-orange-accent',
+    id: 'demo-3',
+    priority: 'medium',
     title: 'Boost your Weekend Brunch post',
-    desc: 'This post has 3x your average engagement. Boosting it for SAR 150 could reach 50K people.',
-    impact: '📈 Est. 50K reach · ~65 conversions',
-    cta: 'Boost Now →',
-    nav: 'campaigns',
+    description: 'This post has 3x your average engagement. Boosting it for SAR 150 could reach 50K people.',
+    platform: null,
+    status: 'pending',
+    dueDate: null,
   },
   {
-    priority: 'High',
-    priorityColor: 'bg-orange-accent',
-    borderColor: 'border-l-orange-accent',
+    id: 'demo-4',
+    priority: 'medium',
     title: 'Schedule 3 posts for the weekend',
-    desc: "I've generated 3 posts for Friday-Saturday. They're in your approval queue.",
-    impact: '📈 Maintain posting consistency · +15% weekly reach',
-    cta: 'Review Posts →',
-    nav: 'create',
+    description: "I've generated 3 posts for Friday-Saturday. They're in your approval queue.",
+    platform: null,
+    status: 'pending',
+    dueDate: null,
   },
   {
-    priority: 'Recommended',
-    priorityColor: 'bg-brand-blue',
-    borderColor: 'border-l-brand-blue',
-    title: 'Increase Instagram ad budget by 20%',
-    desc: 'Your Instagram campaign has 2.8x ROAS. Increasing budget from 30 to 36 SAR/day could generate ~12 more conversions/week.',
-    impact: '💰 Est. +12 conversions/week · +840 SAR revenue',
-    cta: 'Adjust Budget →',
-    nav: 'campaigns',
-  },
-  {
-    priority: 'Recommended',
-    priorityColor: 'bg-brand-blue',
-    borderColor: 'border-l-brand-blue',
+    id: 'demo-5',
+    priority: 'low',
     title: 'Reply to 4 pending comments',
-    desc: "4 Instagram comments are waiting. I've drafted AI responses for all of them.",
-    impact: '💬 Faster replies = +22% follower trust',
-    cta: 'View Comments →',
-    nav: 'chat',
+    description: "4 Instagram comments are waiting. I've drafted AI responses for all of them.",
+    platform: 'instagram',
+    status: 'pending',
+    dueDate: null,
   },
 ];
 
-export const ActionPlanScreen = ({ onBack, onNavigate }: ActionPlanScreenProps) => {
+export const ActionPlanScreen = ({ onBack, onNavigate, tasks, isLoading, onMarkDone }: ActionPlanScreenProps) => {
   const { t } = useTranslation();
-  const [doneActions, setDoneActions] = useState<number[]>([]);
+  const [localDone, setLocalDone] = useState<string[]>([]);
 
-  const handleAction = (idx: number, nav: string) => {
-    setDoneActions(prev => [...prev, idx]);
-    onNavigate(nav);
+  const displayTasks = tasks && tasks.length > 0 ? tasks : FALLBACK_ACTIONS;
+
+  const handleDone = (task: ActionTaskData) => {
+    if (onMarkDone) {
+      onMarkDone(task.id);
+    }
+    setLocalDone(prev => [...prev, task.id]);
+  };
+
+  const formatDate = (date: string | null) => {
+    if (!date) return '';
+    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   return (
@@ -87,40 +100,65 @@ export const ActionPlanScreen = ({ onBack, onNavigate }: ActionPlanScreenProps) 
           <button onClick={onBack}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
           <h1 className="text-[20px] font-extrabold text-foreground">{t('actionPlan.title', "Today's Action Plan")}</h1>
         </div>
-        <p className="text-[13px] text-muted-foreground ms-9 mb-4">{t('actionPlan.date', 'March 19, 2026')}</p>
+        <p className="text-[13px] text-muted-foreground ms-9 mb-4">{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
 
         {/* AI Summary */}
         <div className="bg-card rounded-2xl p-4 border border-border-light border-s-[3px] border-s-brand-blue mb-4">
-          <span className="text-[11px] uppercase font-bold text-brand-blue tracking-[0.05em]">✦ {t('actionPlan.aiAnalysis', 'AI Analysis')}</span>
-          <p className="text-[14px] text-foreground leading-[1.55] mt-2">{t('actionPlan.summary', 'Your engagement is up 23% this week. Based on your data, here are the 6 actions I recommend for today, ranked by expected impact.')}</p>
+          <span className="text-[11px] uppercase font-bold text-brand-blue tracking-[0.05em]">{'\u2726'} {t('actionPlan.aiAnalysis', 'AI Analysis')}</span>
+          <p className="text-[14px] text-foreground leading-[1.55] mt-2">
+            {/* TODO: connect AI */}
+            {t('actionPlan.summary', `You have ${displayTasks.filter(t => t.status !== 'completed' && !localDone.includes(t.id)).length} pending actions. Complete them to maximize your social media impact today.`)}
+          </p>
         </div>
+
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="w-8 h-8 border-2 border-brand-blue border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+
+        {!isLoading && displayTasks.length === 0 && (
+          <div className="bg-card rounded-2xl p-8 border border-border-light text-center">
+            <CheckCircle2 size={40} className="text-green-accent mx-auto mb-3" />
+            <h3 className="text-[16px] font-bold text-foreground mb-1">All caught up!</h3>
+            <p className="text-[13px] text-muted-foreground">No pending actions right now. Check back later.</p>
+          </div>
+        )}
 
         {/* Action Items */}
         <div className="space-y-3">
-          {actions.map((a, i) => {
-            const isDone = doneActions.includes(i);
+          {displayTasks.map((task, i) => {
+            const isDone = task.status === 'completed' || localDone.includes(task.id);
+            const config = priorityConfig[task.priority] ?? priorityConfig.medium;
             return (
               <motion.div
-                key={i}
+                key={task.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className={`bg-card rounded-2xl p-[18px] border border-border-light border-s-4 ${a.borderColor} ${isDone ? 'opacity-60' : ''}`}
+                className={`bg-card rounded-2xl p-[18px] border border-border-light border-s-4 ${config.borderColor} ${isDone ? 'opacity-60' : ''}`}
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <span className={`text-[10px] font-bold uppercase tracking-[0.05em] text-primary-foreground px-2.5 py-0.5 rounded-lg ${a.priorityColor}`}>{a.priority}</span>
-                  {isDone && <span className="text-[10px] font-bold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">✅ Done</span>}
-                  {!isDone && <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-md">⏳ Pending</span>}
+                  <span className={`text-[10px] font-bold uppercase tracking-[0.05em] text-primary-foreground px-2.5 py-0.5 rounded-lg ${config.bgColor}`}>{config.label}</span>
+                  {isDone && <span className="text-[10px] font-bold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">{'\u2705'} Done</span>}
+                  {!isDone && <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-md">{'\u23F3'} Pending</span>}
+                  {task.platform && (
+                    <span className="text-[10px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-md capitalize">{task.platform}</span>
+                  )}
                 </div>
-                <h3 className="text-[16px] font-bold text-foreground">{a.title}</h3>
-                <p className="text-[13px] text-muted-foreground leading-[1.5] mt-1">{a.desc}</p>
-                <p className="text-[13px] font-semibold text-green-accent mt-2">{a.impact}</p>
+                <h3 className="text-[16px] font-bold text-foreground">{task.title}</h3>
+                {task.description && (
+                  <p className="text-[13px] text-muted-foreground leading-[1.5] mt-1">{task.description}</p>
+                )}
+                {task.dueDate && (
+                  <p className="text-[12px] text-muted-foreground mt-1">Due: {formatDate(task.dueDate)}</p>
+                )}
                 {!isDone && (
                   <button
-                    onClick={() => handleAction(i, a.nav)}
+                    onClick={() => handleDone(task)}
                     className="mt-3 h-10 px-5 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold btn-press"
                   >
-                    {a.cta}
+                    Mark Done
                   </button>
                 )}
               </motion.div>
@@ -130,7 +168,9 @@ export const ActionPlanScreen = ({ onBack, onNavigate }: ActionPlanScreenProps) 
 
         {/* Bottom Summary */}
         <div className="bg-green-soft rounded-2xl p-4 mt-4">
-          <p className="text-[14px] font-bold text-green-accent">{t('actionPlan.bottomSummary', 'Completing all 6 actions today could result in: +54K reach · +65 conversions · improved rating')}</p>
+          <p className="text-[14px] font-bold text-green-accent">
+            {displayTasks.filter(t => t.status !== 'completed' && !localDone.includes(t.id)).length} actions remaining today
+          </p>
         </div>
       </div>
     </motion.div>

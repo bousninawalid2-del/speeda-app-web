@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
  * - Sets refresh token as httpOnly, Secure cookie (JS cannot read it)
  */
 export async function issueTokens(
-  user: { id: string; email: string; name: string | null },
+  user: { id: string; email: string; name: string | null; role?: string },
   _req?: NextRequest
 ) {
   const refreshTokenId = generateSecureToken();
@@ -67,13 +67,14 @@ export async function issueTokens(
     sub: user.id,
     email: user.email,
     name: user.name ?? undefined,
+    role: user.role ?? 'client',
   });
 
   const refreshToken = signRefreshToken({ sub: user.id, jti: refreshTokenId });
 
   const response = NextResponse.json({
     accessToken,
-    user: { id: user.id, email: user.email, name: user.name },
+    user: { id: user.id, email: user.email, name: user.name, role: user.role ?? 'client' },
   });
 
   // Store refresh token in httpOnly cookie — JS cannot access it

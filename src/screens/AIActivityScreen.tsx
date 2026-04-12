@@ -7,6 +7,9 @@ interface AIActivityScreenProps {
   onBack: () => void;
 }
 
+// STATIC: Logs n8n non exposed — Phase 2
+// TODO: connect n8n activity logs
+
 type Category = 'All' | 'Content' | 'Campaigns' | 'Engagement' | 'Optimization';
 
 const activityData = {

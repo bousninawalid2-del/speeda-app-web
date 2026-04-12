@@ -47,6 +47,7 @@ async function getOrCreateN8nUserId(speedaUserId: string): Promise<bigint | null
     //    window.  ON CONFLICT handles the rare case where two concurrent
     //    inserts collide on email; the re-fetch below always returns the
     //    winner's row.
+    // WARNING: potential race condition under high load
     await n8nPool.query(
       `INSERT INTO users (id, email, username, phone_number, role, status, updated_at)
        SELECT COALESCE(MAX(id), 0) + 1, $1, $2, $3, 'CLIENT', 'CONFIRMER', NOW()
