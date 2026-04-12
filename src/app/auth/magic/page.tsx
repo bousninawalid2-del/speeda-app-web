@@ -9,8 +9,8 @@ function MagicLinkContent() {
   const router = useRouter();
   const params = useSearchParams();
   const { loginWithTokens } = useAuth();
-  const [status, setStatus] = useState<'loading' | 'error'>('loading');
   const token = params.get('token');
+  const [status, setStatus] = useState<'loading' | 'error'>(token ? 'loading' : 'error');
   const forceOnboarding = isOnboardingForcedValue(params.get('onboarding'))
     || isOnboardingForcedValue(params.get('showOnboarding'));
 

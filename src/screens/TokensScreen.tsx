@@ -25,10 +25,10 @@ interface TokensScreenProps {
 }
 
 const tokenPacks = [
-  { id: 'fallback-1', amount: 200, price: 199, discount: null, badge: null },
-  { id: 'fallback-2', amount: 500, price: 449, discount: '20', badge: null },
-  { id: 'fallback-3', amount: 1500, price: 1199, discount: '33', badge: 'popular' },
-  { id: 'fallback-4', amount: 5000, price: 3499, discount: '48', badge: 'bestValue' },
+  { id: 'fallback-1', amount: 200, price: 199, perToken: '1.00', discount: null, badge: null },
+  { id: 'fallback-2', amount: 500, price: 449, perToken: '0.90', discount: '20', badge: null },
+  { id: 'fallback-3', amount: 1500, price: 1199, perToken: '0.80', discount: '33', badge: 'popular' },
+  { id: 'fallback-4', amount: 5000, price: 3499, perToken: '0.70', discount: '48', badge: 'bestValue' },
 ];
 
 type AgentType = 'Content' | 'Strategy' | 'Engagement' | 'Analytics' | 'Ads' | 'Brand';
@@ -88,12 +88,13 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, isLoading, isPur
   const liveHistory = liveData?.history;
   const liveByAgent = liveData?.byAgent;
   const availablePacks = liveData?.packages?.length
-    ? liveData.packages.map((pack, idx) => ({
+    ? liveData.packages.map((pack) => ({
         id: pack.id,
         amount: pack.tokenCount,
         price: pack.price,
-        discount: idx === 1 ? '20' : idx === 2 ? '33' : idx >= 3 ? '48' : null,
-        badge: idx === 2 ? 'popular' : idx === 3 ? 'bestValue' : null,
+        perToken: pack.tokenCount > 0 ? (pack.price / pack.tokenCount).toFixed(2) : '0.00',
+        discount: null,
+        badge: null,
       }))
     : tokenPacks;
 
@@ -179,7 +180,7 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, isLoading, isPur
                       {pack.badge === 'popular' && <span className="text-[10px] font-bold text-primary-foreground gradient-btn px-2 py-0.5 rounded-md">{t('tokens.popular')}</span>}
                       {pack.badge === 'bestValue' && <span className="text-[10px] font-bold text-primary-foreground bg-brand-blue px-2 py-0.5 rounded-md">{t('tokens.bestValue')}</span>}
                     </div>
-                    <p className="text-[13px] text-muted-foreground mt-0.5">{formatPrice(pack.price, i18n.language)} · {formatPerToken((pack.price / pack.amount).toFixed(2), i18n.language)}</p>
+                    <p className="text-[13px] text-muted-foreground mt-0.5">{formatPrice(pack.price, i18n.language)} · {formatPerToken(pack.perToken, i18n.language)}</p>
                   </div>
                   <button onClick={() => handlePurchase(i)} disabled={isPurchasePending || purchasingPackIdx !== null} className={`h-10 px-5 rounded-xl text-[13px] font-bold btn-press disabled:opacity-60 ${pack.badge === 'popular' ? 'gradient-btn text-primary-foreground shadow-btn' : 'border border-border text-foreground'}`}>
                     {purchasingPackIdx === i ? (

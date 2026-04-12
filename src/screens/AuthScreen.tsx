@@ -330,7 +330,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
               </div>
               <div className="flex-1 overflow-y-auto px-2 pb-5">
                 {filtered.map(c => (
-                  <button type="button" key={c.code + c.name} onClick={() => { setSelectedCountry(c); setCountryOpen(false); setCountrySearch(''); }} className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-start transition-colors ${selectedCountry.code === c.code && selectedCountry.name === c.name ? 'bg-purple-soft' : 'hover:bg-muted'}`}>
+                  <button type="button" key={`${c.code}|${c.name}`} onClick={() => { setSelectedCountry(c); setCountryOpen(false); setCountrySearch(''); }} className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-start transition-colors ${selectedCountry.code === c.code && selectedCountry.name === c.name ? 'bg-purple-soft' : 'hover:bg-muted'}`}>
                     <span className="text-[18px]">{c.flag}</span>
                     <span className="text-[14px] font-medium text-foreground flex-1">{c.name}</span>
                     <span className="text-[13px] text-muted-foreground">{c.code}</span>
