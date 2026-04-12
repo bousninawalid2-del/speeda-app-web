@@ -17,7 +17,7 @@ function VerifyContent() {
   const handleVerify = async (code: string) => {
     try {
       await verifyEmail(userId, code);
-      router.replace('/dashboard');
+      router.replace('/setup');
     } catch (err: unknown) {
       throw err; // let screen show error
     }
@@ -36,7 +36,7 @@ function VerifyContent() {
     <div className="max-w-[430px] mx-auto relative min-h-screen bg-background overflow-x-hidden">
       <EmailVerificationScreen
         email={email}
-        onVerified={() => router.replace('/dashboard')}
+        onVerified={() => router.replace('/setup')}
         onBack={() => router.back()}
         onVerifyCode={handleVerify}
         onResend={handleResend}

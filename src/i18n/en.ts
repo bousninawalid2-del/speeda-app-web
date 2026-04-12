@@ -167,8 +167,8 @@ export const en = {
   },
   emailVerification: {
     checkInbox: 'Check your inbox',
-    sentTo: "We've sent a verification link to",
-    instruction: 'Click the link in the email to verify your account. This usually takes less than a minute.',
+    sentTo: "We've sent a verification code to",
+    instruction: 'Enter the 6-digit code from your email. It expires in 60 minutes.',
     openEmailApp: 'Open Email App',
     resendEmail: 'Resend Email',
     resendIn: 'Resend in {{count}}s',

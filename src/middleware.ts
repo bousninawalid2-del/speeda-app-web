@@ -26,7 +26,7 @@ const AUTH_ONLY_PATHS = ['/auth', '/onboarding', '/'];
  * See AuthContext where we write/clear this cookie alongside localStorage.
  */
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, searchParams } = request.nextUrl;
 
   // Skip API routes and static files
   if (
@@ -42,6 +42,7 @@ export function middleware(request: NextRequest) {
   const isDashboard = pathname.startsWith('/dashboard');
   const isSetup = pathname === '/setup';
   const isAuthPath = AUTH_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
+  const forceOnboarding = searchParams.get('onboarding') === '1';
 
   // Protect dashboard routes
   if (isDashboard && !isAuthenticated) {
@@ -53,6 +54,14 @@ export function middleware(request: NextRequest) {
   // Protect setup route — requires auth
   if (isSetup && !isAuthenticated) {
     return NextResponse.redirect(new URL('/auth', request.url));
+  }
+
+  // Relaunch onboarding/setup flow explicitly when requested.
+  if (isAuthenticated && forceOnboarding && !isSetup) {
+    const setupUrl = request.nextUrl.clone();
+    setupUrl.pathname = '/setup';
+    setupUrl.search = '';
+    return NextResponse.redirect(setupUrl);
   }
 
   // If authenticated but setup not done → force /setup before dashboard

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AuthScreen } from '@/screens/AuthScreen';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,28 +10,12 @@ function AuthContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, register, sendMagicLink } = useAuth();
-  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 
   const referralCode = searchParams.get('ref') ?? undefined;
 
   const handleLogin = async (email: string, password: string) => {
     try {
       await login(email, password);
-      // Check if the user has already completed setup (Activity created)
-      try {
-        const res = await fetch('/api/setup', { credentials: 'include' });
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.activity) {
-            // Setup already done — set the cookie and go to dashboard
-            document.cookie = 'speeda_setup_done=1; path=/; max-age=31536000; SameSite=Lax';
-            router.replace('/dashboard');
-            return;
-          }
-        }
-      } catch {
-        // Ignore check failure — fall through to /setup
-      }
       router.replace('/setup');
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Login failed');
@@ -42,7 +26,6 @@ function AuthContent() {
   const handleRegister = async (data: { name: string; email: string; password: string; phone?: string }) => {
     try {
       const { userId } = await register({ ...data, referralCode });
-      setPendingUserId(userId);
       router.push(`/auth/verify?userId=${userId}&email=${encodeURIComponent(data.email)}`);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Registration failed');

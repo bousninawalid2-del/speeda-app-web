@@ -52,13 +52,6 @@ const TOKENS_FALLBACK: TokensData = {
   },
 };
 
-const TOKEN_PACKAGES_FALLBACK: TokenPackage[] = [
-  { id: 'pack_200', name: 'Starter Pack', tokenCount: 200, price: 199 },
-  { id: 'pack_500', name: 'Growth Pack', tokenCount: 500, price: 449 },
-  { id: 'pack_1500', name: 'Pro Pack', tokenCount: 1500, price: 1199 },
-  { id: 'pack_5000', name: 'Scale Pack', tokenCount: 5000, price: 3499 },
-];
-
 export function useTokens() {
   return useQuery({
     queryKey: ['tokens'],
@@ -91,7 +84,7 @@ export function useTokenPackages() {
         const response = await apiFetch<{ packs: TokenPackage[] }>('/token-packages');
         return response.packs;
       } catch {
-        return TOKEN_PACKAGES_FALLBACK;
+        return [];
       }
     },
     staleTime: 5 * 60 * 1000,

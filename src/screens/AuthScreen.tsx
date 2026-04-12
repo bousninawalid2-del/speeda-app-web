@@ -63,7 +63,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
   const { t } = useTranslation();
   const [mode, setMode] = useState<AuthMode>('signin');
   const [showPass, setShowPass] = useState(false);
-  const [selectedCountryCode, setSelectedCountryCode] = useState(allCountries[0].code);
+  const [selectedCountryIndex, setSelectedCountryIndex] = useState(0);
 
   // Controlled form fields
   const [name, setName] = useState('');
@@ -74,7 +74,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
   const [formError, setFormError] = useState<string | null>(null);
   const [quickLoginSent, setQuickLoginSent] = useState(false);
 
-  const selectedCountry = allCountries.find((country) => country.code === selectedCountryCode) ?? allCountries[0];
+  const selectedCountry = allCountries[selectedCountryIndex] ?? allCountries[0];
 
   const inputClass = "w-full h-[56px] rounded-2xl bg-card border border-border pl-12 pr-4 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors";
 
@@ -182,11 +182,11 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
             <div className="relative h-[56px] rounded-2xl bg-card border border-border px-3 flex items-center gap-1.5 flex-shrink-0 min-w-[110px]">
               <select
                 className="appearance-none bg-transparent text-[13px] font-medium text-foreground pr-5 focus:outline-none w-full h-full cursor-pointer"
-                value={selectedCountryCode}
-                onChange={(e) => { setSelectedCountryCode(e.target.value); setFormError(null); }}
+                value={String(selectedCountryIndex)}
+                onChange={(e) => { setSelectedCountryIndex(Number(e.target.value)); setFormError(null); }}
               >
-                {allCountries.map((country) => (
-                  <option key={`${country.code}-${country.name}`} value={country.code}>
+                {allCountries.map((country, index) => (
+                  <option key={`${country.code}-${country.name}`} value={String(index)}>
                     {country.flag} {country.code}
                   </option>
                 ))}

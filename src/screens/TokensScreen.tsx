@@ -26,13 +26,6 @@ interface TokensScreenProps {
   onPurchase?:    (packId: string) => Promise<void>;
 }
 
-const fallbackTokenPacks: TokenPackage[] = [
-  { id: 'pack_200', name: 'Starter Pack', tokenCount: 200, price: 199 },
-  { id: 'pack_500', name: 'Growth Pack', tokenCount: 500, price: 449 },
-  { id: 'pack_1500', name: 'Pro Pack', tokenCount: 1500, price: 1199 },
-  { id: 'pack_5000', name: 'Scale Pack', tokenCount: 5000, price: 3499 },
-];
-
 type AgentType = 'Content' | 'Strategy' | 'Engagement' | 'Analytics' | 'Ads' | 'Brand';
 
 const agentColors: Record<AgentType, { bg: string; text: string; bar: string }> = {
@@ -86,7 +79,7 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, tokenPackages, i
   const [autoRecharge, setAutoRecharge] = useState(false);
   const [buyingPack, setBuyingPack] = useState<number | null>(null);
   const [purchasingPackIdx, setPurchasingPackIdx] = useState<number | null>(null);
-  const packs = tokenPackages?.length ? tokenPackages : fallbackTokenPacks;
+  const packs = tokenPackages ?? [];
   const basePricePerToken = packs[0] ? getPerTokenPrice(packs[0]) : 0;
 
   // Prefer live data; fall back to static mock
@@ -267,6 +260,11 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, tokenPackages, i
                 </div>
               );
             })}
+            {packs.length === 0 && (
+              <div className="bg-card rounded-2xl border border-border-light p-4 text-[13px] text-muted-foreground">
+                Token packs are currently unavailable. Please try again shortly.
+              </div>
+            )}
           </div>
           <button className="text-brand-blue text-[13px] font-semibold mt-3 mb-6">{t('tokens.viewFullHistory')}</button>
         </div>
