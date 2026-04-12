@@ -15,6 +15,7 @@ export interface TokensData {
   total:    number;
   history:  TokenLog[];
   byAgent:  Record<string, number>;
+  packages?: Array<{ id: string; name: string; tokenCount: number; price: number }>;
 }
 
 const TOKENS_FALLBACK: TokensData = {

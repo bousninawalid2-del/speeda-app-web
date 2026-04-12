@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { generateOTP, errorResponse } from '@/lib/auth-guard';
+import { EMAIL_VERIFICATION_CODE_TTL_MS } from '@/lib/auth-constants';
 import { sendVerificationEmail } from '@/lib/email';
 import { startFreeTrial } from '@/lib/subscription-guard';
 import { ensureN8nUserById } from '@/lib/sync-n8n';
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     // Generate & save OTP
     const code = generateOTP();
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+    const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_CODE_TTL_MS);
     await prisma.verifyToken.create({
       data: { code, userId: user.id, expiresAt },
     });

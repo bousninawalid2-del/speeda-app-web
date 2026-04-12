@@ -1,19 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Public routes — accessible without authentication
-const PUBLIC_PATHS = [
-  '/',
-  '/onboarding',
-  '/auth',
-  '/auth/verify',
-  '/auth/verified',
-  '/auth/reset-password',
-  '/auth/magic',
-  '/product',
-];
-
 // Paths that should redirect to /dashboard when already authenticated
-const AUTH_ONLY_PATHS = ['/auth', '/onboarding', '/'];
+const AUTH_ONLY_PATHS = ['/auth', '/'];
 
 /**
  * Middleware runs on every request.
@@ -57,7 +45,20 @@ export function middleware(request: NextRequest) {
 
   // If authenticated but setup not done → force /setup before dashboard
   if (isDashboard && isAuthenticated && !hasSetup) {
-    return NextResponse.redirect(new URL('/setup', request.url));
+    const setupUrl = new URL('/setup', request.url);
+    setupUrl.search = request.nextUrl.search;
+    return NextResponse.redirect(setupUrl);
+  }
+
+  // Keep onboarding reachable for authenticated users only when explicitly requested
+  if (pathname === '/onboarding' && isAuthenticated) {
+    const hasOnboardingRequest =
+      request.nextUrl.searchParams.has('next') ||
+      request.nextUrl.searchParams.has('onboarding') ||
+      request.nextUrl.searchParams.has('showOnboarding');
+    if (!hasOnboardingRequest) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
   }
 
   // Redirect logged-in users away from auth screens
