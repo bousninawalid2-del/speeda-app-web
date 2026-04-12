@@ -166,7 +166,7 @@ Set these in `.env` at the project root. Never commit real secrets to version co
 | `DATABASE_URL` | ✓ | PostgreSQL connection string. Format: `postgresql://user:pass@host:port/dbname` |
 | `JWT_ACCESS_SECRET` | ✓ | Signs short-lived access tokens. Min 32 characters. |
 | `JWT_REFRESH_SECRET` | ✓ | Signs long-lived refresh tokens. Min 32 characters. Must differ from access secret. |
-| `JWT_ACCESS_EXPIRES` | — | Access token lifetime. Default: `15m`. Uses [ms](https://github.com/vercel/ms) format. |
+| `JWT_ACCESS_EXPIRES` | — | Access token lifetime. Default: `7d`. Uses [ms](https://github.com/vercel/ms) format. |
 | `JWT_REFRESH_EXPIRES` | — | Refresh token lifetime. Default: `7d`. |
 | `SMTP_HOST` | ✓ | SMTP server hostname (`smtp.resend.com`, `smtp.sendgrid.net`, etc.). |
 | `SMTP_PORT` | ✓ | SMTP port — `587` (STARTTLS) or `465` (TLS). |

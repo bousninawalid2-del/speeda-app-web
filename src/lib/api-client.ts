@@ -1,6 +1,6 @@
 /**
  * Thin API client that:
- *  - Reads the access token from localStorage (short-lived, 15 min)
+ *  - Reads the access token from localStorage
  *  - Automatically refreshes it on 401 by calling /api/auth/refresh
  *    (the refresh token is stored in an httpOnly cookie — never exposed to JS)
  *  - Exposes typed helpers for every auth endpoint

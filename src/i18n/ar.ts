@@ -145,6 +145,7 @@ export const ar = {
     fullName: 'الاسم الكامل',
     email: 'البريد الإلكتروني',
     phoneNumber: 'رقم الهاتف',
+    phoneWhatsappHint: 'استخدم نفس رقم الهاتف المرتبط بخدمة واتساب لدينا.',
     password: 'كلمة المرور',
     forgotPassword: 'نسيت كلمة المرور؟',
     createAccount: 'إنشاء حساب',

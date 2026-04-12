@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
       packName:   pack.name,
       amount:     pack.price,
       returnUrl:  `${appUrl}/dashboard/tokens?success=1`,
+      cancelUrl:  `${appUrl}/dashboard/tokens?cancel=1`,
       externalId: `tok_${userId}_${pack.id}_${Date.now()}`,
     });
 

@@ -127,6 +127,7 @@ export async function createTokenPurchaseLink(opts: {
   packName: string;
   amount: number;
   returnUrl: string;
+  cancelUrl?: string;
   externalId?: string;
 }): Promise<MamoLink> {
   return createPaymentLink({
@@ -134,6 +135,7 @@ export async function createTokenPurchaseLink(opts: {
     amount:     opts.amount,
     currency:   'SAR',
     return_url: opts.returnUrl,
+    failure_return_url: opts.cancelUrl ?? opts.returnUrl,
     description: opts.packName,
     external_id: opts.externalId,
   });
