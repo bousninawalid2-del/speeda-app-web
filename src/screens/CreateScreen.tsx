@@ -1,4 +1,4 @@
-import { type ChangeEvent, useRef, useState } from 'react';
+import { type ChangeEvent, type ComponentType, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, X, ChevronDown, ChevronRight, Calendar as CalendarIcon, FolderOpen } from 'lucide-react';
 import Image from 'next/image';
@@ -18,7 +18,7 @@ import { CaptionTemplateEngine } from '../components/CaptionTemplateEngine';
 import { IndustryHashtags } from '../components/IndustryHashtags';
 import { useSocialAccounts } from '../hooks/useSocialAccounts';
 import { useTokens } from '../hooks/useTokens';
-import { useCreatePost, type CreatePostInput, type Post } from '../hooks/usePosts';
+import { useCreateBulkPosts, useCreatePost, type CreatePostInput, type Post } from '../hooks/usePosts';
 import type { SocialAccount } from '@/services/social.service';
 import type { CalendarPost } from '@/components/CalendarData';
 import { getAccessToken } from '@/lib/api-client';
@@ -64,20 +64,53 @@ const langOptions = [
   { id: 'other', label: 'Other' },
 ];
 
-const strategyCalendar = [
-  { day: 'Monday', items: [{ platform: 'instagram', type: 'Feed Post' }, { platform: 'tiktok', type: 'Reel' }] },
-  { day: 'Tuesday', items: [{ platform: 'instagram', type: 'Story' }, { platform: 'snapchat', type: 'Story' }] },
-  { day: 'Wednesday', items: [{ platform: 'tiktok', type: 'Video' }] },
-  { day: 'Thursday', items: [{ platform: 'instagram', type: 'Carousel' }, { platform: 'tiktok', type: 'Reel' }] },
-  { day: 'Friday', items: [{ platform: 'instagram', type: 'Reel' }, { platform: 'snapchat', type: 'Story' }, { platform: 'facebook', type: 'Post' }] },
-  { day: 'Saturday', items: [{ platform: 'instagram', type: 'Story' }] },
-  { day: 'Sunday', items: [{ platform: 'tiktok', type: 'Reel' }, { platform: 'instagram', type: 'Feed Post' }] },
-];
-
 const PlatformIcon = ({ id, size = 16 }: { id: string; size?: number }) => {
   const p = platforms.find(pl => pl.id === id);
-  return p ? <p.Logo size={size} /> : null;
+  if (p) return <p.Logo size={size} />;
+  return (
+    <span
+      className="inline-flex items-center justify-center rounded-full bg-muted text-muted-foreground font-bold"
+      style={{ width: size, height: size, fontSize: Math.max(10, size - 6) }}
+    >
+      {id.charAt(0).toUpperCase() || '?'}
+    </span>
+  );
 };
+
+const DURATION_TO_DAYS: Record<string, number> = {
+  '3 days': 3,
+  '1 week': 7,
+  '2 weeks': 14,
+  '1 month': 30,
+};
+
+function getPlatformDetails(platformId: string): { name: string; Logo?: ComponentType<{ size?: number }> } {
+  const known = platforms.find(platform => platform.id === platformId);
+  if (known) return { name: known.name, Logo: known.Logo };
+  const normalized = platformId.replace(/[_-]+/g, ' ').trim();
+  const label = normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : platformId;
+  return { name: label || 'Unknown' };
+}
+
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getDefaultBrowserTimeZone(): string {
+  if (typeof window === 'undefined') return 'UTC';
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+}
+
+function getTimeZoneOptions(defaultTimeZone: string): string[] {
+  if (typeof Intl.supportedValuesOf === 'function') {
+    const options = Intl.supportedValuesOf('timeZone');
+    return options.includes(defaultTimeZone) ? options : [defaultTimeZone, ...options];
+  }
+  return [defaultTimeZone, 'UTC'];
+}
 
 const Chip = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => (
   <button onClick={onClick} className={`rounded-3xl px-5 py-[9px] text-[13px] font-semibold transition-all duration-200 whitespace-nowrap ${
@@ -127,8 +160,18 @@ function parseMediaUrls(mediaUrls: unknown): string[] {
 
 function getSafeMediaSrc(url?: string): string | null {
   if (!url) return null;
-  if (url.startsWith('blob:')) return url;
-  if (url.startsWith('/api/media?id=')) return url;
+  if (url.startsWith('blob:')) {
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol === 'blob:') return url;
+    } catch {
+      return null;
+    }
+  }
+  if (url.startsWith('/api/media?id=')) {
+    const id = url.slice('/api/media?id='.length);
+    if (/^[a-zA-Z0-9_-]+$/.test(id)) return url;
+  }
   return null;
 }
 
@@ -643,23 +686,49 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
 const contentPillars = ['Product Showcase', 'Behind the Scenes', 'Customer Stories', 'Promotions & Deals', 'Educational Tips', 'Seasonal Content', 'Team & Culture', 'User-Generated Content'];
 const successIndicators = ['Reach', 'Engagement Rate', 'Follower Growth', 'Website Clicks', 'Orders', 'Revenue', 'Brand Awareness'];
 
-const StrategyMode = ({ onPreviewInCalendar }: { onPreviewInCalendar?: () => void }) => {
-  const { t } = useTranslation();
+const StrategyMode = ({
+  onPreviewInCalendar,
+  onUploadMedia,
+}: {
+  onPreviewInCalendar?: () => void;
+  onUploadMedia?: (file: File) => Promise<{ id: string; url: string }>;
+}) => {
+  const { data: socialAccounts } = useSocialAccounts();
+  const createBulkPosts = useCreateBulkPosts();
   const [name, setName] = useState('');
   const [goal, setGoal] = useState('Brand Awareness');
   const [duration, setDuration] = useState('1 week');
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['instagram', 'tiktok', 'snapchat']);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [tone, setTone] = useState('Professional');
   const [langs, setLangs] = useState<string[]>(['saudi']);
   const [desc, setDesc] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
-  const [mediaFiles, setMediaFiles] = useState<{ name: string; size: string }[]>([]);
+  const [mediaFiles, setMediaFiles] = useState<UploadedMedia[]>([]);
   const [generated, setGenerated] = useState(false);
   const [loading, setLoading] = useState(false);
   const [expandedDay, setExpandedDay] = useState<string | null>(null);
   const [selectedPillars, setSelectedPillars] = useState<string[]>(['Product Showcase']);
   const [targetAudience, setTargetAudience] = useState('Families in Riyadh, young professionals 22-35');
   const [selectedIndicators, setSelectedIndicators] = useState<string[]>(['Reach', 'Engagement Rate']);
+  const [showMediaLibrary, setShowMediaLibrary] = useState(false);
+  const [startDate, setStartDate] = useState(() => formatLocalDate(new Date()));
+  const [scheduleTime, setScheduleTime] = useState('20:00');
+  const defaultTimeZone = getDefaultBrowserTimeZone();
+  const [timeZone, setTimeZone] = useState(defaultTimeZone);
+  const timeZoneOptions = useMemo(() => getTimeZoneOptions(defaultTimeZone), [defaultTimeZone]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const availablePlatforms = useMemo(
+    () => socialAccounts?.filter(account => account.connected) ?? [],
+    [socialAccounts],
+  );
+  const connectedPlatformIds = useMemo(
+    () => new Set(availablePlatforms.map(account => account.platform)),
+    [availablePlatforms],
+  );
+  const selectedConnectedPlatforms = useMemo(
+    () => selectedPlatforms.filter(platform => connectedPlatformIds.has(platform)),
+    [connectedPlatformIds, selectedPlatforms],
+  );
 
   const togglePillar = (p: string) => {
     if (selectedPillars.includes(p)) setSelectedPillars(ps => ps.filter(x => x !== p));
@@ -673,7 +742,10 @@ const StrategyMode = ({ onPreviewInCalendar }: { onPreviewInCalendar?: () => voi
   const togglePlatform = (id: string) => {
     setSelectedPlatforms(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
   };
-  const addMedia = () => { if (mediaFiles.length < 4) setMediaFiles(p => [...p, { name: `photo_${p.length + 1}.jpg`, size: '2.4 MB' }]); };
+  const addMedia = () => {
+    if (mediaFiles.length >= 4) return;
+    fileInputRef.current?.click();
+  };
   const removeMedia = (i: number) => setMediaFiles(p => p.filter((_, idx) => idx !== i));
   const { isFree: isFreeStrategy } = useFreeTier();
   const [showUpgradeStrategy, setShowUpgradeStrategy] = useState(false);
@@ -686,7 +758,150 @@ const StrategyMode = ({ onPreviewInCalendar }: { onPreviewInCalendar?: () => voi
     setDesc(templates[i].prompt.replace('our [menu item]', 'our best menu items'));
   };
 
-  const totalPosts = strategyCalendar.reduce((sum, d) => sum + d.items.length, 0);
+  const uploadMediaFile = async (file: File): Promise<{ id: string; url: string }> => {
+    if (onUploadMedia) return onUploadMedia(file);
+
+    const token = getAccessToken();
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch('/api/media', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: `Failed to upload media (HTTP ${response.status})` }));
+      throw new Error(error.error ?? 'Upload failed');
+    }
+
+    return response.json() as Promise<{ id: string; url: string }>;
+  };
+
+  const appendLibraryMedia = (items: { id: string; name: string; size: string }[]) => {
+    setMediaFiles(prev => {
+      const slots = Math.max(0, 4 - prev.length);
+      if (slots === 0) return prev;
+      const next = items.slice(0, slots).map(item => ({
+        id: item.id,
+        name: item.name,
+        size: item.size,
+        url: `/api/media?id=${item.id}`,
+      }));
+      return [...prev, ...next];
+    });
+  };
+
+  const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    if (files.length === 0) return;
+
+    const slots = Math.max(0, 4 - mediaFiles.length);
+    if (slots === 0) return;
+    const selectedFiles = files.slice(0, slots);
+
+    for (const file of selectedFiles) {
+      const tempId = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `strategy-upload-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const localPreview = URL.createObjectURL(file);
+
+      setMediaFiles(prev => [...prev, {
+        id: tempId,
+        name: file.name,
+        size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+        localPreview,
+      }]);
+
+      try {
+        const uploaded = await uploadMediaFile(file);
+        setMediaFiles(prev => prev.map(item => {
+          if (item.id !== tempId) return item;
+          revokeObjectUrl(item.localPreview);
+          return { ...item, id: uploaded.id, url: uploaded.url, localPreview: undefined };
+        }));
+      } catch (error: unknown) {
+        setMediaFiles(prev => {
+          const failedItem = prev.find(item => item.id === tempId);
+          revokeObjectUrl(failedItem?.localPreview);
+          return prev.filter(item => item.id !== tempId);
+        });
+        toast.error(error instanceof Error ? error.message : 'Failed to upload media');
+      }
+    }
+
+    event.target.value = '';
+  };
+
+  const durationDays = DURATION_TO_DAYS[duration] ?? 7;
+  const strategySchedulePreview = useMemo(() => {
+    if (!startDate || selectedConnectedPlatforms.length === 0) return [];
+    const base = new Date(`${startDate}T00:00:00`);
+    if (Number.isNaN(base.getTime())) return [];
+
+    return Array.from({ length: durationDays }, (_, index) => {
+      const nextDate = new Date(base);
+      nextDate.setDate(base.getDate() + index);
+      return {
+        key: formatLocalDate(nextDate),
+        day: nextDate.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }),
+        items: selectedConnectedPlatforms.map(platform => ({ platform, type: 'Post' })),
+      };
+    });
+  }, [durationDays, selectedConnectedPlatforms, startDate]);
+
+  const totalPosts = strategySchedulePreview.reduce((sum, day) => sum + day.items.length, 0);
+
+  const handleApproveAllAndSchedule = async () => {
+    if (selectedConnectedPlatforms.length === 0) {
+      toast.error('Select at least one connected platform');
+      return;
+    }
+    if (!startDate) {
+      toast.error('Select a start date');
+      return;
+    }
+    if (!scheduleTime) {
+      toast.error('Select a scheduling time');
+      return;
+    }
+
+    const mediaUrls = mediaFiles.map(file => file.url).filter((url): url is string => Boolean(url));
+    const caption = desc.trim() || name.trim() || `Content strategy post for ${goal}`;
+    const skippedMediaCount = mediaFiles.length - mediaUrls.length;
+    if (skippedMediaCount > 0) {
+      toast.warning(`${skippedMediaCount} media item(s) were not uploaded and will be skipped.`);
+    }
+
+    const items = strategySchedulePreview.flatMap(day =>
+      day.items.map(item => ({
+        platform: item.platform,
+        caption,
+        mediaUrls,
+        scheduledLocalDate: day.key,
+        scheduledLocalTime: scheduleTime,
+      })),
+    );
+
+    if (items.length === 0) {
+      toast.error('No posts to schedule');
+      return;
+    }
+
+    try {
+      const result = await createBulkPosts.mutateAsync({ timeZone, items });
+      if (result.failed > 0) {
+        toast.warning(`Scheduled ${result.scheduled}/${result.created} posts. ${result.failed} failed.`);
+      } else {
+        toast.success(`Scheduled ${result.scheduled} posts successfully ✓`);
+      }
+      onPreviewInCalendar?.();
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to bulk schedule strategy');
+    }
+  };
 
   return (
     <>
@@ -735,18 +950,57 @@ const StrategyMode = ({ onPreviewInCalendar }: { onPreviewInCalendar?: () => voi
         </div>
       </Section>
 
+      {/* Scheduling */}
+      <Section label="Scheduling">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <input
+            type="date"
+            value={startDate}
+            onChange={e => setStartDate(e.target.value)}
+            className="w-full rounded-2xl bg-card border border-border px-3 py-2 text-[13px] focus:border-primary focus:outline-none"
+          />
+          <input
+            type="time"
+            value={scheduleTime}
+            onChange={e => setScheduleTime(e.target.value)}
+            className="w-full rounded-2xl bg-card border border-border px-3 py-2 text-[13px] focus:border-primary focus:outline-none"
+          />
+          <select
+            value={timeZone}
+            onChange={e => setTimeZone(e.target.value)}
+            className="w-full rounded-2xl bg-card border border-border px-3 py-2 text-[13px] focus:border-primary focus:outline-none"
+          >
+            {timeZoneOptions.map(zone => (
+              <option key={zone} value={zone}>{zone}</option>
+            ))}
+          </select>
+        </div>
+      </Section>
+
       {/* Platforms (multi-select) */}
       <Section label="Platforms">
-        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
-          {platforms.map(p => (
-            <button key={p.id} onClick={() => togglePlatform(p.id)}
-              className={`flex items-center gap-2 rounded-3xl px-4 py-2 text-[13px] font-semibold whitespace-nowrap transition-all ${
-                selectedPlatforms.includes(p.id) ? 'bg-brand-blue text-primary-foreground' : 'bg-card border border-border text-muted-foreground'
-              }`}>
-              <p.Logo size={16} />{p.name}
-            </button>
-          ))}
-        </div>
+        {availablePlatforms.length === 0 ? (
+          <p className="text-[13px] text-muted-foreground">No connected platforms found. Connect social accounts first.</p>
+        ) : (
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+            {availablePlatforms.map(account => {
+              const details = getPlatformDetails(account.platform);
+              const isSelected = selectedPlatforms.includes(account.platform);
+              return (
+                <button
+                  key={account.platform}
+                  onClick={() => togglePlatform(account.platform)}
+                  className={`flex items-center gap-2 rounded-3xl px-4 py-2 text-[13px] font-semibold whitespace-nowrap transition-all ${
+                    isSelected ? 'bg-brand-blue text-primary-foreground' : 'bg-card border border-border text-muted-foreground'
+                  }`}
+                >
+                  {details.Logo ? <details.Logo size={16} /> : <PlatformIcon id={account.platform} size={16} />}
+                  {details.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </Section>
 
       {/* Templates */}
@@ -780,7 +1034,8 @@ const StrategyMode = ({ onPreviewInCalendar }: { onPreviewInCalendar?: () => voi
 
       {/* Media (optional) */}
       <Section label="Upload Media (optional)">
-        <MediaUpload files={mediaFiles} add={addMedia} remove={removeMedia} />
+        <MediaUpload files={mediaFiles} add={addMedia} remove={removeMedia} onOpenLibrary={() => setShowMediaLibrary(true)} />
+        <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileUpload} />
       </Section>
 
       {/* Description */}
@@ -810,7 +1065,7 @@ const StrategyMode = ({ onPreviewInCalendar }: { onPreviewInCalendar?: () => voi
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-brand-blue">✦ Strategy Ready</span>
               </div>
-              <h3 className="text-[16px] font-bold text-foreground">{duration} strategy · {selectedPlatforms.length} platforms · {totalPosts} posts total</h3>
+              <h3 className="text-[16px] font-bold text-foreground">{duration} strategy · {selectedConnectedPlatforms.length} platforms · {totalPosts} posts total</h3>
               <p className="text-[13px] text-muted-foreground mt-1">Est. reach: 45K · Est. engagement: 2,800</p>
               {selectedPillars.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
@@ -826,30 +1081,30 @@ const StrategyMode = ({ onPreviewInCalendar }: { onPreviewInCalendar?: () => voi
             <div>
               <h3 className="text-[16px] font-bold text-foreground mb-3">Content Calendar</h3>
               <div className="space-y-2">
-                {strategyCalendar.map(day => (
-                  <div key={day.day} className="bg-card rounded-2xl border border-border-light overflow-hidden">
-                    <button onClick={() => setExpandedDay(expandedDay === day.day ? null : day.day)}
+                {strategySchedulePreview.map(day => (
+                  <div key={day.key} className="bg-card rounded-2xl border border-border-light overflow-hidden">
+                    <button onClick={() => setExpandedDay(expandedDay === day.key ? null : day.key)}
                       className="w-full flex items-center justify-between p-4">
                       <div className="flex items-center gap-3">
-                        <span className="text-[14px] font-bold text-foreground w-24">{day.day}</span>
+                        <span className="text-[14px] font-bold text-foreground w-36">{day.day}</span>
                         <div className="flex items-center gap-1.5">
                           {day.items.map((item, i) => <PlatformIcon key={i} id={item.platform} size={18} />)}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[12px] text-muted-foreground">{day.items.length} post{day.items.length > 1 ? 's' : ''}</span>
-                        <ChevronDown size={16} className={`text-muted-foreground transition-transform ${expandedDay === day.day ? 'rotate-180' : ''}`} />
+                        <ChevronDown size={16} className={`text-muted-foreground transition-transform ${expandedDay === day.key ? 'rotate-180' : ''}`} />
                       </div>
                     </button>
                     <AnimatePresence>
-                      {expandedDay === day.day && (
+                      {expandedDay === day.key && (
                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                           className="border-t border-border-light">
                           {day.items.map((item, i) => (
                             <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-border-light last:border-0">
                               <PlatformIcon id={item.platform} size={20} />
                               <div className="flex-1">
-                                <span className="text-[13px] font-semibold text-foreground">{platforms.find(p => p.id === item.platform)?.name} — {item.type}</span>
+                                <span className="text-[13px] font-semibold text-foreground">{getPlatformDetails(item.platform).name} — {item.type}</span>
                                 <p className="text-[12px] text-muted-foreground mt-0.5">AI-generated content ready for review</p>
                               </div>
                               <ChevronRight size={14} className="text-muted-foreground" />
@@ -865,8 +1120,12 @@ const StrategyMode = ({ onPreviewInCalendar }: { onPreviewInCalendar?: () => voi
 
             {/* Actions */}
             <div className="space-y-2 pt-2">
-              <button className="w-full h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press">
-                Approve All & Schedule
+              <button
+                onClick={handleApproveAllAndSchedule}
+                disabled={createBulkPosts.isPending || selectedConnectedPlatforms.length === 0 || strategySchedulePreview.length === 0}
+                className="w-full h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press disabled:opacity-60"
+              >
+                {createBulkPosts.isPending ? 'Scheduling...' : 'Approve All & Schedule'}
               </button>
               {/* Preview in Calendar */}
               <button onClick={onPreviewInCalendar}
@@ -882,6 +1141,23 @@ const StrategyMode = ({ onPreviewInCalendar }: { onPreviewInCalendar?: () => voi
               </button>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Media Library Modal */}
+      <AnimatePresence>
+        {showMediaLibrary && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowMediaLibrary(false)} className="fixed inset-0 bg-foreground/30 z-50" />
+            <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} className="fixed inset-x-0 bottom-0 z-50 bg-card rounded-t-3xl max-h-[85vh] overflow-y-auto p-5">
+              <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted" />
+              <MediaLibrary mode="picker" multiSelect onSelect={(items) => {
+                appendLibraryMedia(items.map(item => ({ id: item.id, name: item.name, size: item.size })));
+                setShowMediaLibrary(false);
+                toast.success(`${items.length} media added`);
+              }} onClose={() => setShowMediaLibrary(false)} />
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
       <UpgradePrompt feature="AI Strategy Planning" benefit="generate unlimited AI content strategies" open={showUpgradeStrategy} onClose={() => setShowUpgradeStrategy(false)} />
@@ -1006,7 +1282,7 @@ export const CreateScreen = ({ posts, postsLoading, onPublish, onUploadMedia, co
               />
             )}
             {mode === 'strategy' && (
-              <StrategyMode onPreviewInCalendar={handlePreviewInCalendar} />
+              <StrategyMode onPreviewInCalendar={handlePreviewInCalendar} onUploadMedia={onUploadMedia} />
             )}
             {mode === 'media' && (
               <MediaLibrary mode="tab" onSelect={(items) => {

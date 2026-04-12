@@ -35,6 +35,13 @@ function toAbsoluteUrl(url: string, origin: string): string {
   return `${baseOrigin}${normalizedPath}`;
 }
 
+async function markPostFailed(postId: string) {
+  return prisma.post.update({
+    where: { id: postId },
+    data: { status: 'Failed' },
+  });
+}
+
 // ─── GET /api/posts ───────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
@@ -98,7 +105,6 @@ export async function POST(req: NextRequest) {
     .filter(Boolean)
     .map(url => toAbsoluteUrl(url, origin));
   const resolvedStatus = status ?? (scheduledAt ? 'Scheduled' : 'Draft');
-  const ayrshareMediaUrls = (mediaUrls ?? []).map(url => toAbsoluteMediaUrl(url, req));
   let publishError: string | null = null;
 
   // Build full caption with hashtags
@@ -151,10 +157,6 @@ export async function POST(req: NextRequest) {
             mediaUrls: absoluteMediaUrls ?? [],
           });
         }
-        post = await prisma.post.update({
-          where: { id: post.id },
-          data: { status: 'Failed' },
-        });
         post = await markPostFailed(post.id);
       }
     } else {
