@@ -183,12 +183,13 @@ model Campaign {
 }
 
 model Activity {
-  id                   String   @id @default(cuid())
+  id                   BigInt   @id @default(autoincrement())
   userId               String   @unique
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   business_name        String?
   industry             String?
-  country              String?
+  business_description String?
   location             String?
   opening_hours        String?
   business_size        String?
@@ -196,28 +197,31 @@ model Activity {
   audience_target      String?
   unique_selling_point String?
   certifications       String?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @default(now())
-}
+  resumer              String?
 
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
 model Preference {
-  id                   String   @id @default(cuid())
+  id                   BigInt   @id @default(autoincrement())
   userId               String   @unique
-  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  action               String?
+  color                String?
   tone_of_voice        String?
   language_preference  String?
-  business_description String?
   social_media_goals   String?
-  color_primary        String?
-  color_secondary      String?
   preferred_platforms  String?
   hashtags             String?
   emojis               String?
   other                String?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @default(now())
-}
+  resumer              String?
+  text                 String?
 
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
 model Strategy {
   id              String    @id @default(cuid())
   userId          String
