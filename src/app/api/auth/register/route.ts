@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
     const { name, email, password, phone, referralCode } = parsed.data;
 
-    // Check for existing account
+    // Check for existing account by email
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       return errorResponse('An account with this email already exists', 409);
@@ -33,12 +33,17 @@ export async function POST(request: NextRequest) {
     const hashed = await bcrypt.hash(password, 12);
     let preRegisteredUserId: string | null = null;
 
+    // Check for WhatsApp pre-registration by phone
+    // Rule: phone exists + no password = WhatsApp pre-registration → complete it
+    //       phone exists + has password = fully registered account → block
     if (phone) {
       const existingByPhone = await prisma.user.findFirst({ where: { phone } });
       if (existingByPhone) {
-        if (existingByPhone.email === null) {
+        if (existingByPhone.password === null) {
+          // WhatsApp pre-registered user, no password set yet → complete registration on this row
           preRegisteredUserId = existingByPhone.id;
         } else {
+          // Account already fully registered with this phone → block
           return errorResponse('An account with this phone number already exists', 409);
         }
       }
@@ -54,15 +59,11 @@ export async function POST(request: NextRequest) {
       if (referrer) referrerId = referrer.id;
     }
 
+    // Update pre-registered row (WhatsApp) OR create a brand-new user
     const user = preRegisteredUserId
       ? await prisma.user.update({
           where: { id: preRegisteredUserId },
-          data: {
-            name,
-            email,
-            password: hashed,
-            phone,
-          },
+          data: { name, email, password: hashed, phone },
         })
       : await prisma.user.create({
           data: {
