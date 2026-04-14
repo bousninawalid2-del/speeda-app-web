@@ -30,6 +30,20 @@ export async function POST(request: NextRequest) {
       return errorResponse('An account with this email already exists', 409);
     }
 
+    const hashed = await bcrypt.hash(password, 12);
+    let preRegisteredUserId: string | null = null;
+
+    if (phone) {
+      const existingByPhone = await prisma.user.findFirst({ where: { phone } });
+      if (existingByPhone) {
+        if (existingByPhone.email === null) {
+          preRegisteredUserId = existingByPhone.id;
+        } else {
+          return errorResponse('An account with this phone number already exists', 409);
+        }
+      }
+    }
+
     // Validate referral code if provided
     let referrerId: string | null = null;
     if (referralCode) {
@@ -40,16 +54,25 @@ export async function POST(request: NextRequest) {
       if (referrer) referrerId = referrer.id;
     }
 
-    const hashed = await bcrypt.hash(password, 12);
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashed,
-        phone,
-        referredByCode: referralCode || null,
-      },
-    });
+    const user = preRegisteredUserId
+      ? await prisma.user.update({
+          where: { id: preRegisteredUserId },
+          data: {
+            name,
+            email,
+            password: hashed,
+            phone,
+          },
+        })
+      : await prisma.user.create({
+          data: {
+            name,
+            email,
+            password: hashed,
+            phone,
+            referredByCode: referralCode || null,
+          },
+        });
 
     // Create referral record if valid referrer found
     if (referrerId) {
