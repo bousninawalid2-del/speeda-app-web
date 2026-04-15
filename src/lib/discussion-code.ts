@@ -1,7 +1,9 @@
 import crypto from 'crypto';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 
 const DISCUSSION_CODE_LENGTH = 8;
+const MAX_REGENERATION_ATTEMPTS = 3;
 
 /** Generate an 8-digit numeric user-facing discussion code. */
 function generateDiscussionCode(): string {
@@ -9,34 +11,45 @@ function generateDiscussionCode(): string {
   return crypto.randomInt(0, maxExclusive).toString().padStart(DISCUSSION_CODE_LENGTH, '0');
 }
 
-/** Generate a 27-digit numeric-like secure key. */
+/**
+ * Generate a decimal-only key from 20 random bytes (160 bits of entropy).
+ * The decimal string is typically around 48-49 digits.
+ */
 function generateDiscussionKey(): string {
-  const segment = () => crypto.randomInt(0, 1_000_000_000).toString().padStart(9, '0');
-  return `${segment()}${segment()}${segment()}`;
+  return BigInt(`0x${crypto.randomBytes(20).toString('hex')}`).toString(10);
 }
 
 export async function regenerateDiscussionCodeForUser(userId: string) {
-  const nextValues = {
-    code: generateDiscussionCode(),
-    key: generateDiscussionKey(),
-  };
+  const existing = await prisma.userDiscussionCode.findUnique({ where: { userId }, select: { id: true } });
 
-  const existing = await prisma.userDiscussionCode.findUnique({
-    where: { userId },
-    select: { id: true },
-  });
+  for (let attempt = 0; attempt < MAX_REGENERATION_ATTEMPTS; attempt += 1) {
+    const nextValues = {
+      code: generateDiscussionCode(),
+      key: generateDiscussionKey(),
+    };
 
-  if (!existing) {
-    return prisma.userDiscussionCode.create({
-      data: {
-        userId,
-        ...nextValues,
-      },
-    });
+    try {
+      if (!existing) {
+        return await prisma.userDiscussionCode.create({
+          data: {
+            userId,
+            ...nextValues,
+          },
+        });
+      }
+
+      return await prisma.userDiscussionCode.update({
+        where: { userId },
+        data: nextValues,
+      });
+    } catch (error) {
+      if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') {
+        throw error;
+      }
+    }
   }
 
-  return prisma.userDiscussionCode.update({
-    where: { userId },
-    data: nextValues,
-  });
+  throw new Error(
+    `Failed to generate unique discussion code values after ${MAX_REGENERATION_ATTEMPTS} attempts`
+  );
 }

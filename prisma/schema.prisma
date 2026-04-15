@@ -51,8 +51,8 @@ model UserDiscussionCode {
   id        String   @id @default(cuid())
   userId    String   @unique
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  code      String
-  key       String
+  code      String   @unique
+  key       String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

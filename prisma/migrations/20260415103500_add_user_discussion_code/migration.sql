@@ -13,5 +13,11 @@ CREATE TABLE "UserDiscussionCode" (
 -- CreateIndex
 CREATE UNIQUE INDEX "UserDiscussionCode_userId_key" ON "UserDiscussionCode"("userId");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "UserDiscussionCode_code_key" ON "UserDiscussionCode"("code");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserDiscussionCode_key_key" ON "UserDiscussionCode"("key");
+
 -- AddForeignKey
 ALTER TABLE "UserDiscussionCode" ADD CONSTRAINT "UserDiscussionCode_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

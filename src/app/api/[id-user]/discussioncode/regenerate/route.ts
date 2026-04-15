@@ -1,18 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { errorResponse } from '@/lib/auth-guard';
+import { errorResponse, requireAuth } from '@/lib/auth-guard';
 import { regenerateDiscussionCodeForUser } from '@/lib/discussion-code';
 
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ 'id-user': string }> }
 ) {
   try {
+    const auth = requireAuth(request);
+    if (auth instanceof NextResponse) return auth;
+
     const resolvedParams = await params;
     const userId = resolvedParams['id-user']?.trim();
 
     if (!userId) {
       return errorResponse('Missing userId route parameter', 400);
+    }
+    if (auth.user.sub !== userId) {
+      return errorResponse('Forbidden', 403);
     }
 
     const user = await prisma.user.findUnique({
