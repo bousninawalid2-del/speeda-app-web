@@ -92,13 +92,13 @@ export async function GET(request: NextRequest) {
 
     return {
       platform,
-      username: live?.username ?? dbAccount?.username ?? undefined,
+      username: live?.username ?? dbAccount?.username ?? null,
       followers: live?.followers ?? dbAccount?.followers ?? 0,
       connected,
       status: toStatus(connected, monthStats.failed),
       errors: monthStats.failed,
       postsThisMonth: monthStats.total,
-      lastSync: dbAccount?.updatedAt?.toISOString() ?? 'Recently',
+      lastSync: dbAccount?.updatedAt?.toISOString() ?? null,
     };
   });
 

@@ -500,7 +500,18 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
   const [doneCount, setDoneCount] = useState(0);
   const [pendingDoneId, setPendingDoneId] = useState<number | null>(null);
   const totalCount = cappedCards.length;
-  const cardsSnapshot = cappedCards.map((card) => `${card.id}:${card.title}`).join('|');
+  const cardsSnapshot = JSON.stringify(
+    cappedCards.map((card) => ({
+      id: card.id,
+      title: card.title,
+      desc: card.desc,
+      impact: card.impact,
+      impactIcon: card.impactIcon,
+      nav: card.nav,
+      priority: card.priority,
+      color: card.color,
+    }))
+  );
 
   useEffect(() => {
     setActiveCards(cappedCards);

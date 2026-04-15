@@ -10,15 +10,7 @@ const updateSchema = z.object({
   businessName: z.string().max(120).optional(),
   city: z.string().max(120).optional(),
   industry: z.string().max(120).optional(),
-}).refine(
-  (data) =>
-    data.name !== undefined
-    || data.phone !== undefined
-    || data.businessName !== undefined
-    || data.city !== undefined
-    || data.industry !== undefined,
-  { message: 'Nothing to update' }
-);
+});
 
 function normalizeNullable(value: string | undefined): string | null | undefined {
   if (value === undefined) return undefined;
@@ -63,6 +55,7 @@ export async function GET(request: NextRequest) {
         activity: user.activity
           ? {
               ...user.activity,
+              // Activity currently has no dedicated country field in this schema/version.
               country: null,
             }
           : null,
@@ -101,21 +94,29 @@ export async function PATCH(request: NextRequest) {
       industry: normalizeNullable(parsed.data.industry),
     };
 
-    await prisma.$transaction([
-      (userData.name !== undefined || userData.phone !== undefined)
-        ? prisma.user.update({
-            where: { id: userId },
-            data: userData,
-          })
-        : prisma.user.findUnique({ where: { id: userId }, select: { id: true } }),
-      (activityData.business_name !== undefined || activityData.location !== undefined || activityData.industry !== undefined)
-        ? prisma.activity.upsert({
-            where: { userId },
-            create: { userId, ...activityData },
-            update: activityData,
-          })
-        : prisma.activity.findUnique({ where: { userId }, select: { id: true } }),
-    ]);
+    const operations = [];
+    if (userData.name !== undefined || userData.phone !== undefined) {
+      operations.push(
+        prisma.user.update({
+          where: { id: userId },
+          data: userData,
+        })
+      );
+    }
+    if (activityData.business_name !== undefined || activityData.location !== undefined || activityData.industry !== undefined) {
+      operations.push(
+        prisma.activity.upsert({
+          where: { userId },
+          create: { userId, ...activityData },
+          update: activityData,
+        })
+      );
+    }
+    if (operations.length === 0) {
+      return errorResponse('Nothing to update', 400);
+    }
+
+    await prisma.$transaction(operations);
 
     const refreshed = await prisma.user.findUnique({
       where: { id: userId },
@@ -148,6 +149,7 @@ export async function PATCH(request: NextRequest) {
         activity: refreshed.activity
           ? {
               ...refreshed.activity,
+              // Activity currently has no dedicated country field in this schema/version.
               country: null,
             }
           : null,

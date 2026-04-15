@@ -69,7 +69,9 @@ export function useUpdateProfile() {
       }),
     onSuccess: (res) => {
       // Optimistic update inside cache
-      qc.setQueryData(['profile'], res.profile);
+      qc.setQueryData(['profile'], (old: ProfileData | undefined) =>
+        old ? { ...old, ...res.profile } : res.profile
+      );
     },
   });
 }
