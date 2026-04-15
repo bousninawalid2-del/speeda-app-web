@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Plus, Pencil, Trash2, UtensilsCrossed, X } from 'lucide-react';
+import { ChevronLeft, Plus, Pencil, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSettingsMenu } from '@/hooks/useSettingsMenu';
 
 interface MenuManagementScreenProps {
   onBack: () => void;
@@ -25,7 +26,9 @@ const demoItems: MenuItem[] = [
 ];
 
 export const MenuManagementScreen = ({ onBack }: MenuManagementScreenProps) => {
-  const [items, setItems] = useState<MenuItem[]>(demoItems);
+  const { data: fetchedItems = demoItems } = useSettingsMenu(demoItems);
+  const [itemsOverride, setItemsOverride] = useState<MenuItem[] | null>(null);
+  const items = itemsOverride ?? fetchedItems;
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [newItem, setNewItem] = useState({ name: '', description: '', price: '', category: 'Main Courses' });
@@ -33,10 +36,10 @@ export const MenuManagementScreen = ({ onBack }: MenuManagementScreenProps) => {
   const handleSave = () => {
     if (!newItem.name.trim()) { toast.error('Dish name is required'); return; }
     if (editingItem) {
-      setItems(items.map(i => i.id === editingItem.id ? { ...i, name: newItem.name, description: newItem.description, price: Number(newItem.price) || 0, category: newItem.category } : i));
+      setItemsOverride(items.map(i => i.id === editingItem.id ? { ...i, name: newItem.name, description: newItem.description, price: Number(newItem.price) || 0, category: newItem.category } : i));
       toast.success('Item updated ✓');
     } else {
-      setItems([...items, { id: Date.now(), name: newItem.name, description: newItem.description, price: Number(newItem.price) || 0, category: newItem.category }]);
+      setItemsOverride([...items, { id: Date.now(), name: newItem.name, description: newItem.description, price: Number(newItem.price) || 0, category: newItem.category }]);
       toast.success('Item added ✓');
     }
     setNewItem({ name: '', description: '', price: '', category: 'Main Courses' });
@@ -51,7 +54,7 @@ export const MenuManagementScreen = ({ onBack }: MenuManagementScreenProps) => {
   };
 
   const handleDelete = (id: number) => {
-    setItems(items.filter(i => i.id !== id));
+    setItemsOverride(items.filter(i => i.id !== id));
     toast.success('Item removed');
   };
 
