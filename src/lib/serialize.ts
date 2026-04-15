@@ -12,8 +12,9 @@ export function serializePrisma<T>(obj: T): T {
 
 // Patch BigInt.prototype.toJSON globally so JSON.stringify never throws
 // This is a one-time side-effect that applies when this module is first imported.
-if (!(BigInt.prototype as unknown as { toJSON?: unknown }).toJSON) {
-  (BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function () {
+type BigIntWithToJSON = { toJSON?: () => string };
+if (!(BigInt.prototype as unknown as BigIntWithToJSON).toJSON) {
+  (BigInt.prototype as unknown as BigIntWithToJSON).toJSON = function () {
     return this.toString();
   };
 }
