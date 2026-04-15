@@ -226,7 +226,7 @@ export async function POST(req: NextRequest) {
             console.log(`👤 Nouvel utilisateur enregistré : ${phoneNumber}`);
         }
 
-        const userId = user.id;
+        const userId = user.id.toString();
         const userExist = !!(user.password && user.password.trim() !== "");
 
         const activity = await prisma.activity.findUnique({
@@ -338,7 +338,9 @@ export async function POST(req: NextRequest) {
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify(toSend),
+            body: JSON.stringify(toSend, (_, value) =>
+                typeof value === "bigint" ? value.toString() : value
+            ),
         });
 
         return NextResponse.json({ ok: true });
