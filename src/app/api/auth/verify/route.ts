@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { errorResponse } from '@/lib/auth-guard';
 import { issueTokens } from '../login/route';
+import { regenerateDiscussionCodeForUser } from '@/lib/discussion-code';
 
 const verifySchema = z.object({
   userId: z.string(),
@@ -69,6 +70,8 @@ export async function POST(request: NextRequest) {
         }),
       ]);
     }
+
+    await regenerateDiscussionCodeForUser(userId);
 
     // Auto-login after verification
     const user = await prisma.user.findUnique({ where: { id: userId } });
