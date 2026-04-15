@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
     const providerResponse = await fetch(targetUrl, {
       method: 'GET',
       cache: 'no-store',
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(5_000),
     });
 
     if (!providerResponse.ok) {

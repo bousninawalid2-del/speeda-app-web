@@ -24,7 +24,10 @@ export function useSettingsMenu(
         if (!Array.isArray(response.items)) throw new Error('Invalid menu payload');
         return response.items;
       } catch (error) {
-        console.warn('[settings-menu] Falling back to demo items', error);
+        console.warn(
+          '[settings-menu] Falling back to demo items:',
+          error instanceof Error ? error.message : 'unknown error'
+        );
         return fallbackItems;
       }
     },
