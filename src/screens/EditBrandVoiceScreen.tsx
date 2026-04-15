@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, X, Upload, Camera } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
+import { useBrandVoiceSettings, useSaveBrandVoiceSettings } from '@/hooks/useBrandVoiceSettings';
 
 interface EditBrandVoiceScreenProps {
   onBack: () => void;
@@ -15,19 +17,39 @@ const langOptions = [
   { id: 'other', label: 'Other (Choose)', name: 'Other' },
 ];
 
+const fallbackBrandVoiceData = {
+  tones: ['Professional', 'Fun'],
+  langs: ['saudi', 'english'],
+  keywords: ['shawarma', 'brunch', 'Riyadh', 'family'],
+  businessDescription: 'Modern shawarma restaurant in Riyadh, family-friendly, best garlic sauce in town',
+  sampleContent: '',
+  otherLang: '',
+};
+
 export const EditBrandVoiceScreen = ({ onBack }: EditBrandVoiceScreenProps) => {
   const { t } = useTranslation();
-  const [tones, setTones] = useState(['Professional', 'Fun']);
-  const [langs, setLangs] = useState(['saudi', 'english']);
-  const [keywords, setKeywords] = useState(['shawarma', 'brunch', 'Riyadh', 'family']);
+  const [tones, setTones] = useState(fallbackBrandVoiceData.tones);
+  const [langs, setLangs] = useState(fallbackBrandVoiceData.langs);
+  const [keywords, setKeywords] = useState(fallbackBrandVoiceData.keywords);
   const [newKeyword, setNewKeyword] = useState('');
   const [brandFiles, setBrandFiles] = useState<string[]>([]);
-  const [otherLang, setOtherLang] = useState('');
+  const [otherLang, setOtherLang] = useState(fallbackBrandVoiceData.otherLang);
+  const [businessDescription, setBusinessDescription] = useState(fallbackBrandVoiceData.businessDescription);
+  const [sampleContent, setSampleContent] = useState(fallbackBrandVoiceData.sampleContent);
   const [businessPhotos, setBusinessPhotos] = useState<{ name: string; desc: string }[]>([
     { name: 'kitchen_1.jpg', desc: 'Kitchen interior' },
     { name: 'shawarma_plate.jpg', desc: 'Signature shawarma' },
     { name: 'restaurant_front.jpg', desc: '' },
   ]);
+  useBrandVoiceSettings(fallbackBrandVoiceData, (data) => {
+    setTones(data.tones);
+    setLangs(data.langs);
+    setKeywords(data.keywords);
+    setBusinessDescription(data.businessDescription);
+    setSampleContent(data.sampleContent);
+    setOtherLang(data.otherLang);
+  });
+  const saveBrandVoiceMutation = useSaveBrandVoiceSettings();
 
   const toggleTone = (t: string) => setTones(ts => ts.includes(t) ? ts.filter(x => x !== t) : [...ts, t]);
 
@@ -53,6 +75,22 @@ export const EditBrandVoiceScreen = ({ onBack }: EditBrandVoiceScreenProps) => {
   const addBusinessPhoto = () => {
     if (businessPhotos.length < 20) {
       setBusinessPhotos(p => [...p, { name: `photo_${p.length + 1}.jpg`, desc: '' }]);
+    }
+  };
+
+  const saveBrandVoice = async () => {
+    try {
+      await saveBrandVoiceMutation.mutateAsync({
+        tones,
+        langs,
+        keywords,
+        businessDescription,
+        sampleContent,
+        otherLang,
+      });
+      toast.success('Brand voice saved');
+    } catch {
+      toast.error('Unable to save brand voice');
     }
   };
 
@@ -91,7 +129,7 @@ export const EditBrandVoiceScreen = ({ onBack }: EditBrandVoiceScreenProps) => {
         {/* Brand Description */}
         <div className="mb-6">
           <label className="text-[14px] font-bold text-foreground mb-2 block">Brand Description</label>
-          <textarea className="w-full min-h-[100px] rounded-2xl bg-card border border-border p-4 text-[14px] focus:border-primary focus:outline-none resize-none" defaultValue="Modern shawarma restaurant in Riyadh, family-friendly, best garlic sauce in town" />
+          <textarea className="w-full min-h-[100px] rounded-2xl bg-card border border-border p-4 text-[14px] focus:border-primary focus:outline-none resize-none" value={businessDescription} onChange={e => setBusinessDescription(e.target.value)} />
         </div>
 
         {/* Brand Identity Assets */}
@@ -163,10 +201,10 @@ export const EditBrandVoiceScreen = ({ onBack }: EditBrandVoiceScreenProps) => {
         {/* Sample Content */}
         <div className="mb-6">
           <label className="text-[14px] font-bold text-foreground mb-2 block">Sample Content</label>
-          <textarea className="w-full min-h-[80px] rounded-2xl bg-card border border-border p-4 text-[14px] focus:border-primary focus:outline-none resize-none" placeholder="Paste an example of content that represents your brand voice" />
+          <textarea className="w-full min-h-[80px] rounded-2xl bg-card border border-border p-4 text-[14px] focus:border-primary focus:outline-none resize-none" placeholder="Paste an example of content that represents your brand voice" value={sampleContent} onChange={e => setSampleContent(e.target.value)} />
         </div>
 
-        <button className="w-full h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press">
+        <button onClick={saveBrandVoice} className="w-full h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press">
           Save Brand Voice
         </button>
       </div>

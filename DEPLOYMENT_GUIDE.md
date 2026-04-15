@@ -181,6 +181,7 @@ MAMOPAY_SANDBOX=false
 # Internal Docker network — DO NOT change
 N8N_WEBHOOK_URL=http://n8n:5678/webhook/210b7b4e-4fb5-420b-b219-9a9e66aa8872
 N8N_ENGAGEMENT_WEBHOOK_URL=https://n8n.speeda.ai/webhook/engagement
+N8N_SETTINGS_MENU_WEBHOOK_URL=https://n8n.speeda.ai/webhook/settings-menu
 DISCUSSION_CODE_SECRET=GENERATE_A_NEW_DISCUSSION_CODE_SECRET
 N8N_WEBHOOK_URL_PUBLIC=https://n8n.speeda.ai/
 N8N_AUTH_USER=admin
@@ -202,7 +203,7 @@ openssl rand -base64 48   # → DISCUSSION_CODE_SECRET
 openssl rand -base64 32   # → ADMIN_SECRET
 ```
 
-If `N8N_ENGAGEMENT_WEBHOOK_URL` is not configured (or n8n returns errors), dashboard/chat engagement endpoints return `503` and the UI automatically falls back to the built-in mock engagement datasets.
+If `N8N_ENGAGEMENT_WEBHOOK_URL` or `N8N_SETTINGS_MENU_WEBHOOK_URL` is not configured (or n8n returns errors), related settings/engagement endpoints return `503` and the UI automatically falls back to the built-in mock datasets.
 
 ---
 

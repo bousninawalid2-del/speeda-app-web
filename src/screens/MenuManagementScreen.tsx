@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Plus, Pencil, Trash2, UtensilsCrossed, X } from 'lucide-react';
+import { ChevronLeft, Plus, Pencil, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSettingsMenu } from '@/hooks/useSettingsMenu';
 
 interface MenuManagementScreenProps {
   onBack: () => void;
@@ -26,6 +27,7 @@ const demoItems: MenuItem[] = [
 
 export const MenuManagementScreen = ({ onBack }: MenuManagementScreenProps) => {
   const [items, setItems] = useState<MenuItem[]>(demoItems);
+  useSettingsMenu(demoItems, setItems);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [newItem, setNewItem] = useState({ name: '', description: '', price: '', category: 'Main Courses' });
