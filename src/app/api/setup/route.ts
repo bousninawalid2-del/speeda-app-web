@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { requireAuth, errorResponse } from '@/lib/auth-guard';
 import { syncPreferenceToN8n, syncActivityToN8n } from '@/lib/sync-n8n';
+import { serializePrisma } from '@/lib/serialize';
 
 const setupSchema = z.object({
   // Activity
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
   syncPreferenceToN8n(user.sub).catch(() => {});
   syncActivityToN8n(user.sub).catch(() => {});
 
-  return Response.json({ activity, preference });
+  return Response.json(serializePrisma({ activity, preference }));
 }
 
 export async function GET(req: NextRequest) {
@@ -83,5 +84,5 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
-  return Response.json({ activity, preference, images });
+  return Response.json(serializePrisma({ activity, preference, images }));
 }

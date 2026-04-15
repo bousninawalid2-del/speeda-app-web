@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireAuth, errorResponse } from '@/lib/auth-guard';
+import { serializePrisma } from '@/lib/serialize';
 
 const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'application/pdf'];
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
     select: { id: true, filename: true, mimetype: true, size: true, createdAt: true },
   });
 
-  return Response.json({ image }, { status: 201 });
+  return Response.json(serializePrisma({ image }), { status: 201 });
 }
 
 export async function DELETE(req: NextRequest) {
