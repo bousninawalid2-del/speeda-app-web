@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import './serialize'; // apply BigInt.prototype.toJSON patch globally
 
 // Prevent multiple Prisma instances in development (HMR)
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };

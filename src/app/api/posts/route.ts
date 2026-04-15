@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { requireAuth, errorResponse } from '@/lib/auth-guard';
 import { rateLimit } from '@/lib/rate-limit';
 import { publishPost } from '@/lib/ayrshare';
+import { serializePrisma } from '@/lib/serialize';
 
 // ─── Validation ───────────────────────────────────────────────────────────────
 
@@ -72,10 +73,10 @@ export async function GET(req: NextRequest) {
     prisma.post.count({ where }),
   ]);
 
-  return Response.json({
+  return Response.json(serializePrisma({
     posts,
     pagination: { page, limit, total, pages: Math.ceil(total / limit) },
-  });
+  }));
 }
 
 // ─── POST /api/posts ──────────────────────────────────────────────────────────
@@ -166,7 +167,7 @@ export async function POST(req: NextRequest) {
   }
 
   return Response.json(
-    publishError ? { post, publishError } : { post },
+    serializePrisma(publishError ? { post, publishError } : { post }),
     { status: 201 },
   );
 }

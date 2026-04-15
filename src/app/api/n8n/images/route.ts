@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireN8nAuth } from '@/lib/n8n-guard';
 import { errorResponse } from '@/lib/auth-guard';
+import { serializePrisma } from '@/lib/serialize';
 
 /**
  * GET /api/n8n/images?userId=xxx
@@ -52,5 +53,5 @@ export async function GET(req: NextRequest) {
       : {}),
   }));
 
-  return Response.json({ images: result });
+  return Response.json(serializePrisma({ images: result }));
 }
