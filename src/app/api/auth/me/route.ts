@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
         tokenBalance: true, tokenUsed: true,
         activity: {
           select: {
+            // `country` is not part of the current Activity schema.
             business_name: true, industry: true,
             location: true, business_size: true,
           },

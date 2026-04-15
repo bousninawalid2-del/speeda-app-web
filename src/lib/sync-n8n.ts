@@ -99,6 +99,7 @@ export async function syncPreferenceToN8n(userId: UserIdInput): Promise<void> {
 
     if (!pref || n8nUserId == null) return;
 
+    // Preference now stores a single color value instead of primary/secondary split.
     const color = pref.color ?? null;
 
     await n8nPool.query(
