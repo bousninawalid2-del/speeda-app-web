@@ -531,6 +531,7 @@ export const fr = {
     signOutConfirm: 'Vous serez déconnecté de tous les autres appareils.',
     signOutAllBtn: 'Tout déconnecter',
     allDevicesSignedOut: 'Tous les autres appareils déconnectés ✓',
+    signOutAllNotAvailable: 'La déconnexion de tous les appareils n\'est pas disponible pour le moment.',
   },
   competitor: {
     title: 'Veille concurrentielle',

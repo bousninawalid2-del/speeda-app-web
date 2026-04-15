@@ -3,12 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Check, X, MessageSquare } from 'lucide-react';
 import { PaymentFlow } from '../components/PaymentFlow';
 import { SalesChatWidget } from '../components/SalesAgent';
+import { usePlanComparisonPlans, type PlanComparisonPlan } from '@/hooks/usePlanComparisonPlans';
 
 interface PlanComparisonScreenProps {
   onBack: () => void;
 }
 
-const plans = [
+const STATIC_PLANS = [
   {
     name: 'Starter',
     monthlyPrice: 549,
@@ -76,15 +77,38 @@ const plans = [
 
 const formatPrice = (price: number) => price.toLocaleString();
 
+type PlanCard = typeof STATIC_PLANS[number];
+
+const mapDynamicPlansToCards = (plans?: PlanComparisonPlan[]): PlanCard[] => {
+  if (!plans?.length) return STATIC_PLANS;
+  return plans.map((plan) => ({
+    name: plan.name,
+    monthlyPrice: plan.monthlyPrice,
+    current: plan.name.toLowerCase() === 'pro',
+    badge: plan.name.toLowerCase() === 'pro' ? '⭐ Current Plan' : undefined,
+    popular: plan.popular,
+    features: [
+      ...plan.features.map((name) => ({ name, included: true })),
+      ...plan.locked.map((name) => ({ name, included: false })),
+    ],
+    watermark: plan.watermark,
+  }));
+};
+
 export const PlanComparisonScreen = ({ onBack }: PlanComparisonScreenProps) => {
-  const [selectedPlan, setSelectedPlan] = useState<typeof plans[0] | null>(null);
+  const { data: dynamicPlans, isError } = usePlanComparisonPlans();
+  const plans = isError ? STATIC_PLANS : mapDynamicPlansToCards(dynamicPlans);
+
+  const [selectedPlan, setSelectedPlan] = useState<PlanCard | null>(null);
   const [annual, setAnnual] = useState(false);
   const [showSalesChat, setShowSalesChat] = useState(false);
 
-  const getPrice = (plan: typeof plans[0]) => {
+  const getPrice = (plan: PlanCard) => {
     const price = annual ? Math.round(plan.monthlyPrice * 0.8) : plan.monthlyPrice;
     return formatPrice(price);
   };
+
+  const currentPlanIndex = plans.findIndex(p => p.current);
 
   return (
     <>
@@ -115,7 +139,7 @@ export const PlanComparisonScreen = ({ onBack }: PlanComparisonScreenProps) => {
                 </div>
                 <p className="text-[24px] font-extrabold text-foreground mt-2">{getPrice(plan)} ﷼<span className="text-[14px] font-medium text-muted-foreground">/{annual ? 'mo' : 'mo'}</span></p>
                 {annual && <p className="text-[11px] text-green-accent font-medium">Billed yearly · Save {formatPrice(Math.round(plan.monthlyPrice * 12 * 0.2))} ﷼/year</p>}
-                {plan.watermark && <p className="text-[10px] text-muted-foreground mt-1">Includes "Powered by Speeda AI ✦" watermark</p>}
+                {plan.watermark && <p className="text-[10px] text-muted-foreground mt-1">Includes &quot;Powered by Speeda AI ✦&quot; watermark</p>}
                 <div className="mt-3 space-y-2">
                   {plan.features.map((f, j) => (
                     <div key={j} className="flex items-center gap-2">
@@ -130,7 +154,7 @@ export const PlanComparisonScreen = ({ onBack }: PlanComparisonScreenProps) => {
                 </div>
                 {plan.current ? (
                   <div className="mt-4 h-[44px] rounded-2xl bg-muted flex items-center justify-center text-[13px] font-bold text-muted-foreground">Current Plan</div>
-                ) : i > plans.findIndex(p => p.current) ? (
+                ) : i > currentPlanIndex ? (
                   <button onClick={() => setSelectedPlan(plan)} className="w-full mt-4 h-[44px] rounded-2xl gradient-btn text-primary-foreground text-[13px] font-bold btn-press">Upgrade</button>
                 ) : (
                   <button className="w-full mt-4 text-muted-foreground text-[13px] font-medium">Downgrade</button>
