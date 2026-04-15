@@ -30,7 +30,6 @@ export default function Page() {
         phone:        profile.phone,
         isVerified:   profile.isVerified,
         businessName: profile.activity?.business_name,
-        country:      profile.activity?.location,
         city:         profile.activity?.location,
         industry:     profile.activity?.industry,
       } : undefined}

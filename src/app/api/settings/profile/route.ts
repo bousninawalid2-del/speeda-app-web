@@ -83,12 +83,12 @@ export async function PATCH(request: NextRequest) {
       phone: normalizeNullable(parsed.data.phone),
     };
 
-    const normalizedCity = normalizeNullable(parsed.data.city);
+    const normalizedLocation = normalizeNullable(parsed.data.city);
     const normalizedCountry = normalizeNullable(parsed.data.country);
 
     const activityData = {
       business_name: normalizeNullable(parsed.data.businessName),
-      location: normalizedCity === undefined ? normalizedCountry : normalizedCity,
+      location: normalizedLocation ?? normalizedCountry,
       industry: normalizeNullable(parsed.data.industry),
     };
 
