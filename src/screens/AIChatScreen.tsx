@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 
 // ─── Engagement Data ──────────────────────────────────────────────────────────
 
-const engagementMessages = [
+const fallbackEngagementMessages = [
   { name: 'Ahmed K.', emoji: '👍', Logo: InstagramLogo, platform: 'Instagram', type: 'Comment', filter: 'Comments', time: '5m ago', msg: 'This looks amazing! What time do you close?', ai: "Thank you Ahmed! We're open until 12 AM tonight. See you soon!" },
   { name: 'Sara M.', emoji: '🌟', Logo: GoogleLogo, platform: 'Google', type: 'Review', filter: 'Reviews', time: '15m ago', msg: 'Food was cold when delivered. Very disappointed with the service.', ai: "We sincerely apologize for this experience, Sara. We'd like to make it right. Please DM us your order number and we'll send a replacement.", isNegative: true },
   { name: 'Mohammed A.', emoji: '😊', Logo: InstagramLogo, platform: 'Instagram', type: 'DM', filter: 'DMs', time: '30m ago', msg: 'Do you have any vegan options on the menu?', ai: 'Yes Mohammed! We have 5 vegan dishes including our popular Falafel Bowl and Quinoa Salad. Would you like to see the full menu?' },
@@ -220,6 +220,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
   const [engFilter, setEngFilter] = useState(initialEngagementFilter || 'All');
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [limitReached, setLimitReached] = useState(false);
+  const [engagementFeed, setEngagementFeed] = useState(fallbackEngagementMessages);
   const [pendingUpload, setPendingUpload] = useState<{
     mediaId: string;
     mediaUrl: string;
@@ -279,6 +280,67 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (subTab !== 'engagement') return;
+
+    let alive = true;
+    const loadEngagement = async () => {
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('speeda_access_token') : null;
+        const res = await fetch(`/api/chat/engagement-feed?filter=${encodeURIComponent(engFilter)}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          credentials: 'same-origin',
+        });
+        if (!res.ok) throw new Error('Engagement feed unavailable');
+
+        const data = await res.json();
+        if (!Array.isArray(data.engagementMessages)) throw new Error('Invalid payload');
+
+        const platformToLogo: Record<string, typeof InstagramLogo> = {
+          Instagram: InstagramLogo,
+          Google: GoogleLogo,
+          WhatsApp: WhatsAppLogo,
+        };
+        const deriveFilterFromType = (type: string): string => {
+          const normalizedType = type.toLowerCase();
+          if (normalizedType === 'review') return 'Reviews';
+          if (normalizedType === 'dm' || normalizedType === 'message') return 'DMs';
+          return 'Comments';
+        };
+        const asRecord = (value: unknown): Record<string, unknown> =>
+          value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+
+        const nextFeed = data.engagementMessages.map((entryUnknown: unknown, index: number) => {
+          const entry = asRecord(entryUnknown);
+          const platform = String(entry.platform ?? 'Instagram');
+          const type = String(entry.type ?? 'Comment');
+          return {
+            id: String(entry.id ?? `eng_${index}`),
+            name: String(entry.name ?? 'Customer'),
+            emoji: String(entry.emoji ?? '👍'),
+            Logo: platformToLogo[platform] ?? InstagramLogo,
+            platform,
+            type,
+            filter: String(entry.filter ?? deriveFilterFromType(type)),
+            time: String(entry.time ?? 'Just now'),
+            msg: String(entry.msg ?? ''),
+            ai: String(entry.ai ?? entry.reply ?? ''),
+            isNegative: Boolean(entry.isNegative),
+          };
+        });
+
+        if (!alive) return;
+        setEngagementFeed(nextFeed);
+      } catch {
+        if (!alive) return;
+        setEngagementFeed(fallbackEngagementMessages);
+      }
+    };
+
+    loadEngagement();
+    return () => { alive = false; };
+  }, [subTab, engFilter]);
 
   // ── File upload handler ──────────────────────────────────────────────────
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -416,7 +478,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
     setSubTab('chat');
   };
 
-  const filteredEngagement = engFilter === 'All' ? engagementMessages : engagementMessages.filter(m => m.filter === engFilter);
+  const filteredEngagement = engFilter === 'All' ? engagementFeed : engagementFeed.filter(m => m.filter === engFilter);
 
   const handleAttach = (type: string) => {
     setPendingUpload({

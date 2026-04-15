@@ -176,6 +176,8 @@ Set these in `.env` at the project root. Never commit real secrets to version co
 | `EMAIL_FROM` | — | Sender address for outgoing emails. Default: `Speeda <noreply@speeda.ai>`. |
 | `AYRSHARE_API_KEY` | ✓ | Ayrshare Business API key — required for social sync, analytics, and scheduling. Get yours at [ayrshare.com](https://www.ayrshare.com). |
 | `AYRSHARE_WEBHOOK_SECRET` | — | When set, webhook requests must include `Authorization: Bearer <secret>`. Configure the same value in your Ayrshare dashboard. |
+| `DISCUSSION_CODE_SECRET` | — | Secret used to generate stateless HMAC discussion codes (`disc_...`) for n8n payloads. If missing, engagement APIs return provider-unavailable responses and the UI falls back to local mock data. |
+| `N8N_ENGAGEMENT_WEBHOOK_URL` | — | n8n webhook URL used by `/api/dashboard/engagement` and `/api/chat/engagement-feed`. If missing or failing, those APIs return `503` and UI falls back to existing mock engagement data. |
 | `NEXT_PUBLIC_APP_URL` | ✓ | Public URL (no trailing slash). Used in email links and as the Ayrshare OAuth redirect domain. E.g. `https://platform.speeda.ai`. |
 
 ---

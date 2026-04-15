@@ -4,6 +4,22 @@ import { prisma } from '@/lib/db';
 
 const DISCUSSION_CODE_LENGTH = 8;
 const MAX_REGENERATION_ATTEMPTS = 3;
+const HMAC_DIGEST_SLICE_LENGTH = 24;
+
+export function makeDiscussionCode(userId: string | bigint): string {
+  const secret = process.env.DISCUSSION_CODE_SECRET;
+  if (!secret) {
+    console.warn('[discussion-code] DISCUSSION_CODE_SECRET is not configured');
+    return '';
+  }
+
+  const digest = crypto
+    .createHmac('sha256', secret)
+    .update(String(userId))
+    .digest('base64url');
+
+  return `disc_${digest.slice(0, HMAC_DIGEST_SLICE_LENGTH)}`;
+}
 
 /** Generate an 8-digit numeric user-facing discussion code. */
 function generateDiscussionCode(): string {

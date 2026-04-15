@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { requireAuth, errorResponse } from '@/lib/auth-guard';
 import { rateLimit } from '@/lib/rate-limit';
+import { makeDiscussionCode } from '@/lib/discussion-code';
 
 /**
  * POST /api/chat
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return errorResponse(parsed.error.issues[0].message, 400);
 
   const { message, sessionId, isInteractive, interactiveTitle, mediaId, mediaType } = parsed.data;
+  const discussionCode = makeDiscussionCode(user.sub);
 
   try {
     // ── Fetch user state in parallel ───────────────────────────────────────
@@ -113,8 +115,8 @@ export async function POST(req: NextRequest) {
 
       // Conversation tracking
       wa_message_id: '',
-      discu_code:    '',
-      discu_key:     '',
+      discu_code:    discussionCode,
+      discu_key:     discussionCode,
 
       // Source channel — lets n8n know this is web chat, not WhatsApp
       source: 'web',
