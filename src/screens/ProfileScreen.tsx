@@ -20,11 +20,27 @@ interface ProfileScreenProps {
   onNavigate?:   (screen: string) => void;
   initialData?:  ProfileInitialData;
   isLoading?:    boolean;
-  onSave?:       (data: { name: string; phone: string }) => Promise<void>;
+  onSave?:       (data: {
+    name: string;
+    phone: string;
+    businessName: string;
+    country: string;
+    city: string;
+    industry: string;
+  }) => Promise<void>;
 }
 
 export const ProfileScreen = ({ onBack, onNavigate, initialData, isLoading, onSave }: ProfileScreenProps) => {
   const { t } = useTranslation();
+  type FormState = {
+    businessName: string;
+    ownerName: string;
+    email: string;
+    phone: string;
+    country: string;
+    city: string;
+    businessType: string;
+  };
   const [form, setForm] = useState({
     businessName: initialData?.businessName ?? "Malek's Kitchen",
     ownerName:    initialData?.name         ?? 'Malek Zlitni',
@@ -56,7 +72,14 @@ export const ProfileScreen = ({ onBack, onNavigate, initialData, isLoading, onSa
     if (!onSave) return;
     setSaving(true);
     try {
-      await onSave({ name: form.ownerName, phone: form.phone });
+      await onSave({
+        name: form.ownerName,
+        phone: form.phone,
+        businessName: form.businessName,
+        country: form.country,
+        city: form.city,
+        industry: form.businessType,
+      });
       toast.success('Profile saved');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to save');
@@ -143,12 +166,12 @@ export const ProfileScreen = ({ onBack, onNavigate, initialData, isLoading, onSa
             { label: 'Owner Name', key: 'ownerName' },
             { label: t('settings.email'), key: 'email' },
             { label: t('settings.phone'), key: 'phone' },
-          ].map(field => (
+          ].map((field: { label: string; key: keyof FormState }) => (
             <div key={field.key}>
               <label className="text-[13px] font-semibold text-foreground mb-1.5 block">{field.label}</label>
               <input
                 className={inputClass}
-                value={(form as any)[field.key]}
+                value={form[field.key]}
                 onChange={e => setForm(f => ({ ...f, [field.key]: e.target.value }))}
               />
             </div>
