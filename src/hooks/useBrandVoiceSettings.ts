@@ -11,8 +11,7 @@ export interface BrandVoiceSettingsData {
 }
 
 export function useBrandVoiceSettings(
-  fallbackData: BrandVoiceSettingsData,
-  onSuccess?: (data: BrandVoiceSettingsData) => void
+  fallbackData: BrandVoiceSettingsData
 ) {
   return useQuery({
     queryKey: ['settings-brand-voice'],
@@ -23,7 +22,6 @@ export function useBrandVoiceSettings(
         return fallbackData;
       }
     },
-    onSuccess,
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false,
   });

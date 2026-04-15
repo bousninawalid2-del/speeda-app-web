@@ -28,42 +28,45 @@ const fallbackBrandVoiceData = {
 
 export const EditBrandVoiceScreen = ({ onBack }: EditBrandVoiceScreenProps) => {
   const { t } = useTranslation();
-  const [tones, setTones] = useState(fallbackBrandVoiceData.tones);
-  const [langs, setLangs] = useState(fallbackBrandVoiceData.langs);
-  const [keywords, setKeywords] = useState(fallbackBrandVoiceData.keywords);
+  const { data: fetchedBrandVoice = fallbackBrandVoiceData } = useBrandVoiceSettings(fallbackBrandVoiceData);
+  const [tonesOverride, setTonesOverride] = useState<string[] | null>(null);
+  const [langsOverride, setLangsOverride] = useState<string[] | null>(null);
+  const [keywordsOverride, setKeywordsOverride] = useState<string[] | null>(null);
   const [newKeyword, setNewKeyword] = useState('');
   const [brandFiles, setBrandFiles] = useState<string[]>([]);
-  const [otherLang, setOtherLang] = useState(fallbackBrandVoiceData.otherLang);
-  const [businessDescription, setBusinessDescription] = useState(fallbackBrandVoiceData.businessDescription);
-  const [sampleContent, setSampleContent] = useState(fallbackBrandVoiceData.sampleContent);
+  const [otherLangOverride, setOtherLangOverride] = useState<string | null>(null);
+  const [businessDescriptionOverride, setBusinessDescriptionOverride] = useState<string | null>(null);
+  const [sampleContentOverride, setSampleContentOverride] = useState<string | null>(null);
   const [businessPhotos, setBusinessPhotos] = useState<{ name: string; desc: string }[]>([
     { name: 'kitchen_1.jpg', desc: 'Kitchen interior' },
     { name: 'shawarma_plate.jpg', desc: 'Signature shawarma' },
     { name: 'restaurant_front.jpg', desc: '' },
   ]);
-  useBrandVoiceSettings(fallbackBrandVoiceData, (data) => {
-    setTones(data.tones);
-    setLangs(data.langs);
-    setKeywords(data.keywords);
-    setBusinessDescription(data.businessDescription);
-    setSampleContent(data.sampleContent);
-    setOtherLang(data.otherLang);
-  });
   const saveBrandVoiceMutation = useSaveBrandVoiceSettings();
+  const tones = tonesOverride ?? fetchedBrandVoice.tones;
+  const langs = langsOverride ?? fetchedBrandVoice.langs;
+  const keywords = keywordsOverride ?? fetchedBrandVoice.keywords;
+  const otherLang = otherLangOverride ?? fetchedBrandVoice.otherLang;
+  const businessDescription = businessDescriptionOverride ?? fetchedBrandVoice.businessDescription;
+  const sampleContent = sampleContentOverride ?? fetchedBrandVoice.sampleContent;
 
-  const toggleTone = (t: string) => setTones(ts => ts.includes(t) ? ts.filter(x => x !== t) : [...ts, t]);
+  const toggleTone = (t: string) =>
+    setTonesOverride((current) => {
+      const source = current ?? tones;
+      return source.includes(t) ? source.filter(x => x !== t) : [...source, t];
+    });
 
   const toggleLang = (id: string) => {
     if (langs.includes(id)) {
-      setLangs(ls => ls.filter(x => x !== id));
+      setLangsOverride(langs.filter(x => x !== id));
     } else if (langs.length < 2) {
-      setLangs(ls => [...ls, id]);
+      setLangsOverride([...langs, id]);
     }
   };
 
   const addKeyword = () => {
     if (newKeyword.trim() && !keywords.includes(newKeyword.trim())) {
-      setKeywords(ks => [...ks, newKeyword.trim()]);
+      setKeywordsOverride([...keywords, newKeyword.trim()]);
       setNewKeyword('');
     }
   };
@@ -122,14 +125,14 @@ export const EditBrandVoiceScreen = ({ onBack }: EditBrandVoiceScreenProps) => {
             ))}
           </div>
           {langs.includes('other') && (
-            <input className="w-full h-[48px] rounded-2xl bg-card border border-border px-4 text-[14px] mt-2 focus:border-primary focus:outline-none" placeholder="e.g., French, Urdu, Turkish..." value={otherLang} onChange={e => setOtherLang(e.target.value)} />
+            <input className="w-full h-[48px] rounded-2xl bg-card border border-border px-4 text-[14px] mt-2 focus:border-primary focus:outline-none" placeholder="e.g., French, Urdu, Turkish..." value={otherLang} onChange={e => setOtherLangOverride(e.target.value)} />
           )}
         </div>
 
         {/* Brand Description */}
         <div className="mb-6">
           <label className="text-[14px] font-bold text-foreground mb-2 block">Brand Description</label>
-          <textarea className="w-full min-h-[100px] rounded-2xl bg-card border border-border p-4 text-[14px] focus:border-primary focus:outline-none resize-none" value={businessDescription} onChange={e => setBusinessDescription(e.target.value)} />
+          <textarea className="w-full min-h-[100px] rounded-2xl bg-card border border-border p-4 text-[14px] focus:border-primary focus:outline-none resize-none" value={businessDescription} onChange={e => setBusinessDescriptionOverride(e.target.value)} />
         </div>
 
         {/* Brand Identity Assets */}
@@ -188,7 +191,7 @@ export const EditBrandVoiceScreen = ({ onBack }: EditBrandVoiceScreenProps) => {
             {keywords.map(k => (
               <span key={k} className="flex items-center gap-1 px-3 py-1.5 rounded-3xl bg-muted text-foreground text-[12px] font-medium">
                 {k}
-                <button onClick={() => setKeywords(ks => ks.filter(x => x !== k))}><X size={12} className="text-muted-foreground" /></button>
+                <button onClick={() => setKeywordsOverride(keywords.filter(x => x !== k))}><X size={12} className="text-muted-foreground" /></button>
               </span>
             ))}
           </div>
@@ -201,7 +204,7 @@ export const EditBrandVoiceScreen = ({ onBack }: EditBrandVoiceScreenProps) => {
         {/* Sample Content */}
         <div className="mb-6">
           <label className="text-[14px] font-bold text-foreground mb-2 block">Sample Content</label>
-          <textarea className="w-full min-h-[80px] rounded-2xl bg-card border border-border p-4 text-[14px] focus:border-primary focus:outline-none resize-none" placeholder="Paste an example of content that represents your brand voice" value={sampleContent} onChange={e => setSampleContent(e.target.value)} />
+          <textarea className="w-full min-h-[80px] rounded-2xl bg-card border border-border p-4 text-[14px] focus:border-primary focus:outline-none resize-none" placeholder="Paste an example of content that represents your brand voice" value={sampleContent} onChange={e => setSampleContentOverride(e.target.value)} />
         </div>
 
         <button onClick={saveBrandVoice} className="w-full h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press">

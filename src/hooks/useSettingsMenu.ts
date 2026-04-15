@@ -14,8 +14,7 @@ interface SettingsMenuResponse {
 }
 
 export function useSettingsMenu(
-  fallbackItems: SettingsMenuItem[],
-  onSuccess?: (items: SettingsMenuItem[]) => void
+  fallbackItems: SettingsMenuItem[]
 ) {
   return useQuery({
     queryKey: ['settings-menu'],
@@ -28,7 +27,6 @@ export function useSettingsMenu(
         return fallbackItems;
       }
     },
-    onSuccess,
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false,
   });

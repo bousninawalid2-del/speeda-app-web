@@ -48,9 +48,9 @@ export async function PUT(request: NextRequest) {
     if (!parsed.success) return errorResponse(parsed.error.issues[0].message, 400);
 
     const userId = toUserIdBigInt(auth.user.sub);
-    const tone_of_voice = parsed.data.tones.join(', ');
-    const language_preference = parsed.data.langs.join(', ');
-    const hashtags = parsed.data.keywords.join(', ');
+    const tone_of_voice = parsed.data.tones.join(',');
+    const language_preference = parsed.data.langs.join(',');
+    const hashtags = parsed.data.keywords.join(',');
 
     const preference = await prisma.preference.upsert({
       where: { userId },
