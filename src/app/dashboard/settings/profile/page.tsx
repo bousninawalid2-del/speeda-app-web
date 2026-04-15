@@ -4,14 +4,20 @@ import { useRouter } from 'next/navigation';
 import { ProfileScreen } from '@/screens/ProfileScreen';
 import { resolveScreen } from '@/lib/navigation';
 import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
-import { toast } from 'sonner';
 
 export default function Page() {
   const router  = useRouter();
   const { data: profile, isLoading } = useProfile();
   const { mutateAsync: updateProfile } = useUpdateProfile();
 
-  const handleSave = async (data: { name: string; phone: string }) => {
+  const handleSave = async (data: {
+    name: string;
+    phone: string;
+    businessName: string;
+    country: string;
+    city: string;
+    industry: string;
+  }) => {
     await updateProfile(data);
   };
 

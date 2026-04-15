@@ -14,6 +14,7 @@ import { useAnalytics } from '../hooks/useAnalytics';
 import { useSocialAccounts } from '../hooks/useSocialAccounts';
 import { useSubscription } from '../hooks/useSubscription';
 import { usePosts } from '../hooks/usePosts';
+import { useDashboardHome } from '@/hooks/useDashboardHome';
 
 const MOS_TOOLTIP_KEY = 'speeda_mos_tooltip_shown';
 
@@ -412,6 +413,7 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
   const { data: socialAccounts } = useSocialAccounts();
   const { data: subData } = useSubscription();
   const { data: postsData } = usePosts();
+  const { data: dashboardHomeData } = useDashboardHome();
 
   const [briefingDismissed, setBriefingDismissed] = useState(false);
   const [questsOpen, setQuestsOpen] = useState(false);
@@ -434,54 +436,62 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
   const tokensTotal = tokensData?.total ?? 500;
 
   // Build strategy cards dynamically based on real state
-  const initialCards: StrategyCard[] = [];
-  let cardId = 1;
+  const initialCards: StrategyCard[] = Array.isArray(dashboardHomeData?.todaysActions) && dashboardHomeData.todaysActions.length > 0
+    ? dashboardHomeData.todaysActions.map((card) => ({
+        ...card,
+        priority: card.priority === 'critical'
+          ? t('strategy.critical')
+          : card.priority === 'high'
+            ? t('strategy.high')
+            : t('strategy.recommended'),
+      }))
+    : (() => {
+        const fallbackCards: StrategyCard[] = [];
+        let cardId = 1;
 
-  // If platforms disconnected — critical action
-  if (disconnectedAccounts.length > 0) {
-    initialCards.push({
-      id: cardId++, priority: t('strategy.critical'), color: 'bg-red-accent',
-      title: `Reconnect ${disconnectedAccounts[0].platform}`,
-      desc: `Your ${disconnectedAccounts[0].platform} account is disconnected. Reconnect to keep publishing.`,
-      impact: 'Restore publishing', impactIcon: '🔗', nav: 'social',
-    });
-  }
+        if (disconnectedAccounts.length > 0) {
+          fallbackCards.push({
+            id: cardId++, priority: t('strategy.critical'), color: 'bg-red-accent',
+            title: `Reconnect ${disconnectedAccounts[0].platform}`,
+            desc: `Your ${disconnectedAccounts[0].platform} account is disconnected. Reconnect to keep publishing.`,
+            impact: 'Restore publishing', impactIcon: '🔗', nav: 'social',
+          });
+        }
 
-  // If no posts scheduled — suggest creating one
-  if (scheduledPosts === 0) {
-    initialCards.push({
-      id: cardId++, priority: t('strategy.high'), color: 'bg-orange-accent',
-      title: t('strategy.postPeak'), desc: t('strategy.postPeakDesc'),
-      impact: '+40% reach', impactIcon: '📈', nav: 'create',
-    });
-  }
+        if (scheduledPosts === 0) {
+          fallbackCards.push({
+            id: cardId++, priority: t('strategy.high'), color: 'bg-orange-accent',
+            title: t('strategy.postPeak'), desc: t('strategy.postPeakDesc'),
+            impact: '+40% reach', impactIcon: '📈', nav: 'create',
+          });
+        }
 
-  // If tokens low — suggest buying more
-  if (tokenLow) {
-    initialCards.push({
-      id: cardId++, priority: t('strategy.high'), color: 'bg-orange-accent',
-      title: 'Top up your AI tokens',
-      desc: `You have ${tokenCount} tokens left. Buy more to keep creating content.`,
-      impact: 'Uninterrupted AI', impactIcon: '✦', nav: 'tokens-packs',
-    });
-  }
+        if (tokenLow) {
+          fallbackCards.push({
+            id: cardId++, priority: t('strategy.high'), color: 'bg-orange-accent',
+            title: 'Top up your AI tokens',
+            desc: `You have ${tokenCount} tokens left. Buy more to keep creating content.`,
+            impact: 'Uninterrupted AI', impactIcon: '✦', nav: 'tokens-packs',
+          });
+        }
 
-  // If no platforms connected — connect some
-  if (connectedCount === 0) {
-    initialCards.push({
-      id: cardId++, priority: t('strategy.critical'), color: 'bg-red-accent',
-      title: 'Connect your social media',
-      desc: 'Connect at least one platform to start publishing content and tracking analytics.',
-      impact: 'Enable publishing', impactIcon: '🔗', nav: 'social',
-    });
-  }
+        if (connectedCount === 0) {
+          fallbackCards.push({
+            id: cardId++, priority: t('strategy.critical'), color: 'bg-red-accent',
+            title: 'Connect your social media',
+            desc: 'Connect at least one platform to start publishing content and tracking analytics.',
+            impact: 'Enable publishing', impactIcon: '🔗', nav: 'social',
+          });
+        }
 
-  // Always suggest content creation
-  initialCards.push({
-    id: cardId++, priority: t('strategy.recommended'), color: 'bg-brand-blue',
-    title: t('strategy.postPeak'), desc: t('strategy.postPeakDesc'),
-    impact: '+40% reach', impactIcon: '📈', nav: 'create',
-  });
+        fallbackCards.push({
+          id: cardId++, priority: t('strategy.recommended'), color: 'bg-brand-blue',
+          title: t('strategy.postPeak'), desc: t('strategy.postPeakDesc'),
+          impact: '+40% reach', impactIcon: '📈', nav: 'create',
+        });
+
+        return fallbackCards;
+      })();
 
   // Cap at 5 cards
   const cappedCards = initialCards.slice(0, 5);
@@ -490,6 +500,22 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
   const [doneCount, setDoneCount] = useState(0);
   const [pendingDoneId, setPendingDoneId] = useState<number | null>(null);
   const totalCount = cappedCards.length;
+  const cardsSnapshot = cappedCards.map((card) => `${card.id}:${card.title}`).join('|');
+
+  useEffect(() => {
+    setActiveCards(cappedCards);
+    setDoneCount(0);
+    setPendingDoneId(null);
+  }, [cardsSnapshot]);
+
+  const aiActivitySummary = dashboardHomeData?.aiActivitySummary ?? t('home.aiActivitySummary');
+  const aiRecommendations = dashboardHomeData?.recommendations?.length
+    ? dashboardHomeData.recommendations
+    : [
+        { icon: '📅', bg: 'bg-purple-soft', text: t('home.schedulePosts'), nav: 'create' },
+        { icon: '💬', bg: 'bg-green-soft', text: t('home.respondReviews'), nav: 'chat-engagement-reviews' },
+        { icon: '📈', bg: 'bg-orange-soft', text: t('home.increaseBudget'), nav: 'campaigns' },
+      ];
 
   const handleDismiss = useCallback((id: number, action: 'do' | 'skip') => {
     if (action === 'do') setDoneCount(c => c + 1);
@@ -606,7 +632,7 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
               <div className="w-2 h-2 rounded-full bg-green-accent animate-pulse-dot" />
               <span className="text-[11px] font-bold text-purple">{t('home.aiActive')}</span>
             </div>
-            <span className="text-[12px] text-muted-foreground relative z-10">{t('home.aiActivitySummary')}</span>
+            <span className="text-[12px] text-muted-foreground relative z-10">{aiActivitySummary}</span>
           </button>
 
           {/* Row 2: Strategy Cards — horizontal scrollable */}
@@ -657,11 +683,7 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
             <div>
               <h2 className="text-[18px] font-bold text-foreground">{t('home.aiRecommendations')}</h2>
               <div className="mt-3 space-y-2">
-                {[
-                  { icon: '📅', bg: 'bg-purple-soft', text: t('home.schedulePosts'), nav: 'create' },
-                  { icon: '💬', bg: 'bg-green-soft', text: t('home.respondReviews'), nav: 'chat-engagement-reviews' },
-                  { icon: '📈', bg: 'bg-orange-soft', text: t('home.increaseBudget'), nav: 'campaigns' },
-                ].map((item, i) => (
+                {aiRecommendations.map((item, i) => (
                   <button key={i} onClick={() => onNavigate(item.nav)} className="w-full flex items-center gap-3 bg-card rounded-2xl p-4 border border-border-light desktop-hover">
                     <div className={`w-11 h-11 rounded-2xl ${item.bg} flex items-center justify-center text-lg`}>{item.icon}</div>
                     <span className="text-[14px] font-medium text-foreground flex-1 text-start">{item.text}</span>
@@ -852,7 +874,7 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
             <div className="w-2 h-2 rounded-full bg-green-accent animate-pulse-dot" />
             <span className="text-[11px] font-bold text-purple">{t('home.aiActive')}</span>
           </div>
-          <span className="text-[12px] text-muted-foreground relative z-10">{t('home.aiActivitySummary')}</span>
+          <span className="text-[12px] text-muted-foreground relative z-10">{aiActivitySummary}</span>
         </button>
 
         {/* Strategy Cards — horizontal swipeable with peek */}
@@ -901,11 +923,7 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
         <div className="mt-6">
           <h2 className="text-[18px] font-bold text-foreground">{t('home.aiRecommendations')}</h2>
           <div className="mt-3 space-y-2">
-            {[
-              { icon: '📅', bg: 'bg-purple-soft', text: t('home.schedulePosts'), nav: 'create' },
-              { icon: '💬', bg: 'bg-green-soft', text: t('home.respondReviews'), nav: 'chat-engagement-reviews' },
-              { icon: '📈', bg: 'bg-orange-soft', text: t('home.increaseBudget'), nav: 'campaigns' },
-            ].map((item, i) => (
+            {aiRecommendations.map((item, i) => (
               <motion.button whileTap={{ scale: 0.98 }} key={i} onClick={() => onNavigate(item.nav)} className="w-full flex items-center gap-3 bg-card rounded-2xl p-4 border border-border-light card-tap">
                 <div className={`w-11 h-11 rounded-2xl ${item.bg} flex items-center justify-center text-lg`}>{item.icon}</div>
                 <span className="text-[14px] font-medium text-foreground flex-1 text-start">{item.text}</span>

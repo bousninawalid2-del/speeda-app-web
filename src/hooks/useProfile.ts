@@ -13,7 +13,7 @@ export interface ProfileData {
   activity: {
     business_name: string | null;
     industry:      string | null;
-    country:       string | null;
+    country?:      string | null;
     location:      string | null;
     business_size: string | null;
   } | null;
@@ -42,8 +42,8 @@ export function useProfile() {
     queryKey: ['profile'],
     queryFn:  async () => {
       try {
-        const res = await apiFetch<{ user: ProfileData }>('/auth/me');
-        return res.user;
+        const res = await apiFetch<{ profile: ProfileData }>('/settings/profile');
+        return res.profile;
       } catch {
         return PROFILE_FALLBACK;
       }
@@ -55,16 +55,21 @@ export function useProfile() {
 export function useUpdateProfile() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name?: string; phone?: string }) =>
-      apiFetch<{ user: Pick<ProfileData, 'id' | 'email' | 'name' | 'phone'> }>('/auth/me', {
+    mutationFn: (data: {
+      name?: string;
+      phone?: string;
+      businessName?: string;
+      country?: string;
+      city?: string;
+      industry?: string;
+    }) =>
+      apiFetch<{ profile: ProfileData }>('/settings/profile', {
         method: 'PATCH',
         body: JSON.stringify(data),
       }),
     onSuccess: (res) => {
       // Optimistic update inside cache
-      qc.setQueryData(['profile'], (old: ProfileData | undefined) =>
-        old ? { ...old, ...res.user } : old
-      );
+      qc.setQueryData(['profile'], res.profile);
     },
   });
 }
