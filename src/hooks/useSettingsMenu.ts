@@ -23,7 +23,8 @@ export function useSettingsMenu(
         const response = await apiFetch<SettingsMenuResponse>('/settings/menu');
         if (!Array.isArray(response.items)) throw new Error('Invalid menu payload');
         return response.items;
-      } catch {
+      } catch (error) {
+        console.warn('[settings-menu] Falling back to demo items', error);
         return fallbackItems;
       }
     },

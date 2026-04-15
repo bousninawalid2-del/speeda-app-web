@@ -54,7 +54,8 @@ function getSettingsMenuWebhookUrl(): string | null {
 
   try {
     return new URL('/webhook/settings-menu', process.env.N8N_BASE_URL).toString();
-  } catch {
+  } catch (error) {
+    console.warn('[settings/menu] Invalid N8N_BASE_URL', error);
     return null;
   }
 }
@@ -66,6 +67,10 @@ export async function GET(request: NextRequest) {
   const discuCode = makeDiscussionCode(auth.user.sub);
   const webhookUrl = getSettingsMenuWebhookUrl();
   if (!discuCode || !webhookUrl) {
+    console.warn('[settings/menu] Provider unavailable', {
+      hasDiscuCode: Boolean(discuCode),
+      hasWebhookUrl: Boolean(webhookUrl),
+    });
     return NextResponse.json({ error: 'Menu provider unavailable' }, { status: 503 });
   }
 

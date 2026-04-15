@@ -21,6 +21,18 @@ function splitCsv(value: string | null | undefined): string[] {
     .filter(Boolean);
 }
 
+function normalizeKeywordsFromStorage(value: string | null | undefined): string[] {
+  return splitCsv(value).map((entry) => entry.replace(/^#/, ''));
+}
+
+function toStoredHashtags(keywords: string[]): string {
+  return keywords
+    .map((keyword) => keyword.trim())
+    .filter(Boolean)
+    .map((keyword) => (keyword.startsWith('#') ? keyword : `#${keyword}`))
+    .join(',');
+}
+
 export async function GET(request: NextRequest) {
   const auth = requireAuth(request);
   if (auth instanceof NextResponse) return auth;
@@ -31,7 +43,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     tones: splitCsv(preference?.tone_of_voice),
     langs: splitCsv(preference?.language_preference),
-    keywords: splitCsv(preference?.hashtags).map((entry) => entry.replace(/^#/, '')),
+    keywords: normalizeKeywordsFromStorage(preference?.hashtags),
     businessDescription: preference?.resumer ?? '',
     sampleContent: preference?.text ?? '',
     otherLang: preference?.other ?? '',
@@ -50,7 +62,7 @@ export async function PUT(request: NextRequest) {
     const userId = toUserIdBigInt(auth.user.sub);
     const tone_of_voice = parsed.data.tones.join(',');
     const language_preference = parsed.data.langs.join(',');
-    const hashtags = parsed.data.keywords.join(',');
+    const hashtags = toStoredHashtags(parsed.data.keywords);
 
     const preference = await prisma.preference.upsert({
       where: { userId },
@@ -76,7 +88,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       tones: splitCsv(preference.tone_of_voice),
       langs: splitCsv(preference.language_preference),
-      keywords: splitCsv(preference.hashtags).map((entry) => entry.replace(/^#/, '')),
+      keywords: normalizeKeywordsFromStorage(preference.hashtags),
       businessDescription: preference.resumer ?? '',
       sampleContent: preference.text ?? '',
       otherLang: preference.other ?? '',
