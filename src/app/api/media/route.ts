@@ -1,13 +1,14 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireAuth, errorResponse } from '@/lib/auth-guard';
+import { toUserIdBigInt } from '@/lib/user-id';
 
 const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
 
 export async function POST(req: NextRequest) {
   const auth = requireAuth(req);
   if (auth instanceof Response) return auth;
-  const { user } = auth;
+  const userId = toUserIdBigInt(auth.user.sub);
 
   let formData: FormData;
   try {
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
 
   const media = await prisma.dataImage.create({
     data: {
-      userId: user.sub,
+      userId,
       filename: file.name,
       mimetype: file.type,
       size: buffer.byteLength,
@@ -47,10 +48,10 @@ export async function GET(req: NextRequest) {
   if (!id) {
     const auth = requireAuth(req);
     if (auth instanceof Response) return auth;
-    const { user } = auth;
+    const userId = toUserIdBigInt(auth.user.sub);
 
     const type = req.nextUrl.searchParams.get('type');
-    const where: { userId: string; mimetype?: { startsWith: string } } = { userId: user.sub };
+    const where: { userId: bigint; mimetype?: { startsWith: string } } = { userId };
     if (type === 'photo') where.mimetype = { startsWith: 'image/' };
     if (type === 'video') where.mimetype = { startsWith: 'video/' };
 

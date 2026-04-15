@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { verifyRefreshToken, signAccessToken, signRefreshToken, expiresInMs } from '@/lib/jwt';
 import { generateSecureToken, errorResponse } from '@/lib/auth-guard';
+import { toUserIdBigInt, toUserIdString } from '@/lib/user-id';
 
 /**
  * POST /api/auth/refresh
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
       return errorResponse('Refresh token revoked or expired', 401);
     }
 
-    const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+    const user = await prisma.user.findUnique({ where: { id: toUserIdBigInt(payload.sub) } });
     if (!user) return errorResponse('User not found', 404);
 
     // ── Rotate: delete old token, create new one ──────────────────────────────
@@ -43,8 +44,9 @@ export async function POST(request: NextRequest) {
       }),
     ]);
 
-    const accessToken    = signAccessToken({ sub: user.id, email: user.email, name: user.name ?? undefined });
-    const newRefreshToken = signRefreshToken({ sub: user.id, jti: newJti });
+    const userId = toUserIdString(user.id);
+    const accessToken = signAccessToken({ sub: userId, email: user.email, name: user.name ?? undefined });
+    const newRefreshToken = signRefreshToken({ sub: userId, jti: newJti });
 
     const response = NextResponse.json({ accessToken });
 

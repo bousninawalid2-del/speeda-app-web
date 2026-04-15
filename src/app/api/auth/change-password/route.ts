@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { requireAuth, errorResponse } from '@/lib/auth-guard';
+import { toUserIdBigInt } from '@/lib/user-id';
 
 const schema = z.object({
   currentPassword: z.string().min(1),
@@ -14,14 +15,14 @@ export async function PUT(request: NextRequest) {
   try {
     const auth = requireAuth(request);
     if (auth instanceof NextResponse) return auth;
-    const { user } = auth;
+    const userId = toUserIdBigInt(auth.user.sub);
 
     const body = await request.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) return errorResponse(parsed.error.issues[0].message);
     const { currentPassword, newPassword } = parsed.data;
 
-    const dbUser = await prisma.user.findUnique({ where: { id: user.sub } });
+    const dbUser = await prisma.user.findUnique({ where: { id: userId } });
     if (!dbUser || !dbUser.password) {
       return errorResponse('Account uses passwordless login', 400);
     }
@@ -30,10 +31,10 @@ export async function PUT(request: NextRequest) {
     if (!valid) return errorResponse('Current password is incorrect', 401);
 
     const hashed = await bcrypt.hash(newPassword, 12);
-    await prisma.user.update({ where: { id: user.sub }, data: { password: hashed } });
+    await prisma.user.update({ where: { id: userId }, data: { password: hashed } });
 
     // Revoke all existing refresh tokens for security
-    await prisma.refreshToken.deleteMany({ where: { userId: user.sub } });
+    await prisma.refreshToken.deleteMany({ where: { userId } });
 
     return NextResponse.json({ message: 'Password changed successfully.' });
   } catch (err) {

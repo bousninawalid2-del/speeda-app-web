@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { signAccessToken, signRefreshToken, expiresInMs } from '@/lib/jwt';
 import { generateSecureToken, errorResponse } from '@/lib/auth-guard';
+import { toUserIdBigInt, toUserIdString } from '@/lib/user-id';
 
 const schema = z.object({
   email: z.string().email(),
@@ -46,9 +47,10 @@ export async function POST(request: NextRequest) {
  * - Sets refresh token as httpOnly, Secure cookie (JS cannot read it)
  */
 export async function issueTokens(
-  user: { id: string; email: string; name: string | null },
+  user: { id: bigint; email: string; name: string | null },
   _req?: NextRequest
 ) {
+  const userId = toUserIdString(user.id);
   const refreshTokenId = generateSecureToken();
   const refreshExpiry = new Date(
     Date.now() + expiresInMs(process.env.JWT_REFRESH_EXPIRES ?? '7d')
@@ -58,22 +60,22 @@ export async function issueTokens(
   await prisma.refreshToken.create({
     data: {
       token: refreshTokenId,
-      userId: user.id,
+      userId: toUserIdBigInt(user.id),
       expiresAt: refreshExpiry,
     },
   });
 
   const accessToken = signAccessToken({
-    sub: user.id,
+    sub: userId,
     email: user.email,
     name: user.name ?? undefined,
   });
 
-  const refreshToken = signRefreshToken({ sub: user.id, jti: refreshTokenId });
+  const refreshToken = signRefreshToken({ sub: userId, jti: refreshTokenId });
 
   const response = NextResponse.json({
     accessToken,
-    user: { id: user.id, email: user.email, name: user.name },
+    user: { id: userId, email: user.email, name: user.name },
   });
 
   // Store refresh token in httpOnly cookie — JS cannot access it

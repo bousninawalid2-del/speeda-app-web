@@ -6,6 +6,7 @@ import { generateOTP, errorResponse } from '@/lib/auth-guard';
 import { sendVerificationEmail } from '@/lib/email';
 import { startFreeTrial } from '@/lib/subscription-guard';
 import { ensureN8nUserById } from '@/lib/sync-n8n';
+import { toUserIdString } from '@/lib/user-id';
 
 const schema = z.object({
   name: z.string().min(2),
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     const hashed = await bcrypt.hash(password, 12);
 
-    let userIdToUse: string | null = null;
+    let userIdToUse: bigint | null = null;
     if (existingByPhone) {
       if (isPreRegisteredWhatsAppUser(existingByPhone)) {
         userIdToUse = existingByPhone.id;
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 3) Validate referral code if provided
-    let referrerId: string | null = null;
+    let referrerId: bigint | null = null;
     if (referralCode) {
       const referrer = await prisma.user.findUnique({
         where: { referralCode },
@@ -124,7 +125,7 @@ export async function POST(request: NextRequest) {
     sendVerificationEmail(email, name, code).catch(console.error);
 
     return NextResponse.json(
-      { message: 'Account created. Check your email for a verification code.', userId: user.id },
+      { message: 'Account created. Check your email for a verification code.', userId: toUserIdString(user.id) },
       { status: 201 }
     );
   } catch (err) {

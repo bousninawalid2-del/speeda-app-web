@@ -1,4 +1,5 @@
 import { prisma } from './db';
+import { toUserIdBigInt, type UserIdInput } from './user-id';
 
 export type AccessLevel = 'free_trial' | 'active' | 'past_due' | 'none';
 
@@ -18,9 +19,9 @@ export interface SubscriptionAccess {
  * const access = await checkSubscriptionAccess(userId);
  * if (!access.hasAccess) return NextResponse.json({ error: 'Subscription required' }, { status: 402 });
  */
-export async function checkSubscriptionAccess(userId: string): Promise<SubscriptionAccess> {
+export async function checkSubscriptionAccess(userId: UserIdInput): Promise<SubscriptionAccess> {
   const user = await prisma.user.findUnique({
-    where: { id: userId },
+    where: { id: toUserIdBigInt(userId) },
     select: {
       trialEndsAt:  true,
       tokenBalance: true,
@@ -84,13 +85,13 @@ export async function checkSubscriptionAccess(userId: string): Promise<Subscript
  * Start a free trial for a new user.
  * Call this in the registration flow.
  */
-export async function startFreeTrial(userId: string): Promise<void> {
+export async function startFreeTrial(userId: UserIdInput): Promise<void> {
   const days = parseInt(process.env.FREE_TRIAL_DAYS ?? '14', 10);
   const trialEndsAt = new Date();
   trialEndsAt.setDate(trialEndsAt.getDate() + days);
 
   await prisma.user.update({
-    where: { id: userId },
+    where: { id: toUserIdBigInt(userId) },
     data:  { trialEndsAt },
   });
 }

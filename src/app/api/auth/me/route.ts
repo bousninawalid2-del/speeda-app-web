@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { requireAuth, errorResponse } from '@/lib/auth-guard';
+import { toUserIdBigInt, toUserIdString } from '@/lib/user-id';
 
 const patchSchema = z.object({
   name:  z.string().min(1).max(100).optional(),
@@ -15,17 +16,17 @@ export async function GET(request: NextRequest) {
   try {
     const auth = requireAuth(request);
     if (auth instanceof NextResponse) return auth;
-    const { user } = auth;
+    const userId = toUserIdBigInt(auth.user.sub);
 
     const dbUser = await prisma.user.findUnique({
-      where: { id: user.sub },
+      where: { id: userId },
       select: {
         id: true, email: true, name: true, phone: true,
         isVerified: true, createdAt: true,
         tokenBalance: true, tokenUsed: true,
         activity: {
           select: {
-            business_name: true, industry: true, country: true,
+            business_name: true, industry: true,
             location: true, business_size: true,
           },
         },
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!dbUser) return errorResponse('User not found', 404);
-    return NextResponse.json({ user: dbUser });
+    return NextResponse.json({ user: { ...dbUser, id: toUserIdString(dbUser.id) } });
   } catch (err) {
     console.error('[me]', err);
     return errorResponse('Internal server error', 500);
@@ -45,7 +46,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const auth = requireAuth(request);
     if (auth instanceof NextResponse) return auth;
-    const { user } = auth;
+    const userId = toUserIdBigInt(auth.user.sub);
 
     let body: unknown;
     try { body = await request.json(); } catch { return errorResponse('Invalid JSON', 400); }
@@ -58,12 +59,12 @@ export async function PATCH(request: NextRequest) {
     if (parsed.data.phone !== undefined) data.phone = parsed.data.phone.trim();
 
     const updated = await prisma.user.update({
-      where: { id: user.sub },
+      where: { id: userId },
       data,
       select: { id: true, email: true, name: true, phone: true },
     });
 
-    return NextResponse.json({ user: updated });
+    return NextResponse.json({ user: { ...updated, id: toUserIdString(updated.id) } });
   } catch (err) {
     console.error('[me PATCH]', err);
     return errorResponse('Internal server error', 500);
