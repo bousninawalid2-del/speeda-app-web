@@ -532,6 +532,7 @@ export const en = {
     signOutConfirm: 'You\'ll be signed out on all other devices.',
     signOutAllBtn: 'Sign Out All',
     allDevicesSignedOut: 'All other devices signed out ✓',
+    signOutAllNotAvailable: 'Sign out all devices is not available right now.',
   },
   competitor: {
     title: 'Competitor Watch',

@@ -531,6 +531,7 @@ export const ar = {
     signOutConfirm: 'سيتم تسجيل خروجك من جميع الأجهزة الأخرى.',
     signOutAllBtn: 'تسجيل خروج الكل',
     allDevicesSignedOut: 'تم تسجيل خروج جميع الأجهزة الأخرى ✓',
+    signOutAllNotAvailable: 'تسجيل الخروج من جميع الأجهزة غير متاح حالياً.',
   },
   competitor: {
     title: 'مراقبة المنافسين',

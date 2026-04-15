@@ -4,6 +4,7 @@ import { ChevronLeft, Eye, EyeOff, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
+import { useLogoutAllSessions } from '@/hooks/useSecurityActions';
 
 interface SecurityScreenProps {
   onBack: () => void;
@@ -35,10 +36,11 @@ export const SecurityScreen = ({ onBack }: SecurityScreenProps) => {
 
   const { changePassword } = useAuth();
   const [isChangingPw, setIsChangingPw] = useState(false);
+  const { mutateAsync: logoutAllSessions, isPending: isLoggingOutAll } = useLogoutAllSessions();
 
   const handleUpdatePassword = async () => {
     if (!currentPw) { toast.error(t('security.passwordIncorrect')); return; }
-    if (newPw.length < 6) { toast.error(t('security.passwordTooShort')); return; }
+    if (newPw.length < 8) { toast.error(t('security.passwordTooShort')); return; }
     if (newPw !== confirmPw) { toast.error(t('security.passwordMismatch')); return; }
     setIsChangingPw(true);
     try {
@@ -65,6 +67,21 @@ export const SecurityScreen = ({ onBack }: SecurityScreenProps) => {
     setTwoFA(true);
     setShow2FAOptions(false);
     toast.success(t('security.twoFaEnabled', { method }));
+  };
+
+  const handleSignOutAll = async () => {
+    setShowSignOutConfirm(false);
+    try {
+      await logoutAllSessions();
+      toast.success(t('security.allDevicesSignedOut'));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '';
+      if (/not found|method not allowed/i.test(message)) {
+        toast.error(t('security.signOutAllNotAvailable'));
+        return;
+      }
+      toast.error(message || t('security.signOutAllNotAvailable'));
+    }
   };
 
   const Toggle = ({ on, onChange, label, sub }: { on: boolean; onChange: () => void; label: string; sub: string }) => (
@@ -121,7 +138,7 @@ export const SecurityScreen = ({ onBack }: SecurityScreenProps) => {
               </button>
             </div>
           </div>
-          <button onClick={handleUpdatePassword} className="w-full h-[48px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[14px] shadow-btn btn-press mt-4">
+          <button onClick={handleUpdatePassword} disabled={isChangingPw} className="w-full h-[48px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[14px] shadow-btn btn-press mt-4 disabled:opacity-70">
             {t('security.updatePassword')}
           </button>
         </div>
@@ -179,7 +196,7 @@ export const SecurityScreen = ({ onBack }: SecurityScreenProps) => {
               <p className="text-[14px] text-muted-foreground mt-2">{t('security.signOutConfirm')}</p>
               <div className="flex gap-3 mt-5">
                 <button onClick={() => setShowSignOutConfirm(false)} className="flex-1 h-[44px] rounded-2xl border border-border text-foreground text-[14px] font-medium btn-press">{t('common.cancel')}</button>
-                <button onClick={() => { setShowSignOutConfirm(false); toast.success(t('security.allDevicesSignedOut')); }} className="flex-1 h-[44px] rounded-2xl bg-red-accent text-primary-foreground text-[14px] font-bold btn-press">{t('security.signOutAllBtn')}</button>
+                <button onClick={handleSignOutAll} disabled={isLoggingOutAll} className="flex-1 h-[44px] rounded-2xl bg-red-accent text-primary-foreground text-[14px] font-bold btn-press disabled:opacity-70">{t('security.signOutAllBtn')}</button>
               </div>
             </motion.div>
           </motion.div>
