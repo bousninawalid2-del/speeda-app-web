@@ -37,13 +37,14 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return errorResponse(parsed.error.issues[0].message, 400);
 
-  const { userId, ...data } = parsed.data;
+  const { userId, country, location, ...data } = parsed.data;
   const normalizedUserId = toUserIdBigInt(userId);
+  const activityData = { ...data, location: location ?? country };
 
   const activity = await prisma.activity.upsert({
     where:  { userId: normalizedUserId },
-    create: { userId: normalizedUserId, ...data },
-    update: data,
+    create: { userId: normalizedUserId, ...activityData },
+    update: activityData,
   });
 
   // Fire-and-forget sync to n8n datatest — must not block the response

@@ -14,7 +14,6 @@ export default function Page() {
     name: string;
     phone: string;
     businessName: string;
-    country: string;
     city: string;
     industry: string;
   }) => {
@@ -31,7 +30,6 @@ export default function Page() {
         phone:        profile.phone,
         isVerified:   profile.isVerified,
         businessName: profile.activity?.business_name,
-        country:      profile.activity?.country,
         city:         profile.activity?.location,
         industry:     profile.activity?.industry,
       } : undefined}

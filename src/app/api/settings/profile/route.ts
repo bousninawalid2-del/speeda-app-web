@@ -8,6 +8,7 @@ const updateSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   phone: z.string().min(5).max(30).optional(),
   businessName: z.string().max(120).optional(),
+  country: z.string().max(120).optional(),
   city: z.string().max(120).optional(),
   industry: z.string().max(120).optional(),
 });
@@ -52,13 +53,7 @@ export async function GET(request: NextRequest) {
       profile: {
         ...user,
         id: toUserIdString(user.id),
-        activity: user.activity
-          ? {
-              ...user.activity,
-              // Activity currently has no dedicated country field in this schema/version.
-              country: null,
-            }
-          : null,
+        activity: user.activity,
       },
     });
   } catch (error) {
@@ -88,9 +83,12 @@ export async function PATCH(request: NextRequest) {
       phone: normalizeNullable(parsed.data.phone),
     };
 
+    const normalizedLocation = normalizeNullable(parsed.data.city);
+    const normalizedCountry = normalizeNullable(parsed.data.country);
+
     const activityData = {
       business_name: normalizeNullable(parsed.data.businessName),
-      location: normalizeNullable(parsed.data.city),
+      location: normalizedLocation ?? normalizedCountry,
       industry: normalizeNullable(parsed.data.industry),
     };
 
@@ -146,13 +144,7 @@ export async function PATCH(request: NextRequest) {
       profile: {
         ...refreshed,
         id: toUserIdString(refreshed.id),
-        activity: refreshed.activity
-          ? {
-              ...refreshed.activity,
-              // Activity currently has no dedicated country field in this schema/version.
-              country: null,
-            }
-          : null,
+        activity: refreshed.activity,
       },
     });
   } catch (error) {

@@ -13,7 +13,6 @@ export interface ProfileData {
   activity: {
     business_name: string | null;
     industry:      string | null;
-    country?:      string | null;
     location:      string | null;
     business_size: string | null;
   } | null;
@@ -31,7 +30,6 @@ const PROFILE_FALLBACK: ProfileData = {
   activity: {
     business_name: "Malek's Kitchen",
     industry: 'Restaurant',
-    country: 'Saudi Arabia',
     location: 'Riyadh',
     business_size: 'small',
   },
@@ -59,7 +57,6 @@ export function useUpdateProfile() {
       name?: string;
       phone?: string;
       businessName?: string;
-      country?: string;
       city?: string;
       industry?: string;
     }) =>
