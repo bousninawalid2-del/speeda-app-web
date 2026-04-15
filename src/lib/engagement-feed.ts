@@ -112,7 +112,9 @@ function normalizeThreadMessage(item: unknown, index: number): { from: 'them' | 
 
 function normalizeDMConversation(item: unknown, index: number): EngagementDMConversation {
   const raw = toObject(item);
-  const thread = asArray(raw.thread ?? raw.messages).map(normalizeThreadMessage).filter((entry) => entry.text.trim() !== '');
+  const thread = asArray(raw.thread ?? raw.messages)
+    .map((entry, threadIndex) => normalizeThreadMessage(entry, threadIndex))
+    .filter((entry) => entry.text.trim() !== '');
   const lastMsg = toStringValue(raw.lastMsg ?? raw.lastMessage, thread[thread.length - 1]?.text ?? '');
   return {
     id: toStringValue(raw.id, `dm_${index}`),
@@ -165,7 +167,11 @@ export async function fetchEngagementFromProvider(filter: EngagementFilter, disc
   targetUrl.searchParams.set('discu_code', discuCode);
   targetUrl.searchParams.set('filter', filter);
 
-  const providerResponse = await fetch(targetUrl, { method: 'GET', cache: 'no-store' });
+  const providerResponse = await fetch(targetUrl, {
+    method: 'GET',
+    cache: 'no-store',
+    signal: AbortSignal.timeout(10_000),
+  });
   if (!providerResponse.ok) {
     throw new Error('Engagement provider unavailable');
   }

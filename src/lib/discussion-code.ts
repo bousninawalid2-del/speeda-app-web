@@ -8,7 +8,10 @@ const HMAC_DISCUSSION_CODE_LENGTH = 24;
 
 export function makeDiscussionCode(userId: string | bigint): string {
   const secret = process.env.DISCUSSION_CODE_SECRET;
-  if (!secret) return '';
+  if (!secret) {
+    console.warn('[discussion-code] DISCUSSION_CODE_SECRET is not configured');
+    return '';
+  }
 
   const digest = crypto
     .createHmac('sha256', secret)
