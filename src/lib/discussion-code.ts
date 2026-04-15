@@ -19,7 +19,7 @@ function generateDiscussionKey(): string {
   return BigInt(`0x${crypto.randomBytes(20).toString('hex')}`).toString(10);
 }
 
-export async function regenerateDiscussionCodeForUser(userId: string) {
+export async function regenerateDiscussionCodeForUser(userId: bigint) {
   const existing = await prisma.userDiscussionCode.findUnique({ where: { userId }, select: { id: true } });
 
   for (let attempt = 0; attempt < MAX_REGENERATION_ATTEMPTS; attempt += 1) {

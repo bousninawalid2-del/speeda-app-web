@@ -55,7 +55,7 @@ type SyncPayload = N8nPreferencesRow | N8nActivitiesRow;
 
 // ─── Email/userId resolution ──────────────────────────────────────────────────
 
-async function resolveSpeedaUserId(n8nUserId: number): Promise<string | null> {
+async function resolveSpeedaUserId(n8nUserId: number): Promise<bigint | null> {
   const emailRes = await n8nPool.query<{ email: string }>(
     'SELECT email FROM users WHERE id = $1 LIMIT 1',
     [n8nUserId],
@@ -79,26 +79,17 @@ async function handlePreferences(row: N8nPreferencesRow): Promise<void> {
     return;
   }
 
-  // Parse color "primary|secondary"
-  let color_primary: string | undefined;
-  let color_secondary: string | undefined;
-  if (row.color) {
-    const parts = row.color.split('|');
-    color_primary   = parts[0] || undefined;
-    color_secondary = parts[1] || undefined;
-  }
-
   const data = {
     tone_of_voice:        row.tone_of_voice        ?? undefined,
     language_preference:  row.language_preference  ?? undefined,
-    business_description: row.resumer              ?? undefined,
+    resumer:              row.resumer              ?? undefined,
+    text:                 row.text                 ?? undefined,
     social_media_goals:   row.social_media_goals   ?? undefined,
     preferred_platforms:  row.preferred_platforms  ?? undefined,
     hashtags:             row.hashtags             ?? undefined,
     emojis:               row.emojis               ?? undefined,
     other:                row.other                ?? undefined,
-    ...(color_primary   !== undefined && { color_primary }),
-    ...(color_secondary !== undefined && { color_secondary }),
+    color:                row.color                ?? undefined,
   };
 
   await prisma.preference.upsert({

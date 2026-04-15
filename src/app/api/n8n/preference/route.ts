@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { requireN8nAuth } from '@/lib/n8n-guard';
 import { errorResponse } from '@/lib/auth-guard';
 import { syncPreferenceToN8n } from '@/lib/sync-n8n';
+import { toJsonSafe, toUserIdBigInt } from '@/lib/user-id';
 
 /**
  * POST /api/n8n/preference
@@ -36,17 +37,18 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return errorResponse(parsed.error.issues[0].message, 400);
 
   const { userId, ...data } = parsed.data;
+  const normalizedUserId = toUserIdBigInt(userId);
 
   const preference = await prisma.preference.upsert({
-    where:  { userId },
-    create: { userId, ...data },
+    where:  { userId: normalizedUserId },
+    create: { userId: normalizedUserId, ...data },
     update: data,
   });
 
   // Fire-and-forget sync to n8n datatest — must not block the response
-  syncPreferenceToN8n(userId).catch(() => {});
+  syncPreferenceToN8n(normalizedUserId).catch(() => {});
 
-  return Response.json({ preference });
+  return Response.json({ preference: toJsonSafe(preference) });
 }
 
 /**
@@ -59,6 +61,6 @@ export async function GET(req: NextRequest) {
   const userId = req.nextUrl.searchParams.get('userId');
   if (!userId) return errorResponse('userId is required', 400);
 
-  const preference = await prisma.preference.findUnique({ where: { userId } });
-  return Response.json({ preference });
+  const preference = await prisma.preference.findUnique({ where: { userId: toUserIdBigInt(userId) } });
+  return Response.json({ preference: toJsonSafe(preference) });
 }

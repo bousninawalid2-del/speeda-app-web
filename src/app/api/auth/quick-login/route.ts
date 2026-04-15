@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { generateSecureToken, errorResponse } from '@/lib/auth-guard';
 import { sendMagicLinkEmail } from '@/lib/email';
+import { regenerateDiscussionCodeForUser } from '@/lib/discussion-code';
 
 const sendSchema = z.object({ email: z.string().email() });
 const verifySchema = z.object({ token: z.string() });
@@ -79,6 +80,7 @@ export async function PUT(request: NextRequest) {
     // Auto-verify account if not already
     if (!record.user.isVerified) {
       await prisma.user.update({ where: { id: record.userId }, data: { isVerified: true } });
+      await regenerateDiscussionCodeForUser(record.userId);
     }
 
     const { issueTokens } = await import('../login/route');

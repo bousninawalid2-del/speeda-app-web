@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyWebhookAuth, MamoWebhookPayload } from '@/lib/mamopay';
 import { prisma } from '@/lib/db';
+import { toUserIdBigInt } from '@/lib/user-id';
 
 /**
  * POST /api/webhooks/mamo
@@ -63,12 +64,17 @@ export async function POST(req: NextRequest) {
 /**
  * Parse external_id format: sub_{userId}_{planId}_{ts} or tok_{userId}_{packId}_{ts}
  */
-function parseExternalId(externalId?: string): { type: 'sub' | 'tok' | null; userId: string | null; refId: string | null } {
+function parseExternalId(externalId?: string): { type: 'sub' | 'tok' | null; userId: bigint | null; refId: string | null } {
   if (!externalId) return { type: null, userId: null, refId: null };
   const parts = externalId.split('_');
   if (parts.length < 3) return { type: null, userId: null, refId: null };
   const type = parts[0] as 'sub' | 'tok';
-  const userId = parts[1];
+  let userId: bigint | null = null;
+  try {
+    userId = toUserIdBigInt(parts[1]);
+  } catch {
+    return { type: null, userId: null, refId: null };
+  }
   const refId = parts[2];
   return { type, userId, refId };
 }

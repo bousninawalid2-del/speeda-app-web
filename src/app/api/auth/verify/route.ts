@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { errorResponse } from '@/lib/auth-guard';
 import { issueTokens } from '../login/route';
 import { regenerateDiscussionCodeForUser } from '@/lib/discussion-code';
+import { toUserIdBigInt } from '@/lib/user-id';
 
 const verifySchema = z.object({
   userId: z.string(),
@@ -23,10 +24,11 @@ export async function POST(request: NextRequest) {
       return errorResponse(parsed.error.issues[0].message);
     }
     const { userId, code } = parsed.data;
+    const userIdBigInt = toUserIdBigInt(userId);
 
     const record = await prisma.verifyToken.findFirst({
       where: {
-        userId,
+        userId: userIdBigInt,
         code,
         used: false,
       },
@@ -44,12 +46,12 @@ export async function POST(request: NextRequest) {
     // Mark token used and activate user
     await prisma.$transaction([
       prisma.verifyToken.update({ where: { id: record.id }, data: { used: true } }),
-      prisma.user.update({ where: { id: userId }, data: { isVerified: true } }),
+      prisma.user.update({ where: { id: userIdBigInt }, data: { isVerified: true } }),
     ]);
 
     // Complete referral and award tokens to both parties
     const pendingReferral = await prisma.referral.findUnique({
-      where: { refereeId: userId },
+      where: { refereeId: userIdBigInt },
     });
     if (pendingReferral && pendingReferral.status === 'pending') {
       const reward = pendingReferral.tokensAwarded;
@@ -65,16 +67,16 @@ export async function POST(request: NextRequest) {
         }),
         // Award tokens to new user (referee)
         prisma.user.update({
-          where: { id: userId },
+          where: { id: userIdBigInt },
           data: { tokenBalance: { increment: reward } },
         }),
       ]);
     }
 
-    await regenerateDiscussionCodeForUser(userId);
+    await regenerateDiscussionCodeForUser(userIdBigInt);
 
     // Auto-login after verification
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma.user.findUnique({ where: { id: userIdBigInt } });
     return issueTokens(user!);
   } catch (err) {
     console.error('[verify]', err);
@@ -89,15 +91,16 @@ export async function PUT(request: NextRequest) {
     const parsed = resendSchema.safeParse(body);
     if (!parsed.success) return errorResponse(parsed.error.issues[0].message);
     const { userId } = parsed.data;
+    const userIdBigInt = toUserIdBigInt(userId);
 
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma.user.findUnique({ where: { id: userIdBigInt } });
     if (!user) return errorResponse('User not found', 404);
     if (user.isVerified) return errorResponse('Account already verified');
 
     // Rate limit: check if a valid code was sent in the last 60s
     const recent = await prisma.verifyToken.findFirst({
       where: {
-        userId,
+        userId: userIdBigInt,
         used: false,
         createdAt: { gt: new Date(Date.now() - 60 * 1000) },
       },
@@ -110,7 +113,7 @@ export async function PUT(request: NextRequest) {
     const { sendVerificationEmail } = await import('@/lib/email');
     const code = generateOTP();
     await prisma.verifyToken.create({
-      data: { code, userId, expiresAt: new Date(Date.now() + 60 * 60 * 1000) },
+      data: { code, userId: userIdBigInt, expiresAt: new Date(Date.now() + 60 * 60 * 1000) },
     });
     sendVerificationEmail(user.email, user.name ?? '', code).catch(console.error);
 

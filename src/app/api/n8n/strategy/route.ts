@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { requireN8nAuth } from '@/lib/n8n-guard';
 import { errorResponse } from '@/lib/auth-guard';
+import { toJsonSafe, toUserIdBigInt } from '@/lib/user-id';
 
 /**
  * POST /api/n8n/strategy
@@ -55,17 +56,18 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return errorResponse(parsed.error.issues[0].message, 400);
 
   const { userId, weeks, periodStartDate, periodEndDate, ...strategyData } = parsed.data;
+  const normalizedUserId = toUserIdBigInt(userId);
 
   // Deactivate any existing active strategy for this user
   await prisma.strategy.updateMany({
-    where: { userId, status: 'active' },
+    where: { userId: normalizedUserId, status: 'active' },
     data:  { status: 'completed' },
   });
 
   // Create the strategy with nested weekly plannings and draft posts
   const strategy = await prisma.strategy.create({
     data: {
-      userId,
+      userId: normalizedUserId,
       ...strategyData,
       periodStartDate: periodStartDate ? new Date(periodStartDate) : null,
       periodEndDate:   periodEndDate   ? new Date(periodEndDate)   : null,
@@ -100,7 +102,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return Response.json({ strategy }, { status: 201 });
+  return Response.json({ strategy: toJsonSafe(strategy) }, { status: 201 });
 }
 
 /**
@@ -116,7 +118,7 @@ export async function GET(req: NextRequest) {
   if (!userId) return errorResponse('userId is required', 400);
 
   const strategy = await prisma.strategy.findFirst({
-    where: { userId, status: 'active' },
+    where: { userId: toUserIdBigInt(userId), status: 'active' },
     orderBy: { createdAt: 'desc' },
     include: {
       weeklyPlannings: {
@@ -126,5 +128,5 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  return Response.json({ strategy });
+  return Response.json({ strategy: toJsonSafe(strategy) });
 }

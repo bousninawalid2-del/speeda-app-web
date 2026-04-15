@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { requireN8nAuth } from '@/lib/n8n-guard';
 import { errorResponse } from '@/lib/auth-guard';
 import { syncActivityToN8n } from '@/lib/sync-n8n';
+import { toJsonSafe, toUserIdBigInt } from '@/lib/user-id';
 
 /**
  * POST /api/n8n/activity
@@ -37,17 +38,18 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return errorResponse(parsed.error.issues[0].message, 400);
 
   const { userId, ...data } = parsed.data;
+  const normalizedUserId = toUserIdBigInt(userId);
 
   const activity = await prisma.activity.upsert({
-    where:  { userId },
-    create: { userId, ...data },
+    where:  { userId: normalizedUserId },
+    create: { userId: normalizedUserId, ...data },
     update: data,
   });
 
   // Fire-and-forget sync to n8n datatest — must not block the response
-  syncActivityToN8n(userId).catch(() => {});
+  syncActivityToN8n(normalizedUserId).catch(() => {});
 
-  return Response.json({ activity });
+  return Response.json({ activity: toJsonSafe(activity) });
 }
 
 /**
@@ -60,6 +62,6 @@ export async function GET(req: NextRequest) {
   const userId = req.nextUrl.searchParams.get('userId');
   if (!userId) return errorResponse('userId is required', 400);
 
-  const activity = await prisma.activity.findUnique({ where: { userId } });
-  return Response.json({ activity });
+  const activity = await prisma.activity.findUnique({ where: { userId: toUserIdBigInt(userId) } });
+  return Response.json({ activity: toJsonSafe(activity) });
 }

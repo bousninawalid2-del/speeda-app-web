@@ -10,6 +10,7 @@
 
 import { n8nPool } from '@/lib/db-n8n';
 import { prisma } from '@/lib/db';
+import { toUserIdBigInt, type UserIdInput } from '@/lib/user-id';
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
@@ -28,10 +29,10 @@ const DEFAULT_PHONE_PLACEHOLDER = '0000000000';
  * Returns null only when the Speeda user itself cannot be found.
  * Never throws — all errors are logged and swallowed.
  */
-async function getOrCreateN8nUserId(speedaUserId: string): Promise<bigint | null> {
+async function getOrCreateN8nUserId(speedaUserId: UserIdInput): Promise<bigint | null> {
   try {
     const speedaUser = await prisma.user.findUnique({
-      where:  { id: speedaUserId },
+      where:  { id: toUserIdBigInt(speedaUserId) },
       select: { email: true, name: true, phone: true },
     });
     if (!speedaUser?.email) return null;
@@ -77,7 +78,7 @@ async function getOrCreateN8nUserId(speedaUserId: string): Promise<bigint | null
  * Ensure a datatest.users row exists for the given Speeda user id.
  * Safe to call fire-and-forget: `ensureN8nUserById(id).catch(() => {})`.
  */
-export async function ensureN8nUserById(speedaUserId: string): Promise<void> {
+export async function ensureN8nUserById(speedaUserId: UserIdInput): Promise<void> {
   await getOrCreateN8nUserId(speedaUserId);
 }
 
@@ -88,19 +89,18 @@ export async function ensureN8nUserById(speedaUserId: string): Promise<void> {
  *
  * Fire-and-forget: call as `syncPreferenceToN8n(userId).catch(() => {})`.
  */
-export async function syncPreferenceToN8n(userId: string): Promise<void> {
+export async function syncPreferenceToN8n(userId: UserIdInput): Promise<void> {
+  const normalizedUserId = toUserIdBigInt(userId);
   try {
     const [pref, n8nUserId] = await Promise.all([
-      prisma.preference.findUnique({ where: { userId } }),
-      getOrCreateN8nUserId(userId),
+      prisma.preference.findUnique({ where: { userId: normalizedUserId } }),
+      getOrCreateN8nUserId(normalizedUserId),
     ]);
 
     if (!pref || n8nUserId == null) return;
 
-    const color =
-      pref.color_primary || pref.color_secondary
-        ? `${pref.color_primary ?? ''}|${pref.color_secondary ?? ''}`
-        : null;
+    // Preference now stores a single color value instead of primary/secondary split.
+    const color = pref.color ?? null;
 
     await n8nPool.query(
       `INSERT INTO preferences
@@ -127,8 +127,8 @@ export async function syncPreferenceToN8n(userId: string): Promise<void> {
         pref.hashtags             ?? null,
         pref.emojis               ?? null,
         pref.other                ?? null,
-        pref.business_description ?? null,  // → resumer
-        pref.business_description ?? null,  // → text
+        pref.resumer ?? null,
+        pref.text ?? null,
         color,
       ],
     );
@@ -142,11 +142,12 @@ export async function syncPreferenceToN8n(userId: string): Promise<void> {
  *
  * Fire-and-forget: call as `syncActivityToN8n(userId).catch(() => {})`.
  */
-export async function syncActivityToN8n(userId: string): Promise<void> {
+export async function syncActivityToN8n(userId: UserIdInput): Promise<void> {
+  const normalizedUserId = toUserIdBigInt(userId);
   try {
     const [activity, n8nUserId] = await Promise.all([
-      prisma.activity.findUnique({ where: { userId } }),
-      getOrCreateN8nUserId(userId),
+      prisma.activity.findUnique({ where: { userId: normalizedUserId } }),
+      getOrCreateN8nUserId(normalizedUserId),
     ]);
 
     if (!activity || n8nUserId == null) return;
