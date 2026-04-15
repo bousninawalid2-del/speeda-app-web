@@ -49,6 +49,11 @@ type WhatsAppPayload = {
     }>;
 };
 
+type PreferenceForText = {
+    resumer?: string | null;
+    preferred_platforms?: string | null;
+} | null;
+
 function getFirstMessage(payload: WhatsAppPayload): WhatsAppMessage | null {
     return payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0] ?? null;
 }
@@ -57,10 +62,7 @@ function notBlank(value?: string | null): boolean {
     return !!value && value.trim() !== "";
 }
 
-function buildPreferenceText(preference: {
-    resumer: string | null;
-    preferred_platforms: string | null;
-} | null): string {
+function buildPreferenceText(preference: PreferenceForText): string {
     if (!preference) return "";
 
     let result = "";
@@ -164,6 +166,16 @@ function extractInteractiveId(payload: WhatsAppPayload): string | null {
 
 function extractMessageId(payload: WhatsAppPayload): string | null {
     return getFirstMessage(payload)?.id ?? null;
+}
+
+function safeJsonStringify(data: unknown): string {
+    return JSON.stringify(data, (_, value) =>
+        typeof value === "bigint" ? value.toString() : value
+    );
+}
+
+function sanitizeBigInt<T>(data: T): T {
+    return JSON.parse(safeJsonStringify(data)) as T;
 }
 
 export async function GET(req: NextRequest) {
@@ -303,6 +315,7 @@ export async function POST(req: NextRequest) {
             toSend.preferred_platforms = preference.preferred_platforms;
             toSend.tone_of_voice = preference.tone_of_voice;
             toSend.language_preference = preference.language_preference;
+            toSend.resumer_preference = preference.resumer;
         }
 
         if (isText) {
@@ -333,15 +346,24 @@ export async function POST(req: NextRequest) {
             toSend.interactive_id = interactiveId;
         }
 
-        await fetch(N8N_WEBHOOK_URL, {
+        const safePayload = sanitizeBigInt(toSend);
+
+        console.log("📦 Safe payload ready for n8n");
+
+        const response = await fetch(N8N_WEBHOOK_URL, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify(toSend, (_, value) =>
-                typeof value === "bigint" ? value.toString() : value
-            ),
+            body: safeJsonStringify(safePayload),
         });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("❌ n8n webhook failed:", response.status, errorText);
+        } else {
+            console.log("✅ Payload envoyé vers n8n");
+        }
 
         return NextResponse.json({ ok: true });
     } catch (error) {
