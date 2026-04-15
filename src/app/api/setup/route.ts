@@ -47,12 +47,13 @@ export async function POST(req: NextRequest) {
     social_media_goals, color_primary, color_secondary,
     preferred_platforms, hashtags, emojis, other,
   } = parsed.data;
+  const resolvedLocation = location ?? country;
 
   const [activity, preference] = await prisma.$transaction([
     prisma.activity.upsert({
       where:  { userId: user.sub },
-      create: { userId: user.sub, business_name, industry, country, location, opening_hours, business_size, year_founded, audience_target, unique_selling_point, certifications },
-      update: { business_name, industry, country, location, opening_hours, business_size, year_founded, audience_target, unique_selling_point, certifications },
+      create: { userId: user.sub, business_name, industry, location: resolvedLocation, opening_hours, business_size, year_founded, audience_target, unique_selling_point, certifications },
+      update: { business_name, industry, location: resolvedLocation, opening_hours, business_size, year_founded, audience_target, unique_selling_point, certifications },
     }),
     prisma.preference.upsert({
       where:  { userId: user.sub },

@@ -24,7 +24,6 @@ interface ProfileScreenProps {
     name: string;
     phone: string;
     businessName: string;
-    country: string;
     city: string;
     industry: string;
   }) => Promise<void>;
@@ -76,7 +75,6 @@ export const ProfileScreen = ({ onBack, onNavigate, initialData, isLoading, onSa
         name: form.ownerName,
         phone: form.phone,
         businessName: form.businessName,
-        country: form.country,
         city: form.city,
         industry: form.businessType,
       });
