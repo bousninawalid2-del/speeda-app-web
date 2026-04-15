@@ -4,6 +4,19 @@ import { prisma } from '@/lib/db';
 
 const DISCUSSION_CODE_LENGTH = 8;
 const MAX_REGENERATION_ATTEMPTS = 3;
+const HMAC_DISCUSSION_CODE_LENGTH = 24;
+
+export function makeDiscussionCode(userId: string | bigint): string {
+  const secret = process.env.DISCUSSION_CODE_SECRET;
+  if (!secret) return '';
+
+  const digest = crypto
+    .createHmac('sha256', secret)
+    .update(String(userId))
+    .digest('base64url');
+
+  return `disc_${digest.slice(0, HMAC_DISCUSSION_CODE_LENGTH)}`;
+}
 
 /** Generate an 8-digit numeric user-facing discussion code. */
 function generateDiscussionCode(): string {

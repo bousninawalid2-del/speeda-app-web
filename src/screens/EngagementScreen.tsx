@@ -10,7 +10,7 @@ import { getSmartReplies, detectMessageType } from '../components/SmartReplyEngi
 
 // ─── Data ───────────────────────────────────────────────────────
 
-const messages = [
+const fallbackMessages = [
   { id: 'c1', name: 'Ahmed K.', emoji: '👍', Logo: InstagramLogo, platform: 'Instagram', type: 'Comment', filter: 'Comments', time: '5m ago', msg: 'This looks amazing! What time do you close?', rating: 0 },
   { id: 'c2', name: 'Sara M.', emoji: '🌟', Logo: GoogleLogo, platform: 'Google', type: 'Review', filter: 'Reviews', time: '15m ago', msg: 'Food was cold when delivered. Very disappointed with the service.', rating: 2, existingReply: null },
   { id: 'c3', name: 'Noura H.', emoji: '👍', Logo: InstagramLogo, platform: 'Instagram', type: 'Comment', filter: 'Comments', time: '3h ago', msg: 'How much is the family meal deal?', rating: 0 },
@@ -19,7 +19,7 @@ const messages = [
   { id: 'c6', name: 'Ali M.', emoji: '🔥', Logo: TikTokLogo, platform: 'TikTok', type: 'Comment', filter: 'Comments', time: '1h ago', msg: 'يجنن والله! 🔥❤️', rating: 0 },
 ];
 
-const dmConversations = [
+const fallbackDmConversations = [
   {
     id: 'dm1', name: 'Mohammed A.', Logo: InstagramLogo, platform: 'Instagram',
     avatar: '😊', unread: true, lastMsg: 'Do you have any vegan options on the menu?', time: '30m ago',
@@ -212,7 +212,9 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
   const [selectedDM, setSelectedDM] = useState<string | null>(null);
   const [dmInput, setDmInput] = useState('');
   const [dmSearch, setDmSearch] = useState('');
-  const [localThreads, setLocalThreads] = useState<Record<string, typeof dmConversations[0]['thread']>>({});
+  const [messagesData, setMessagesData] = useState(fallbackMessages);
+  const [dmConversationsData, setDmConversationsData] = useState(fallbackDmConversations);
+  const [localThreads, setLocalThreads] = useState<Record<string, typeof fallbackDmConversations[0]['thread']>>({});
   const [showAutoResponses, setShowAutoResponses] = useState(false);
   const [autoResponses, setAutoResponses] = useState(defaultAutoResponses);
   const [openComposer, setOpenComposer] = useState<string | null>(null);
@@ -223,19 +225,103 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
   const { t, i18n } = useTranslation();
   const isMobile = useIsMobile();
 
+  useEffect(() => {
+    let alive = true;
+
+    const loadEngagement = async () => {
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('speeda_access_token') : null;
+        const res = await fetch(`/api/dashboard/engagement?filter=${encodeURIComponent(activeFilter)}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          credentials: 'same-origin',
+        });
+
+        if (!res.ok) throw new Error('Engagement feed unavailable');
+        const data = await res.json();
+        if (!Array.isArray(data.messages) || !Array.isArray(data.dmConversations)) {
+          throw new Error('Invalid engagement payload');
+        }
+
+        const platformToLogo: Record<string, typeof InstagramLogo> = {
+          Instagram: InstagramLogo,
+          Google: GoogleLogo,
+          WhatsApp: WhatsAppLogo,
+          Facebook: FacebookLogo,
+          TikTok: TikTokLogo,
+        };
+        const asRecord = (value: unknown): Record<string, unknown> =>
+          value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+
+        const nextMessages = data.messages.map((entryUnknown: unknown, index: number) => {
+          const entry = asRecord(entryUnknown);
+          const platform = String(entry.platform ?? 'Instagram');
+          return {
+            id: String(entry.id ?? `m_${index}`),
+            name: String(entry.name ?? 'Customer'),
+            emoji: String(entry.emoji ?? '👍'),
+            Logo: platformToLogo[platform] ?? InstagramLogo,
+            platform,
+            type: String(entry.type ?? 'Comment'),
+            filter: String(entry.filter ?? (entry.type === 'Review' ? 'Reviews' : entry.type === 'DM' ? 'DMs' : 'Comments')),
+            time: String(entry.time ?? 'Just now'),
+            msg: String(entry.msg ?? ''),
+            rating: Number(entry.rating ?? 0),
+            existingReply: entry.existingReply == null ? null : String(entry.existingReply),
+          };
+        });
+
+        const nextDMs = data.dmConversations.map((entryUnknown: unknown, index: number) => {
+          const entry = asRecord(entryUnknown);
+          const platform = String(entry.platform ?? 'Instagram');
+          return {
+            id: String(entry.id ?? `dm_${index}`),
+            name: String(entry.name ?? 'Customer'),
+            Logo: platformToLogo[platform] ?? InstagramLogo,
+            platform,
+            avatar: String(entry.avatar ?? '💬'),
+            unread: Boolean(entry.unread),
+            lastMsg: String(entry.lastMsg ?? ''),
+            time: String(entry.time ?? 'Just now'),
+            thread: Array.isArray(entry.thread)
+                ? entry.thread.map((messageUnknown: unknown) => {
+                  const message = asRecord(messageUnknown);
+                  return {
+                    from: message.from === 'us' ? 'us' : 'them',
+                    text: String(message.text ?? ''),
+                    time: String(message.time ?? 'Just now'),
+                  };
+                })
+              : [],
+          };
+        });
+
+        if (!alive) return;
+        setMessagesData(nextMessages);
+        setDmConversationsData(nextDMs);
+      } catch {
+        if (!alive) return;
+        setMessagesData(fallbackMessages);
+        setDmConversationsData(fallbackDmConversations);
+      }
+    };
+
+    loadEngagement();
+    return () => { alive = false; };
+  }, [activeFilter]);
+
   const filtered = activeFilter === 'All'
-    ? messages
+    ? messagesData
     : activeFilter === 'DMs'
       ? []
-      : messages.filter(m => m.filter === activeFilter);
+      : messagesData.filter(m => m.filter === activeFilter);
 
-  const filteredDMs = dmConversations.filter(dm =>
+  const filteredDMs = dmConversationsData.filter(dm =>
     dm.name.toLowerCase().includes(dmSearch.toLowerCase())
   );
 
-  const activeDM = dmConversations.find(dm => dm.id === selectedDM);
+  const activeDM = dmConversationsData.find(dm => dm.id === selectedDM);
   const activeThread = activeDM ? (localThreads[activeDM.id] || activeDM.thread) : [];
-  const unreadCount = dmConversations.filter(dm => dm.unread).length;
+  const unreadCount = dmConversationsData.filter(dm => dm.unread).length;
 
   const handleSendDM = () => {
     if (!dmInput.trim() || !activeDM) return;
@@ -458,7 +544,7 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
 
   // ─── Comment/Review Card ────────────────────────────────
 
-  const MessageCard = ({ m, i }: { m: typeof messages[0]; i: number }) => {
+  const MessageCard = ({ m, i }: { m: typeof fallbackMessages[0]; i: number }) => {
     const isReview = m.type === 'Review';
     const composerOpen = openComposer === m.id;
     const existingReply = sentReplies[m.id] || (m as any).existingReply;
@@ -617,7 +703,7 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
           <div className="flex items-center gap-3 mb-4">
             <button onClick={onBack}><ChevronLeft size={24} className="text-foreground" /></button>
             <h1 className="text-[20px] font-extrabold text-foreground">{t('engagement.title')}</h1>
-            <span className="w-6 h-6 rounded-full bg-brand-blue text-primary-foreground text-[11px] font-bold flex items-center justify-center">{messages.length + unreadCount}</span>
+            <span className="w-6 h-6 rounded-full bg-brand-blue text-primary-foreground text-[11px] font-bold flex items-center justify-center">{messagesData.length + unreadCount}</span>
           </div>
           <div className="flex gap-2 mb-4">
             {filters.map(f => (
@@ -646,7 +732,7 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
         <div className="flex items-center gap-3 mb-4">
           <button onClick={onBack}><ChevronLeft size={24} className="text-foreground" /></button>
           <h1 className="text-[20px] font-extrabold text-foreground">{t('engagement.title')}</h1>
-          <span className="w-6 h-6 rounded-full bg-brand-blue text-primary-foreground text-[11px] font-bold flex items-center justify-center">{messages.length + unreadCount}</span>
+          <span className="w-6 h-6 rounded-full bg-brand-blue text-primary-foreground text-[11px] font-bold flex items-center justify-center">{messagesData.length + unreadCount}</span>
         </div>
         <div className="flex gap-2 mb-4">
           {filters.map(f => (
