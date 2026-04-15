@@ -249,6 +249,12 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
           Facebook: FacebookLogo,
           TikTok: TikTokLogo,
         };
+        const deriveFilterFromType = (type: unknown): string => {
+          const normalizedType = String(type ?? '').toLowerCase();
+          if (normalizedType === 'review') return 'Reviews';
+          if (normalizedType === 'dm' || normalizedType === 'message') return 'DMs';
+          return 'Comments';
+        };
         const asRecord = (value: unknown): Record<string, unknown> =>
           value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
 
@@ -262,7 +268,7 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
             Logo: platformToLogo[platform] ?? InstagramLogo,
             platform,
             type: String(entry.type ?? 'Comment'),
-            filter: String(entry.filter ?? (entry.type === 'Review' ? 'Reviews' : entry.type === 'DM' ? 'DMs' : 'Comments')),
+            filter: String(entry.filter ?? deriveFilterFromType(entry.type)),
             time: String(entry.time ?? 'Just now'),
             msg: String(entry.msg ?? ''),
             rating: Number(entry.rating ?? 0),

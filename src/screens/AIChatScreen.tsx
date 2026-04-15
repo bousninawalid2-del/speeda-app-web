@@ -302,6 +302,12 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
           Google: GoogleLogo,
           WhatsApp: WhatsAppLogo,
         };
+        const deriveFilterFromType = (type: string): string => {
+          const normalizedType = type.toLowerCase();
+          if (normalizedType === 'review') return 'Reviews';
+          if (normalizedType === 'dm' || normalizedType === 'message') return 'DMs';
+          return 'Comments';
+        };
         const asRecord = (value: unknown): Record<string, unknown> =>
           value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
 
@@ -316,7 +322,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
             Logo: platformToLogo[platform] ?? InstagramLogo,
             platform,
             type,
-            filter: String(entry.filter ?? (type === 'Review' ? 'Reviews' : type === 'DM' || type === 'Message' ? 'DMs' : 'Comments')),
+            filter: String(entry.filter ?? deriveFilterFromType(type)),
             time: String(entry.time ?? 'Just now'),
             msg: String(entry.msg ?? ''),
             ai: String(entry.ai ?? entry.reply ?? ''),
