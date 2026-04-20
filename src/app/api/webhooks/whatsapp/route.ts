@@ -199,7 +199,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const payload = (await req.json()) as WhatsAppPayload;
+        console.log("🔥🔥 RAW WEBHOOK:", JSON.stringify(payload, null, 2));
 
+        // tu peux garder ton cast ici
+        const typedPayload = payload as WhatsAppPayload;
         const phoneNumber = extractPhoneNumber(payload);
         const message = extractMessageBody(payload);
         const pdfMediaId = extractPdfMediaId(payload);
@@ -254,7 +257,20 @@ export async function POST(req: NextRequest) {
 
         const preferenceExist = preference !== null;
         const preferenceText = buildPreferenceText(preference);
+        
+        let discussion = await prisma.userDiscussionCode.findUnique({
+    where: { userId: user.id },
+});
 
+if (!discussion) {
+    discussion = await prisma.userDiscussionCode.create({
+        data: {
+            userId: user.id,
+            code: `DISC_${user.id.toString()}`,
+            key: `INIT_${user.id.toString()}`,
+        },
+    });
+}
         console.log("📞 Phone            :", phoneNumber);
         console.log("✅ User exist       :", userExist);
         console.log("📊 Activity exist   :", activityExist);
@@ -288,8 +304,8 @@ export async function POST(req: NextRequest) {
             session_end_date: null,
             preference_text: preferenceText,
             email: user.email,
-            discu_code: null,
-            discu_key: null,
+            discu_code: discussion.code,
+            discu_key: discussion.key,
             prestention_exist: false,
             user_strategy: false,
             current_post: null,
