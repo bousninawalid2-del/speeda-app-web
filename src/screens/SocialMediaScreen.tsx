@@ -1,18 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Plus, MoreVertical } from 'lucide-react';
+import { ChevronLeft, Plus, MoreVertical, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { InstagramLogo, TikTokLogo, SnapchatLogo, FacebookLogo, XLogo, YouTubeLogo, LinkedInLogo, GoogleLogo, PinterestLogo, ThreadsLogo } from '../components/PlatformLogos';
 import { PlatformConnectFlow, DisconnectDialog, PlatformManageMenu } from '../components/PlatformConnectFlow';
 import { CalendarTab } from '../components/CalendarTab';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export interface SocialAccountData {
-  platform:   string;
-  username?:  string;
-  followers:  number;
-  connected:  boolean;
-}
+import { useSocialAccounts, useInvalidateSocialAccounts } from '@/hooks/useSocialAccounts';
+import { socialApi } from '@/lib/api-client';
 
 interface AccountDisplay {
   Logo:      React.ComponentType<{ size?: number }>;
@@ -25,16 +19,8 @@ interface AccountDisplay {
 }
 
 interface SocialMediaScreenProps {
-  onBack:          () => void;
-  externalAccounts?: SocialAccountData[];
-  isLoading?:      boolean;
-  /** Called when user clicks Connect — returns Ayrshare Max URL to open */
-  onConnect?:      () => Promise<string | null>;
-  /** Called when user confirms disconnect */
-  onDisconnect?:   (platform: string) => Promise<void>;
+  onBack: () => void;
 }
-
-// ─── Static platform catalogue ───────────────────────────────────────────────
 
 type CatalogueEntry = Pick<AccountDisplay, 'Logo' | 'name' | 'platform'> & { note?: string };
 
@@ -58,17 +44,6 @@ function formatFollowers(n: number): string {
   return String(n);
 }
 
-// ─── Static post queue (mock) ─────────────────────────────────────────────────
-
-const queue = [
-  { Logo: InstagramLogo, title: 'New menu item showcase',  type: 'Reel',   time: 'Tomorrow, 7:00 PM',  status: 'Scheduled',    color: 'text-green-accent' },
-  { Logo: TikTokLogo,   title: 'Behind the kitchen',      type: 'Video',  time: 'Tomorrow, 12:00 PM', status: 'Scheduled',    color: 'text-green-accent' },
-  { Logo: FacebookLogo, title: 'Weekend special offer',    type: 'Post',   time: 'Fri, 6:00 PM',       status: 'Draft',        color: 'text-orange-accent' },
-  { Logo: XLogo,        title: 'Our story — how we started',type: 'Thread',time: 'Fri, 9:00 AM',       status: 'Scheduled',    color: 'text-green-accent' },
-  { Logo: InstagramLogo,title: 'Customer testimonial',     type: 'Story',  time: 'Sat, 10:00 AM',      status: 'AI Generated', color: 'text-purple' },
-  { Logo: YouTubeLogo,  title: '30-sec shawarma prep',     type: 'Short',  time: 'Sat, 2:00 PM',       status: 'Pending',      color: 'text-orange-accent' },
-];
-
 const healthIndicator = (health: string) => {
   switch (health) {
     case 'healthy': return '🟢';
@@ -77,8 +52,6 @@ const healthIndicator = (health: string) => {
     default:        return null;
   }
 };
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 const AccountSkeleton = () => (
   <div className="bg-card rounded-2xl p-4 border border-border-light flex items-center gap-3 animate-pulse">
@@ -91,15 +64,12 @@ const AccountSkeleton = () => (
   </div>
 );
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
-
 export const SocialMediaScreen = ({
   onBack,
-  externalAccounts,
-  isLoading = false,
-  onConnect,
-  onDisconnect,
 }: SocialMediaScreenProps) => {
+  const { data: externalAccounts, isLoading } = useSocialAccounts();
+  const invalidate = useInvalidateSocialAccounts();
+
   const [tab, setTab] = useState('Accounts');
   const [connectingPlatform, setConnectingPlatform] = useState<{ name: string; Logo: React.ComponentType<{ size?: number }> } | null>(null);
   const [managePlatform,     setManagePlatform]     = useState<string | null>(null);
@@ -107,31 +77,29 @@ export const SocialMediaScreen = ({
   const [disconnecting,      setDisconnecting]      = useState(false);
   const [connectLoading,     setConnectLoading]     = useState(false);
 
-  // Merge static catalogue with external data
   const accounts: AccountDisplay[] = PLATFORM_CATALOGUE.map(cat => {
     const ext = externalAccounts?.find(a => a.platform === cat.platform);
     return {
       ...cat,
       connected: ext?.connected ?? false,
       followers: ext ? formatFollowers(ext.followers) : '—',
-      health:    ext?.connected ? 'healthy' : 'none',
+      health:    ext?.connected ? (ext.status === 'error' ? 'error' : ext.status === 'warning' ? 'warning' : 'healthy') : 'none',
     } as AccountDisplay;
   });
 
   const connectedCount = accounts.filter(a => a.connected).length;
   const totalFollowers = externalAccounts
-    ? externalAccounts.reduce((s, a) => s + (a.connected ? a.followers : 0), 0)
+    ? externalAccounts.reduce((s, a) => s + (a.connected ? (a.followers ?? 0) : 0), 0)
     : 0;
 
   const handleConnect = async () => {
-    if (!onConnect) {
-      // Fallback: no-op when running without backend
-      return;
-    }
     setConnectLoading(true);
     try {
-      const url = await onConnect();
-      if (url) window.open(url, '_blank', 'noopener,noreferrer');
+      const { url } = await socialApi.connect();
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setTimeout(() => invalidate(), 3000);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to connect');
     } finally {
       setConnectLoading(false);
     }
@@ -141,7 +109,10 @@ export const SocialMediaScreen = ({
     if (!disconnectPlatform) return;
     setDisconnecting(true);
     try {
-      if (onDisconnect) await onDisconnect(disconnectPlatform);
+      await socialApi.disconnect(disconnectPlatform);
+      invalidate();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to disconnect');
     } finally {
       setDisconnecting(false);
       setDisconnectPlatform(null);
@@ -170,7 +141,7 @@ export const SocialMediaScreen = ({
           {[
             { v: isLoading ? '—' : formatFollowers(totalFollowers), l: 'Total Followers' },
             { v: `${connectedCount}/${accounts.length}`,             l: 'Platforms' },
-            { v: '5',                                                l: 'Scheduled' },
+            { v: '—',                                                l: 'Scheduled' },
           ].map((s, i) => (
             <div key={i}>
               <p className="text-[20px] font-extrabold text-primary-foreground">{s.v}</p>
@@ -181,7 +152,7 @@ export const SocialMediaScreen = ({
 
         {/* Tabs */}
         <div className="mt-4 bg-card rounded-2xl p-1 border border-border flex">
-          {['Accounts', 'Post Queue', 'Calendar'].map(t => (
+          {['Accounts', 'Calendar'].map(t => (
             <button key={t} onClick={() => setTab(t)} className={`flex-1 h-9 rounded-xl text-[12px] font-semibold ${tab === t ? 'bg-brand-blue text-primary-foreground' : 'text-muted-foreground'}`}>{t}</button>
           ))}
         </div>
@@ -220,22 +191,6 @@ export const SocialMediaScreen = ({
                 </div>
               ))
             }
-          </div>
-        )}
-
-        {tab === 'Post Queue' && (
-          <div className="mt-4 space-y-2">
-            {queue.map((q, i) => (
-              <div key={i} className="bg-card rounded-2xl p-4 border border-border-light flex items-center gap-3">
-                <q.Logo size={20} />
-                <div className="flex-1">
-                  <p className="text-[13px] font-bold text-foreground">{q.title}</p>
-                  <p className="text-[11px] text-muted-foreground">{q.type} · {q.time}</p>
-                </div>
-                <span className={`text-[11px] font-semibold ${q.color}`}>{q.status}</span>
-              </div>
-            ))}
-            <button className="w-full bg-card rounded-2xl p-4 border-2 border-dashed border-border text-brand-blue text-[13px] font-bold text-center">+ Schedule New Post</button>
           </div>
         )}
 

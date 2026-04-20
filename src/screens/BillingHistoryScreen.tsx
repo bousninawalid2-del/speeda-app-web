@@ -1,19 +1,10 @@
 import { motion } from 'framer-motion';
 import { ChevronLeft, Download, Loader2 } from 'lucide-react';
-import { BillingPayment } from '@/hooks/useBilling';
+import { useBilling, BillingPayment } from '@/hooks/useBilling';
 
 interface BillingHistoryScreenProps {
   onBack:       () => void;
-  payments?:    BillingPayment[];
-  isLoading?:   boolean;
 }
-
-const FALLBACK_PAYMENTS: BillingPayment[] = [
-  { id: '1', amount: 1449, currency: 'SAR', status: 'succeeded', type: 'subscription',    description: 'Pro Pack — Monthly Subscription', createdAt: '2026-03-01T00:00:00Z', metadata: null },
-  { id: '2', amount: 749,  currency: 'SAR', status: 'succeeded', type: 'token_purchase',  description: 'Token Pack — 500 tokens',          createdAt: '2026-02-22T00:00:00Z', metadata: null },
-  { id: '3', amount: 575,  currency: 'SAR', status: 'succeeded', type: 'topup',           description: 'Ad Top-Up',                        createdAt: '2026-02-18T00:00:00Z', metadata: null },
-  { id: '4', amount: 1449, currency: 'SAR', status: 'succeeded', type: 'subscription',    description: 'Pro Pack — Monthly Subscription', createdAt: '2026-02-01T00:00:00Z', metadata: null },
-];
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -26,8 +17,8 @@ function statusBadge(status: BillingPayment['status']) {
   return <span className="text-[11px] font-semibold text-orange-accent bg-orange-soft px-2 py-0.5 rounded-md">⏳ Pending</span>;
 }
 
-export const BillingHistoryScreen = ({ onBack, payments: livePayments, isLoading }: BillingHistoryScreenProps) => {
-  const payments = livePayments ?? FALLBACK_PAYMENTS;
+export const BillingHistoryScreen = ({ onBack }: BillingHistoryScreenProps) => {
+  const { data: payments, isLoading, isError } = useBilling();
 
   return (
     <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="bg-background min-h-screen pb-8">
@@ -41,7 +32,12 @@ export const BillingHistoryScreen = ({ onBack, payments: livePayments, isLoading
           <div className="flex items-center justify-center py-20">
             <Loader2 size={28} className="text-brand-blue animate-spin" />
           </div>
-        ) : payments.length === 0 ? (
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <p className="text-[15px] font-semibold text-foreground mb-1">Failed to load billing history</p>
+            <p className="text-[13px] text-muted-foreground">Please try again later.</p>
+          </div>
+        ) : !payments || payments.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <p className="text-[15px] font-semibold text-foreground mb-1">No payments yet</p>
             <p className="text-[13px] text-muted-foreground">Your billing history will appear here.</p>

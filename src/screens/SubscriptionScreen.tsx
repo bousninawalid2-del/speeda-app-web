@@ -1,114 +1,43 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Check, X, Loader2 } from 'lucide-react';
-
-export interface PlanData {
-  id:           string;
-  name:         string;
-  monthlyPrice: number;
-  yearlyPrice:  number;
-  tokenCount:   number;
-  features:     string[];
-  locked:       string[];
-  watermark:    boolean;
-  popular:      boolean;
-}
+import { toast } from 'sonner';
+import { usePlans, type Plan } from '@/hooks/usePlans';
+import { useCreateSubscription } from '@/hooks/useSubscription';
 
 interface SubscriptionScreenProps {
   onBack:           () => void;
-  /** Live plans from DB. Falls back to embedded defaults when undefined. */
-  plans?:           PlanData[];
-  isLoading?:       boolean;
-  /** Current active plan name (to show "current" badge) */
   currentPlanName?: string | null;
-  /** Active plan being sent to checkout */
-  processingPlanId?: string | null;
-  /** Called when user taps upgrade — receives planId + billingType */
-  onCheckout?:      (planId: string, billingType: 'monthly' | 'yearly') => Promise<void>;
 }
-
-const FALLBACK_PLANS: PlanData[] = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    monthlyPrice: 549,
-    yearlyPrice: 439,
-    tokenCount: 200,
-    popular: false,
-    watermark: true,
-    features: [
-      '200 tokens/month', '3 platforms', 'AI Content Generation',
-      'Calendar & Scheduling', 'Post Editing', 'Media Library (50 files)',
-      'Basic Analytics (KPIs only)', 'Engagement (read-only)',
-      'MOS Score (read-only)', 'WhatsApp 10 msg/day',
-    ],
-    locked: [
-      'Variations A/B', 'Translation', 'Auto-Schedule', 'DM Management',
-      'Complete Analytics', 'Link Tracking', 'Hashtag Intelligence',
-      'Image Resize', 'Campaigns & Ads', 'PDF Export', 'Competitor Intelligence',
-    ],
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    monthlyPrice: 1199,
-    yearlyPrice: 959,
-    tokenCount: 800,
-    popular: true,
-    watermark: false,
-    features: [
-      '800 tokens/month', 'All 10 platforms', 'Everything in Starter',
-      'Variations A/B', 'Post Translation', 'Auto-Schedule',
-      'DM Management & AI Responses', 'Complete Analytics', 'Link Tracking',
-      'Hashtag Intelligence', 'Image Auto-Resize', 'Campaigns & Ads',
-      'PDF Export', 'RSS Feed Auto-Posting', 'Unlimited Media Library',
-      'Complete MOS Score', 'WhatsApp unlimited', 'Watermark removed',
-    ],
-    locked: ['Competitor Intelligence'],
-  },
-  {
-    id: 'business',
-    name: 'Business',
-    monthlyPrice: 2499,
-    yearlyPrice: 1999,
-    tokenCount: 3000,
-    popular: false,
-    watermark: false,
-    features: [
-      '3,000 tokens/month', 'All 10 platforms', 'Everything in Pro',
-      'Competitor Intelligence', 'Weekly auto PDF reports', 'Priority support',
-      'Onboarding call', 'Multi-location', 'API access',
-    ],
-    locked: [],
-  },
-];
 
 const fmt = (n: number) => n.toLocaleString();
 
 export const SubscriptionScreen = ({
   onBack,
-  plans: livePlans,
-  isLoading,
   currentPlanName,
-  processingPlanId,
-  onCheckout,
 }: SubscriptionScreenProps) => {
-  const plans = livePlans ?? FALLBACK_PLANS;
-  const defaultSelected = plans.find(p => p.popular)?.id ?? plans[0]?.id ?? '';
-  const [selected, setSelected] = useState(currentPlanName
-    ? (plans.find(p => p.name === currentPlanName)?.id ?? defaultSelected)
-    : defaultSelected);
+  const { data: plans, isLoading } = usePlans();
+  const { mutateAsync: createSubscription } = useCreateSubscription();
+
+  const defaultSelected = plans?.find(p => p.popular)?.id ?? plans?.[0]?.id ?? '';
+  const [selected, setSelected] = useState(defaultSelected);
   const [annual, setAnnual] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
 
-  const selectedPlan = plans.find(p => p.id === selected);
-  const getPrice = (plan: PlanData) => annual ? plan.yearlyPrice : plan.monthlyPrice;
+  const selectedPlan = plans?.find(p => p.id === selected);
+  const getPrice = (plan: Plan) => annual ? plan.yearlyPrice : plan.monthlyPrice;
 
   const handleCheckout = async () => {
-    if (!selectedPlan || !onCheckout) return;
+    if (!selectedPlan) return;
     setPurchasing(true);
     try {
-      await onCheckout(selectedPlan.id, annual ? 'yearly' : 'monthly');
+      const { checkoutUrl } = await createSubscription({
+        planId: selectedPlan.id,
+        billingType: annual ? 'yearly' : 'monthly',
+      });
+      window.open(checkoutUrl, '_blank');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to start checkout');
     } finally {
       setPurchasing(false);
     }
@@ -118,6 +47,14 @@ export const SubscriptionScreen = ({
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 size={32} className="text-brand-blue animate-spin" />
+      </div>
+    );
+  }
+
+  if (!plans?.length) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <p className="text-[15px] text-muted-foreground">Unable to load plans.</p>
       </div>
     );
   }
@@ -158,7 +95,6 @@ export const SubscriptionScreen = ({
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="text-[16px] font-bold text-foreground">{plan.name}</h3>
-                      {processingPlanId === plan.id && <Loader2 size={14} className="text-brand-blue animate-spin" />}
                       {plan.popular && <span className="text-[10px] font-bold text-primary-foreground gradient-btn px-2 py-0.5 rounded-md">Most Popular</span>}
                       {isCurrent && <span className="text-[10px] font-bold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">Current</span>}
                     </div>
@@ -206,7 +142,7 @@ export const SubscriptionScreen = ({
 
         <button
           onClick={handleCheckout}
-          disabled={purchasing || !onCheckout || (selectedPlan?.name === currentPlanName)}
+          disabled={purchasing || (selectedPlan?.name === currentPlanName)}
           className="w-full h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press mt-6 disabled:opacity-60 flex items-center justify-center gap-2"
         >
           {purchasing && <Loader2 size={16} className="animate-spin" />}

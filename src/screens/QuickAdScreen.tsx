@@ -1,39 +1,89 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Check, Sparkles } from 'lucide-react';
+import { ChevronLeft, Check, Sparkles, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import { useSocialAccounts } from '@/hooks/useSocialAccounts';
+import { useCreateCampaign } from '@/hooks/useCampaigns';
+import { usePosts } from '@/hooks/usePosts';
 import {
-  InstagramLogo, TikTokLogo, SnapchatLogo, FacebookLogo, GoogleLogo, YouTubeLogo, XLogo, LinkedInLogo,
-  ApplePayLogo, STCPayLogo, MadaLogo, VisaLogo,
+  InstagramLogo, TikTokLogo, SnapchatLogo, FacebookLogo,
+  GoogleLogo, YouTubeLogo, XLogo, LinkedInLogo,
 } from '../components/PlatformLogos';
 
-const socialPlatforms = [
-  { id: 'instagram', name: 'Instagram', audience: '~12M', Logo: InstagramLogo },
-  { id: 'facebook', name: 'Facebook', audience: '~10M', Logo: FacebookLogo },
-];
+// ─── Platform logo map ────────────────────────────────────────────────────────
 
-const paymentMethods = [
-  { id: 'apple', name: 'Apple Pay', Logo: ApplePayLogo },
-  { id: 'stc', name: 'STC Pay', Logo: STCPayLogo },
-  { id: 'mada', name: 'mada', Logo: MadaLogo },
-  { id: 'visa', name: 'Visa/MC', Logo: VisaLogo },
-];
+const PLATFORM_LOGOS: Record<string, React.FC<{ size?: number }>> = {
+  instagram: InstagramLogo,
+  tiktok:    TikTokLogo,
+  snapchat:  SnapchatLogo,
+  facebook:  FacebookLogo,
+  google:    GoogleLogo,
+  youtube:   YouTubeLogo,
+  x:         XLogo,
+  linkedin:  LinkedInLogo,
+};
+
+// ─── Duration → days map ─────────────────────────────────────────────────────
+
+const DURATION_DAYS: Record<string, number> = {
+  '3 days':  3,
+  '1 week':  7,
+  '2 weeks': 14,
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export const QuickAdScreen = ({ onBack }: { onBack: () => void }) => {
-  const [step, setStep] = useState(1);
-  const [selected, setSelected] = useState<string[]>(['instagram']);
-  const [budget, setBudget] = useState('500');
-  const [duration, setDuration] = useState('1 week');
-  const [payment, setPayment] = useState('apple');
-  const [creative, setCreative] = useState(0);
-  const [targetingMode, setTargetingMode] = useState<'ai' | 'manual'>('ai');
-  const [manualLocation, setManualLocation] = useState('');
-  const [manualAgeMin, setManualAgeMin] = useState(22);
-  const [manualAgeMax, setManualAgeMax] = useState(38);
-  const [manualInterests, setManualInterests] = useState<string[]>([]);
-  const [success, setSuccess] = useState(false);
+  const { t } = useTranslation();
+  const [step, setStep]                         = useState(1);
+  const [selected, setSelected]                 = useState<string[]>([]);
+  const [budget, setBudget]                     = useState('500');
+  const [duration, setDuration]                 = useState('1 week');
+  const [creative, setCreative]                 = useState<string | null>(null);
+  const [targetingMode, setTargetingMode]       = useState<'ai' | 'manual'>('ai');
+  const [manualLocation, setManualLocation]     = useState('');
+  const [manualAgeMin, setManualAgeMin]         = useState(22);
+  const [manualAgeMax, setManualAgeMax]         = useState(38);
+  const [manualInterests, setManualInterests]   = useState<string[]>([]);
+  const [success, setSuccess]                   = useState(false);
+
+  const { data: accounts, isLoading: accountsLoading } = useSocialAccounts();
+  const { data: postsData, isLoading: postsLoading }   = usePosts({ status: 'Published', page: 1 });
+  const { mutateAsync: createCampaign, isPending }      = useCreateCampaign();
+
+  const connectedPlatforms = (accounts ?? []).filter(a => a.connected);
 
   const toggle = (id: string) => {
     setSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
+  };
+
+  const handleLaunch = async () => {
+    if (selected.length === 0) { toast.error('Select at least one platform'); return; }
+    const budgetNum = parseInt(budget.replace(',', ''));
+    if (!budgetNum || budgetNum < 50) { toast.error('Minimum budget is SAR 50'); return; }
+
+    const days      = DURATION_DAYS[duration] ?? 7;
+    const startDate = new Date().toISOString();
+    const endDate   = new Date(Date.now() + days * 86_400_000).toISOString();
+
+    try {
+      await createCampaign({
+        name:      `Quick Ad — ${selected.join(', ')} — ${new Date().toLocaleDateString()}`,
+        platforms: selected.join(','),
+        budget:    budgetNum,
+        startDate,
+        endDate,
+        isAI:      targetingMode === 'ai',
+        location:  targetingMode === 'manual' && manualLocation ? manualLocation : undefined,
+        ageRange:  targetingMode === 'manual' ? `${manualAgeMin}-${manualAgeMax}` : undefined,
+        interests: targetingMode === 'manual' && manualInterests.length > 0 ? manualInterests.join(',') : undefined,
+        ayrsharePostIds: creative ?? undefined,
+      });
+      setSuccess(true);
+    } catch {
+      toast.error('Failed to launch campaign — please try again');
+    }
   };
 
   if (success) {
@@ -43,7 +93,7 @@ export const QuickAdScreen = ({ onBack }: { onBack: () => void }) => {
           <Check size={40} className="text-primary-foreground" strokeWidth={3} />
         </motion.div>
         <h2 className="text-[24px] font-extrabold text-foreground mt-6">Ad Launched!</h2>
-        <p className="text-[14px] text-muted-foreground mt-2 text-center">Your campaign is now live across {selected.length} platforms</p>
+        <p className="text-[14px] text-muted-foreground mt-2 text-center">Your campaign is now live across {selected.length} platform{selected.length > 1 ? 's' : ''}</p>
         <button onClick={onBack} className="w-full h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press mt-8">Back to Campaigns</button>
       </motion.div>
     );
@@ -57,6 +107,7 @@ export const QuickAdScreen = ({ onBack }: { onBack: () => void }) => {
           <h1 className="text-[18px] font-bold text-foreground flex-1">Launch Quick Ad</h1>
           <span className="text-[13px] text-muted-foreground">Step {step} of 3</span>
         </div>
+
         {/* Progress */}
         <div className="flex gap-1 mt-3 mb-6">
           {[1, 2, 3].map(s => (
@@ -65,31 +116,53 @@ export const QuickAdScreen = ({ onBack }: { onBack: () => void }) => {
         </div>
 
         <AnimatePresence mode="wait">
+          {/* ── Step 1: Platform Selection ─────────────────────────────────── */}
           {step === 1 && (
             <motion.div key="s1" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}>
               <h2 className="text-[18px] font-bold text-foreground">Where to advertise?</h2>
-              <p className="text-[13px] text-muted-foreground mt-1">Select one or more platforms</p>
+              <p className="text-[13px] text-muted-foreground mt-1">Select from your connected platforms</p>
 
-              <h3 className="text-[14px] font-bold text-foreground mt-5 mb-2">Social Platforms</h3>
-              <div className="grid grid-cols-3 gap-2">
-                {socialPlatforms.map(p => (
-                  <button key={p.id} onClick={() => toggle(p.id)} className={`flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all ${selected.includes(p.id) ? 'bg-purple-soft border-brand-blue' : 'bg-card border-border-light'}`}>
-                    <p.Logo size={28} />
-                    <span className="text-[11px] font-semibold text-foreground">{p.name}</span>
-                    {p.audience && <span className="text-[9px] text-muted-foreground">{p.audience}</span>}
-                  </button>
-                ))}
-              </div>
+              {accountsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 size={24} className="text-brand-blue animate-spin" />
+                </div>
+              ) : connectedPlatforms.length === 0 ? (
+                <div className="mt-5 bg-card rounded-2xl p-6 border border-border-light text-center">
+                  <p className="text-[14px] font-semibold text-foreground">No connected platforms</p>
+                  <p className="text-[12px] text-muted-foreground mt-1">Connect your social accounts first</p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-3 gap-2 mt-5">
+                    {connectedPlatforms.map(p => {
+                      const Logo = PLATFORM_LOGOS[p.platform.toLowerCase()] ?? InstagramLogo;
+                      return (
+                        <button key={p.platform} onClick={() => toggle(p.platform)}
+                          className={`flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all ${selected.includes(p.platform) ? 'bg-purple-soft border-brand-blue' : 'bg-card border-border-light'}`}>
+                          <Logo size={28} />
+                          <span className="text-[11px] font-semibold text-foreground capitalize">{p.platform}</span>
+                          {p.followers > 0 && <span className="text-[9px] text-muted-foreground">~{p.followers >= 1000 ? `${(p.followers / 1000).toFixed(1)}K` : p.followers}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
 
+                  <div className="bg-purple-soft rounded-2xl p-3 mt-4">
+                    <p className="text-[13px] text-purple font-semibold">✦ Tip: Multi-platform campaigns reach broader audiences</p>
+                  </div>
+                </>
+              )}
 
-              <div className="bg-purple-soft rounded-2xl p-3 mt-4">
-                <p className="text-[13px] text-purple font-semibold">✦ Recommended: Instagram + TikTok — best ROAS for restaurants</p>
-              </div>
-
-              <button onClick={() => setStep(2)} className="w-full h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press mt-5">Next →</button>
+              <button
+                onClick={() => { if (selected.length === 0) { toast.error('Select at least one platform'); return; } setStep(2); }}
+                className="w-full h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press mt-5"
+              >
+                Next →
+              </button>
             </motion.div>
           )}
 
+          {/* ── Step 2: Budget & Targeting ─────────────────────────────────── */}
           {step === 2 && (
             <motion.div key="s2" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}>
               <h2 className="text-[18px] font-bold text-foreground">Budget & Targeting</h2>
@@ -110,40 +183,17 @@ export const QuickAdScreen = ({ onBack }: { onBack: () => void }) => {
 
               <h3 className="text-[14px] font-bold text-foreground mt-5 mb-2">Targeting</h3>
               <div className="grid grid-cols-2 gap-3">
-                {/* AI Targeting Card */}
-                <button
-                  onClick={() => setTargetingMode('ai')}
-                  className={`relative rounded-2xl p-4 text-start transition-all overflow-hidden ${targetingMode === 'ai' ? 'border-2 border-brand-blue bg-purple-soft' : 'border border-border-light bg-card'}`}
-                >
-                  {targetingMode === 'ai' && (
-                    <motion.div className="absolute inset-0 pointer-events-none" animate={{ backgroundPosition: ['200% 0', '-200% 0'] }} transition={{ duration: 4, repeat: Infinity, ease: 'linear' }} style={{ background: 'linear-gradient(90deg, transparent 0%, hsla(233,100%,42%,0.08) 50%, transparent 100%)', backgroundSize: '200% 100%' }} />
-                  )}
-                  <motion.span
-                    className="text-[18px] block mb-1"
-                    animate={targetingMode === 'ai' ? { scale: [1, 1.15, 1], filter: ['drop-shadow(0 0 0px transparent)', 'drop-shadow(0 0 6px hsl(233,100%,60%))', 'drop-shadow(0 0 0px transparent)'] } : {}}
-                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                  >✦</motion.span>
-                  <p className="text-[13px] font-bold text-foreground relative z-10">AI Targeting</p>
-                  <p className="text-[11px] text-muted-foreground mt-1 relative z-10">AI analyzes your audience and sets optimal targeting automatically</p>
+                <button onClick={() => setTargetingMode('ai')} className={`relative rounded-2xl p-4 text-start transition-all overflow-hidden ${targetingMode === 'ai' ? 'border-2 border-brand-blue bg-purple-soft' : 'border border-border-light bg-card'}`}>
+                  <span className="text-[18px] block mb-1">✦</span>
+                  <p className="text-[13px] font-bold text-foreground">AI Targeting</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">AI optimizes your audience automatically</p>
                 </button>
-                {/* Manual Targeting Card */}
-                <button
-                  onClick={() => setTargetingMode('manual')}
-                  className={`rounded-2xl p-4 text-start transition-all ${targetingMode === 'manual' ? 'border-2 border-brand-blue bg-purple-soft' : 'border border-border-light bg-card'}`}
-                >
+                <button onClick={() => setTargetingMode('manual')} className={`rounded-2xl p-4 text-start transition-all ${targetingMode === 'manual' ? 'border-2 border-brand-blue bg-purple-soft' : 'border border-border-light bg-card'}`}>
                   <span className="text-[18px] block mb-1">🎯</span>
                   <p className="text-[13px] font-bold text-foreground">Manual Targeting</p>
-                  <p className="text-[11px] text-muted-foreground mt-1">Set your own location, age range, interests, and schedule</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">Set location, age range, and interests</p>
                 </button>
               </div>
-
-              {targetingMode === 'ai' && (
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {['📍 Riyadh', '👤 22-38', '🍽️ Food Lovers', '📱 7-10 PM'].map(t => (
-                    <span key={t} className="rounded-3xl px-4 py-2 text-[12px] font-semibold bg-purple-soft text-purple">{t}</span>
-                  ))}
-                </div>
-              )}
 
               {targetingMode === 'manual' && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-3 space-y-3 overflow-hidden">
@@ -162,19 +212,15 @@ export const QuickAdScreen = ({ onBack }: { onBack: () => void }) => {
                     <label className="text-[12px] font-bold text-foreground block mb-1">Interests</label>
                     <div className="flex flex-wrap gap-2">
                       {['Food', 'Restaurants', 'Lifestyle', 'Shopping', 'Travel', 'Fitness'].map(interest => (
-                        <button key={interest} onClick={() => setManualInterests(prev => prev.includes(interest) ? prev.filter(i => i !== interest) : [...prev, interest])} className={`rounded-3xl px-3 py-1.5 text-[11px] font-semibold ${manualInterests.includes(interest) ? 'bg-brand-blue text-primary-foreground' : 'bg-card border border-border text-muted-foreground'}`}>{interest}</button>
+                        <button key={interest} onClick={() => setManualInterests(prev => prev.includes(interest) ? prev.filter(i => i !== interest) : [...prev, interest])}
+                          className={`rounded-3xl px-3 py-1.5 text-[11px] font-semibold ${manualInterests.includes(interest) ? 'bg-brand-blue text-primary-foreground' : 'bg-card border border-border text-muted-foreground'}`}>{interest}</button>
                       ))}
                     </div>
                   </div>
                 </motion.div>
               )}
 
-              <div className="bg-green-soft rounded-2xl p-4 mt-5 grid grid-cols-4 gap-2 text-center">
-                {[{ v: '~25K', l: 'Reach' }, { v: '~340', l: 'Clicks' }, { v: '~45', l: 'Conv.' }, { v: '3.2x', l: 'ROAS' }].map(r => (
-                  <div key={r.l}><p className="text-[18px] font-extrabold text-green-accent">{r.v}</p><p className="text-[9px] text-green-accent font-semibold">{r.l}</p></div>
-                ))}
-              </div>
-
+              {/* Cost summary */}
               <div className="bg-card rounded-2xl p-4 mt-4 border border-border-light space-y-2">
                 <div className="flex justify-between text-[13px]"><span className="text-muted-foreground">Ad spend</span><span className="text-foreground">SAR {budget}</span></div>
                 <div className="flex justify-between text-[13px]"><span className="text-muted-foreground">Speeda fee (15%)</span><span className="text-foreground">SAR {Math.round(parseInt(budget.replace(',', '')) * 0.15)}</span></div>
@@ -191,9 +237,10 @@ export const QuickAdScreen = ({ onBack }: { onBack: () => void }) => {
             </motion.div>
           )}
 
+          {/* ── Step 3: Creative & Launch ──────────────────────────────────── */}
           {step === 3 && (
             <motion.div key="s3" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}>
-              <h2 className="text-[18px] font-bold text-foreground">Ad Creative & Payment</h2>
+              <h2 className="text-[18px] font-bold text-foreground">Ad Creative</h2>
 
               <button className="w-full mt-4 p-5 rounded-2xl border-2 border-dashed border-border flex items-center gap-3 card-tap">
                 <Sparkles size={24} className="text-brand-teal" />
@@ -203,45 +250,42 @@ export const QuickAdScreen = ({ onBack }: { onBack: () => void }) => {
                 </div>
               </button>
 
-              <p className="text-[13px] text-muted-foreground mt-4 mb-2">Or use existing:</p>
-              {[
-                { title: 'Chicken Shawarma Promo', platform: 'Instagram · Feed Post', eng: '4.2%' },
-                { title: 'Weekend Brunch Reel', platform: 'Instagram · Reel', eng: '8.1%' },
-                { title: 'New Menu Reveal', platform: 'TikTok · Video', eng: '6.5%' },
-              ].map((c, i) => (
-                <button key={i} onClick={() => setCreative(i)} className={`w-full flex items-center gap-3 p-4 rounded-2xl border-2 mt-2 transition-all ${creative === i ? 'border-brand-blue bg-purple-soft' : 'border-border-light bg-card'}`}>
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${creative === i ? 'border-brand-blue' : 'border-border'}`}>
-                    {creative === i && <div className="w-3 h-3 rounded-full bg-brand-blue" />}
-                  </div>
-                  <div className="text-left flex-1">
-                    <p className="text-[13px] font-bold text-foreground">🖼️ {c.title}</p>
-                    <p className="text-[11px] text-muted-foreground">{c.platform} · {c.eng} eng.</p>
-                  </div>
-                </button>
-              ))}
-
-              <h3 className="text-[14px] font-bold text-foreground mt-5 mb-2">Payment Method</h3>
-              <div className="flex flex-wrap gap-2">
-                {paymentMethods.map(p => (
-                  <button key={p.id} onClick={() => setPayment(p.id)} className={`flex items-center gap-2 rounded-2xl px-4 py-3 border-2 transition-all ${payment === p.id ? 'border-brand-blue bg-purple-soft' : 'border-border-light bg-card'}`}>
-                    <p.Logo size={20} />
-                    <span className="text-[12px] font-semibold text-foreground">{p.name}</span>
-                  </button>
-                ))}
-              </div>
+              {postsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 size={20} className="text-brand-blue animate-spin" />
+                </div>
+              ) : (postsData?.posts ?? []).filter(p => p.status === 'Published').length > 0 ? (
+                <>
+                  <p className="text-[13px] text-muted-foreground mt-4 mb-2">Or use an existing post:</p>
+                  {postsData!.posts.filter(p => p.status === 'Published').slice(0, 5).map(p => (
+                    <button key={p.id} onClick={() => setCreative(p.ayrshareId ?? p.id)}
+                      className={`w-full flex items-center gap-3 p-4 rounded-2xl border-2 mt-2 transition-all ${creative === (p.ayrshareId ?? p.id) ? 'border-brand-blue bg-purple-soft' : 'border-border-light bg-card'}`}>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${creative === (p.ayrshareId ?? p.id) ? 'border-brand-blue' : 'border-border'}`}>
+                        {creative === (p.ayrshareId ?? p.id) && <div className="w-3 h-3 rounded-full bg-brand-blue" />}
+                      </div>
+                      <div className="text-left flex-1">
+                        <p className="text-[13px] font-bold text-foreground capitalize">🖼️ {p.caption.slice(0, 50)}{p.caption.length > 50 ? '…' : ''}</p>
+                        <p className="text-[11px] text-muted-foreground">{p.platform} · {p.status}</p>
+                      </div>
+                    </button>
+                  ))}
+                </>
+              ) : null}
 
               <div className="flex gap-3 mt-6">
                 <button onClick={() => setStep(2)} className="h-[56px] px-6 rounded-2xl border border-border text-foreground font-bold text-[14px] btn-press">← Back</button>
-                <button onClick={() => setSuccess(true)} className="flex-1 h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[14px] shadow-btn btn-press">
-                  Launch Ad — SAR {Math.round(parseInt(budget.replace(',', '')) * 1.15)}
+                <button
+                  onClick={handleLaunch}
+                  disabled={isPending}
+                  className="flex-1 h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[14px] shadow-btn btn-press disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isPending ? <><Loader2 size={18} className="animate-spin" /> Launching…</> : `Launch Ad — SAR ${Math.round(parseInt(budget.replace(',', '')) * 1.15)}`}
                 </button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-
-      
     </motion.div>
   );
 };

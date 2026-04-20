@@ -2,42 +2,27 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, Copy, Share2, Check, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { ReferralData } from '@/services/referral.service';
+import { useReferral } from '@/hooks/useReferral';
 
 interface ReferralScreenProps {
-  onBack:      () => void;
-  /** Live referral data from /api/referral. Falls back to demo data. */
-  liveData?:   ReferralData;
-  isLoading?:  boolean;
+  onBack: () => void;
 }
 
-const DEMO_DATA: ReferralData = {
-  referralCode:  'demo-xyz',
-  referralUrl:   'speeda.ai/invite/demo-xyz',
-  totalInvited:  4,
-  totalSignedUp: 3,
-  totalTokens:   150,
-  friends: [
-    { name: 'Omar K.', status: 'signed_up', tokens: 50 },
-    { name: 'Lina A.', status: 'signed_up', tokens: 50 },
-    { name: 'Faisal M.', status: 'signed_up', tokens: 50 },
-    { name: 'Nora S.', status: 'pending', tokens: 0 },
-  ],
-};
-
-export const ReferralScreen = ({ onBack, liveData, isLoading }: ReferralScreenProps) => {
+export const ReferralScreen = ({ onBack }: ReferralScreenProps) => {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
-  const data = liveData ?? DEMO_DATA;
+  const { data, isLoading } = useReferral();
 
   const handleCopy = () => {
+    if (!data) return;
     navigator.clipboard.writeText(data.referralUrl).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleShare = () => {
+    if (!data) return;
     if (typeof navigator !== 'undefined' && navigator.share) {
       navigator.share({ title: 'Join Speeda AI', url: data.referralUrl }).catch(() => {});
     } else {
@@ -57,7 +42,7 @@ export const ReferralScreen = ({ onBack, liveData, isLoading }: ReferralScreenPr
           <div className="flex items-center justify-center py-16">
             <Loader2 size={28} className="text-brand-blue animate-spin" />
           </div>
-        ) : (
+        ) : data ? (
           <>
             {/* Hero */}
             <div className="text-center mb-6">
@@ -84,8 +69,8 @@ export const ReferralScreen = ({ onBack, liveData, isLoading }: ReferralScreenPr
             {/* Stats */}
             <div className="grid grid-cols-3 gap-3 mt-4">
               {[
-                { label: 'Invited', value: String(data.totalInvited) },
-                { label: 'Signed Up', value: String(data.totalSignedUp) },
+                { label: 'Invited',       value: String(data.totalInvited) },
+                { label: 'Signed Up',     value: String(data.totalSignedUp) },
                 { label: 'Tokens Earned', value: `${data.totalTokens} ✦` },
               ].map((s, i) => (
                 <div key={i} className="bg-card rounded-2xl p-3 border border-border-light text-center">
@@ -117,7 +102,7 @@ export const ReferralScreen = ({ onBack, liveData, isLoading }: ReferralScreenPr
               )}
             </div>
           </>
-        )}
+        ) : null}
       </div>
     </motion.div>
   );

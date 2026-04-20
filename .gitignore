@@ -44,3 +44,7 @@ n8n/*.json
 
 # ayrshare private key
 ayrshare/
+
+
+.kilo
+tasks-bilel

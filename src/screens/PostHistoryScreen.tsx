@@ -4,15 +4,16 @@ import { ChevronLeft, Search, ArrowUpDown, RefreshCw, Loader2 } from 'lucide-rea
 import { InstagramLogo, TikTokLogo, FacebookLogo, GoogleLogo, XLogo, YouTubeLogo } from '../components/PlatformLogos';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import type { Post } from '@/hooks/usePosts';
+import { usePosts, useCreatePost, type Post } from '@/hooks/usePosts';
 
-// ── Platform logo map ────────────────────────────────────────────────────────
+// ─── Platform logo map ────────────────────────────────────────────────────────
+
 const PLATFORM_LOGOS: Record<string, React.FC<{ size?: number }>> = {
-  instagram: InstagramLogo,
-  tiktok: TikTokLogo,
-  facebook: FacebookLogo,
-  x: XLogo,
-  youtube: YouTubeLogo,
+  instagram:      InstagramLogo,
+  tiktok:         TikTokLogo,
+  facebook:       FacebookLogo,
+  x:              XLogo,
+  youtube:        YouTubeLogo,
   googlebusiness: GoogleLogo,
 };
 
@@ -20,20 +21,23 @@ function getPlatformLogo(platform: string): React.FC<{ size?: number }> {
   return PLATFORM_LOGOS[platform.toLowerCase()] ?? InstagramLogo;
 }
 
-// ── Type normalisation ───────────────────────────────────────────────────────
+// ─── Type normalisation ───────────────────────────────────────────────────────
+
 interface DisplayPost {
-  id:         string;
-  title:      string;
-  platform:   string;
-  Logo:       React.FC<{ size?: number }>;
-  type:       string;
-  status:     'published' | 'failed' | 'pending';
-  date:       string;
-  reach:      string;
-  likes:      string;
-  comments:   string;
-  fromRss:    boolean;
+  id:          string;
+  title:       string;
+  platform:    string;
+  Logo:        React.FC<{ size?: number }>;
+  type:        string;
+  status:      'published' | 'failed' | 'pending';
+  date:        string;
+  reach:       string;
+  likes:       string;
+  comments:    string;
+  fromRss:     boolean;
   failReason?: string;
+  // Original post data for retry
+  _raw: Post;
 }
 
 function formatDate(iso: string): string {
@@ -46,76 +50,63 @@ function apiPostToDisplay(p: Post): DisplayPost {
     Published: 'published', Failed: 'failed', Draft: 'pending', Scheduled: 'pending',
   };
   return {
-    id:         p.id,
-    title:      p.caption.slice(0, 60),
-    platform:   platform.charAt(0).toUpperCase() + platform.slice(1),
-    Logo:       getPlatformLogo(platform),
-    type:       'Post',
-    status:     statusMap[p.status] ?? 'pending',
-    date:       p.scheduledAt ? formatDate(p.scheduledAt) : formatDate(p.createdAt),
-    reach:      '—',
-    likes:      '—',
-    comments:   '—',
-    fromRss:    false,
+    id:       p.id,
+    title:    p.caption.slice(0, 60),
+    platform: platform.charAt(0).toUpperCase() + platform.slice(1),
+    Logo:     getPlatformLogo(platform),
+    type:     'Post',
+    status:   statusMap[p.status] ?? 'pending',
+    date:     p.scheduledAt ? formatDate(p.scheduledAt) : formatDate(p.createdAt),
+    reach:    '—',
+    likes:    '—',
+    comments: '—',
+    fromRss:  false,
+    _raw:     p,
   };
 }
 
-// ── Fallback demo posts ──────────────────────────────────────────────────────
-const DEMO_POSTS: DisplayPost[] = [
-  { id: '1', title: 'Ramadan Special Shawarma', platform: 'Instagram', Logo: InstagramLogo, type: 'Reel', status: 'published', date: 'Mar 22, 8:00 PM', reach: '12.4K', likes: '340', comments: '28', fromRss: false },
-  { id: '2', title: 'Weekend Brunch Menu', platform: 'Facebook', Logo: FacebookLogo, type: 'Post', status: 'published', date: 'Mar 21, 12:00 PM', reach: '5.6K', likes: '89', comments: '12', fromRss: false },
-  { id: '3', title: 'Behind the Kitchen', platform: 'TikTok', Logo: TikTokLogo, type: 'Video', status: 'published', date: 'Mar 20, 7:00 PM', reach: '28.1K', likes: '1.2K', comments: '45', fromRss: false },
-  { id: '4', title: 'New Menu Announcement', platform: 'X', Logo: XLogo, type: 'Thread', status: 'failed', date: 'Mar 17, 9:00 AM', reach: '—', likes: '—', comments: '—', fromRss: false, failReason: 'API rate limit exceeded — X returned error 429' },
-];
+// ─── UI constants ─────────────────────────────────────────────────────────────
 
-// ── Component ────────────────────────────────────────────────────────────────
 const statusColors: Record<string, string> = {
   published: 'bg-green-accent text-primary-foreground',
-  failed: 'bg-red-accent text-primary-foreground',
-  pending: 'bg-orange-accent text-primary-foreground',
+  failed:    'bg-red-accent text-primary-foreground',
+  pending:   'bg-orange-accent text-primary-foreground',
 };
 
 type SortKey = 'date' | 'reach' | 'engagement';
 const sortOptions: { key: SortKey; label: string }[] = [
-  { key: 'date', label: 'Newest First' },
-  { key: 'reach', label: 'Top Reach' },
-  { key: 'engagement', label: 'Most Engagement' },
+  { key: 'date',        label: 'Newest First' },
+  { key: 'reach',       label: 'Top Reach' },
+  { key: 'engagement',  label: 'Most Engagement' },
 ];
 
+// ─── Component ────────────────────────────────────────────────────────────────
+
 interface PostHistoryScreenProps {
-  onBack:     () => void;
+  onBack:      () => void;
   onNavigate?: (screen: string) => void;
-  /** Live posts from API. Falls back to demo data when undefined. */
-  posts?:     Post[];
-  isLoading?: boolean;
-  onRetry?:   (postId: string) => Promise<void>;
 }
 
-export const PostHistoryScreen = ({
-  onBack,
-  onNavigate,
-  posts: livePosts,
-  isLoading,
-  onRetry,
-}: PostHistoryScreenProps) => {
-  const [search, setSearch] = useState('');
+export const PostHistoryScreen = ({ onBack, onNavigate }: PostHistoryScreenProps) => {
+  const { t } = useTranslation();
+  const [search, setSearch]             = useState('');
   const [filterPlatform, setFilterPlatform] = useState('All');
   const [filterStatus, setFilterStatus] = useState<'All' | 'published' | 'failed'>('All');
-  const [sortBy, setSortBy] = useState<SortKey>('date');
+  const [sortBy, setSortBy]             = useState<SortKey>('date');
   const [showSortMenu, setShowSortMenu] = useState(false);
-  const [retryingIds, setRetryingIds] = useState<string[]>([]);
-  const [retriedIds, setRetriedIds] = useState<string[]>([]);
-  const { t } = useTranslation();
+  const [retryingIds, setRetryingIds]   = useState<string[]>([]);
+  const [retriedIds, setRetriedIds]     = useState<string[]>([]);
+  const [page]                          = useState(1);
 
-  const displayPosts: DisplayPost[] = livePosts
-    ? livePosts.map(apiPostToDisplay)
-    : DEMO_POSTS;
+  const { data, isLoading }                    = usePosts({ page });
+  const { mutateAsync: createPost }            = useCreatePost();
 
+  const displayPosts: DisplayPost[] = (data?.posts ?? []).map(apiPostToDisplay);
   const platforms = ['All', ...Array.from(new Set(displayPosts.map(p => p.platform)))];
   const statusFilters = [
-    { key: 'All' as const, label: 'All Status' },
+    { key: 'All' as const,       label: 'All Status' },
     { key: 'published' as const, label: '✓ Published' },
-    { key: 'failed' as const, label: '✕ Failed' },
+    { key: 'failed' as const,    label: '✕ Failed' },
   ];
 
   const filtered = displayPosts
@@ -125,39 +116,6 @@ export const PostHistoryScreen = ({
 
   const failedCount = displayPosts.filter(p => p.status === 'failed').length;
 
-  const handleRetry = async (postId: string) => {
-    setRetryingIds(prev => [...prev, postId]);
-    toast.loading('Retrying post...', { id: `retry-${postId}` });
-    try {
-      if (onRetry) {
-        await onRetry(postId);
-        setRetriedIds(prev => [...prev, postId]);
-        toast.success('Post scheduled for retry ✓', { id: `retry-${postId}` });
-      } else {
-        // Demo mode
-        await new Promise(r => setTimeout(r, 2000));
-        const success = Math.random() > 0.3;
-        if (success) {
-          setRetriedIds(prev => [...prev, postId]);
-          toast.success('Post published successfully ✓', { id: `retry-${postId}` });
-        } else {
-          toast.error('Retry failed — try again or edit the post', { id: `retry-${postId}` });
-        }
-      }
-    } catch {
-      toast.error('Retry failed — try again or edit the post', { id: `retry-${postId}` });
-    } finally {
-      setRetryingIds(prev => prev.filter(id => id !== postId));
-    }
-  };
-
-  const handleRetryAll = () => {
-    const failedPosts = displayPosts.filter(p => p.status === 'failed' && !retriedIds.includes(p.id));
-    failedPosts.forEach((post, i) => {
-      setTimeout(() => handleRetry(post.id), i * 800);
-    });
-  };
-
   const totalReach = displayPosts
     .filter(p => p.reach !== '—')
     .reduce((acc, p) => {
@@ -165,7 +123,34 @@ export const PostHistoryScreen = ({
       return acc + (isNaN(n) ? 0 : n);
     }, 0);
 
-  const formatReach = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
+  const formatReach = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}K` : n > 0 ? String(n) : '—';
+
+  const handleRetry = async (post: DisplayPost) => {
+    setRetryingIds(prev => [...prev, post.id]);
+    toast.loading('Retrying post...', { id: `retry-${post.id}` });
+    try {
+      await createPost({
+        platform:    post._raw.platform,
+        caption:     post._raw.caption,
+        hashtags:    post._raw.hashtags ?? undefined,
+        mediaUrls:   post._raw.mediaUrls ? JSON.parse(post._raw.mediaUrls) : undefined,
+        scheduledAt: new Date().toISOString(),
+        status:      'Scheduled',
+      });
+      setRetriedIds(prev => [...prev, post.id]);
+      toast.success('Post scheduled for retry ✓', { id: `retry-${post.id}` });
+    } catch {
+      toast.error('Retry failed — try again or edit the post', { id: `retry-${post.id}` });
+    } finally {
+      setRetryingIds(prev => prev.filter(id => id !== post.id));
+    }
+  };
+
+  const handleRetryAll = () => {
+    displayPosts
+      .filter(p => p.status === 'failed' && !retriedIds.includes(p.id))
+      .forEach((post, i) => setTimeout(() => handleRetry(post), i * 800));
+  };
 
   return (
     <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="bg-background min-h-screen pb-24">
@@ -173,7 +158,7 @@ export const PostHistoryScreen = ({
         <div className="flex items-center gap-3 mb-4">
           <button onClick={onBack}><ChevronLeft size={24} className="text-foreground" /></button>
           <h1 className="text-[20px] font-extrabold text-foreground">{t('postHistory.title', 'Post History')}</h1>
-          <span className="text-[13px] text-muted-foreground ml-auto">{displayPosts.length} posts</span>
+          <span className="text-[13px] text-muted-foreground ml-auto">{data?.pagination.total ?? 0} posts</span>
         </div>
 
         {/* Search + Sort */}
@@ -241,8 +226,8 @@ export const PostHistoryScreen = ({
         {/* Stats summary */}
         <div className="grid grid-cols-3 gap-3 mb-4">
           {[
-            { label: t('postHistory.totalPosts', 'Total Posts'), value: String(displayPosts.length), icon: '📝' },
-            { label: t('postHistory.totalReach', 'Total Reach'), value: formatReach(totalReach) || '—', icon: '👁️' },
+            { label: t('postHistory.totalPosts', 'Total Posts'), value: String(data?.pagination.total ?? 0), icon: '📝' },
+            { label: t('postHistory.totalReach', 'Total Reach'), value: formatReach(totalReach), icon: '👁️' },
             { label: t('postHistory.avgEngagement', 'Avg. Engagement'), value: '—', icon: '📈' },
           ].map((s, i) => (
             <div key={i} className="bg-card rounded-2xl p-3 border border-border-light text-center">
@@ -253,7 +238,7 @@ export const PostHistoryScreen = ({
           ))}
         </div>
 
-        {/* Loading state */}
+        {/* Post list */}
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 size={28} className="text-brand-blue animate-spin" />
@@ -264,11 +249,10 @@ export const PostHistoryScreen = ({
             <p className="text-[13px] text-muted-foreground">Try changing your filters or create your first post.</p>
           </div>
         ) : (
-          /* Post list */
           <div className="space-y-3">
             {filtered.map((post, i) => {
-              const isRetrying = retryingIds.includes(post.id);
-              const wasRetried = retriedIds.includes(post.id);
+              const isRetrying  = retryingIds.includes(post.id);
+              const wasRetried  = retriedIds.includes(post.id);
               const effectiveStatus = wasRetried ? 'published' : post.status;
 
               return (
@@ -289,9 +273,9 @@ export const PostHistoryScreen = ({
                   {effectiveStatus === 'published' && (
                     <div className="grid grid-cols-3 gap-2 mt-3">
                       {[
-                        { l: t('postHistory.reach', 'Reach'), v: wasRetried ? '—' : post.reach },
-                        { l: t('postHistory.likes', 'Likes'), v: wasRetried ? '—' : post.likes },
-                        { l: t('postHistory.commentCount', 'Comments'), v: wasRetried ? '—' : post.comments },
+                        { l: t('postHistory.reach', 'Reach'), v: post.reach },
+                        { l: t('postHistory.likes', 'Likes'), v: post.likes },
+                        { l: t('postHistory.commentCount', 'Comments'), v: post.comments },
                       ].map((m, j) => (
                         <div key={j}>
                           <span className="text-[9px] uppercase text-muted-foreground font-semibold">{m.l}</span>
@@ -304,7 +288,7 @@ export const PostHistoryScreen = ({
                     <div className="mt-2 bg-red-accent/10 rounded-xl p-3">
                       <p className="text-[12px] text-red-accent font-medium">⚠️ {post.failReason || t('postHistory.failedReason', 'API error — retry or edit post')}</p>
                       <div className="flex gap-3 mt-2">
-                        <button onClick={() => handleRetry(post.id)} className="h-8 px-4 rounded-lg bg-red-accent text-primary-foreground text-[12px] font-bold flex items-center gap-1.5 btn-press">
+                        <button onClick={() => handleRetry(post)} className="h-8 px-4 rounded-lg bg-red-accent text-primary-foreground text-[12px] font-bold flex items-center gap-1.5 btn-press">
                           <RefreshCw size={12} /> {t('postHistory.retry', 'Retry')}
                         </button>
                         <button
