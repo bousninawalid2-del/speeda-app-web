@@ -29,6 +29,7 @@ export const ContactSupportScreen = ({ onBack }: ContactSupportScreenProps) => {
       // Send via mailto as fallback (no dedicated support API)
       const mailtoUrl = `mailto:support@speeda.ai?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(`From: ${name} (${email})\n\n${message}`)}`;
       window.open(mailtoUrl, '_blank');
+      toast.success(t('contactSupport.messageSent', 'Message sent successfully'));
       setSent(true);
     } catch {
       toast.error('Failed to send message');

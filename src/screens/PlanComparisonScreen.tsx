@@ -1,103 +1,54 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Check, X, MessageSquare } from 'lucide-react';
+import { ChevronLeft, Check, X, MessageSquare, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { PaymentFlow } from '../components/PaymentFlow';
 import { SalesChatWidget } from '../components/SalesAgent';
 import { usePlanComparisonPlans, type PlanComparisonPlan } from '@/hooks/usePlanComparisonPlans';
+import { useCreateSubscription } from '@/hooks/useSubscription';
 
 interface PlanComparisonScreenProps {
   onBack: () => void;
 }
 
-const STATIC_PLANS = [
-  {
-    name: 'Starter',
-    monthlyPrice: 549,
-    current: false,
-    features: [
-      { name: '200 tokens/month', included: true },
-      { name: '3 platforms', included: true },
-      { name: 'AI Content Generation', included: true },
-      { name: 'Calendar & Scheduling', included: true },
-      { name: 'Post Editing', included: true },
-      { name: 'Media Library (50 files)', included: true },
-      { name: 'Basic Analytics', included: true },
-      { name: 'Engagement (read-only)', included: true },
-      { name: 'MOS Score (read-only)', included: true },
-      { name: 'Variations A/B', included: false },
-      { name: 'Translation', included: false },
-      { name: 'Auto-Schedule', included: false },
-      { name: 'Competitor Intelligence', included: false },
-    ],
-    watermark: true,
-  },
-  {
-    name: 'Pro',
-    monthlyPrice: 1199,
-    current: true,
-    badge: '⭐ Current Plan',
-    popular: true,
-    features: [
-      { name: '800 tokens/month', included: true },
-      { name: 'All 10 platforms', included: true },
-      { name: 'Everything in Starter', included: true },
-      { name: 'Variations A/B', included: true },
-      { name: 'Post Translation', included: true },
-      { name: 'Auto-Schedule', included: true },
-      { name: 'DM Management', included: true },
-      { name: 'Complete Analytics', included: true },
-      { name: 'Link Tracking', included: true },
-      { name: 'Hashtag Intelligence', included: true },
-      { name: 'Image Auto-Resize', included: true },
-      { name: 'Campaigns & Ads', included: true },
-      { name: 'PDF Export', included: true },
-      { name: 'Watermark removed', included: true },
-      { name: 'Competitor Intelligence', included: false },
-    ],
-    watermark: false,
-  },
-  {
-    name: 'Business',
-    monthlyPrice: 2499,
-    current: false,
-    features: [
-      { name: '3,000 tokens/month', included: true },
-      { name: 'All 10 platforms', included: true },
-      { name: 'Everything in Pro', included: true },
-      { name: 'Competitor Intelligence', included: true },
-      { name: 'Weekly auto PDF reports', included: true },
-      { name: 'Priority support', included: true },
-      { name: 'Onboarding call', included: true },
-      { name: 'Multi-location', included: true },
-      { name: 'API access', included: true },
-    ],
-    watermark: false,
-  },
-];
+interface PlanCardFeature {
+  name: string;
+  included: boolean;
+}
+
+interface PlanCard {
+  name: string;
+  monthlyPrice: number;
+  current: boolean;
+  badge?: string;
+  popular?: boolean;
+  features: PlanCardFeature[];
+  watermark: boolean;
+  planId?: string;
+}
 
 const formatPrice = (price: number) => price.toLocaleString();
 
-type PlanCard = typeof STATIC_PLANS[number];
-
-const mapDynamicPlansToCards = (plans?: PlanComparisonPlan[]): PlanCard[] => {
-  if (!plans?.length) return STATIC_PLANS;
+const mapDynamicPlansToCards = (plans: PlanComparisonPlan[]): PlanCard[] => {
   return plans.map((plan) => ({
     name: plan.name,
     monthlyPrice: plan.monthlyPrice,
-    current: plan.name.toLowerCase() === 'pro',
-    badge: plan.name.toLowerCase() === 'pro' ? '⭐ Current Plan' : undefined,
+    current: false,
     popular: plan.popular,
     features: [
       ...plan.features.map((name) => ({ name, included: true })),
       ...plan.locked.map((name) => ({ name, included: false })),
     ],
     watermark: plan.watermark,
+    planId: plan.id,
   }));
 };
 
 export const PlanComparisonScreen = ({ onBack }: PlanComparisonScreenProps) => {
-  const { data: dynamicPlans, isError } = usePlanComparisonPlans();
-  const plans = isError ? STATIC_PLANS : mapDynamicPlansToCards(dynamicPlans);
+  const { data: dynamicPlans, isLoading, isError } = usePlanComparisonPlans();
+  const { mutateAsync: createSubscription } = useCreateSubscription();
+
+  const plans: PlanCard[] = dynamicPlans?.length ? mapDynamicPlansToCards(dynamicPlans) : [];
 
   const [selectedPlan, setSelectedPlan] = useState<PlanCard | null>(null);
   const [annual, setAnnual] = useState(false);
@@ -109,6 +60,31 @@ export const PlanComparisonScreen = ({ onBack }: PlanComparisonScreenProps) => {
   };
 
   const currentPlanIndex = plans.findIndex(p => p.current);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <Loader2 size={32} className="text-brand-blue animate-spin" />
+      </div>
+    );
+  }
+
+  if (isError || !plans.length) {
+    return (
+      <div className="bg-background min-h-screen">
+        <div className="px-5 pt-6">
+          <div className="flex items-center gap-3 mb-6">
+            <button onClick={onBack}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
+            <h1 className="text-[20px] font-bold text-foreground">Compare Plans</h1>
+          </div>
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <p className="text-[15px] font-semibold text-foreground mb-1">Unable to load plans</p>
+            <p className="text-[13px] text-muted-foreground">Please try again later.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -191,7 +167,21 @@ export const PlanComparisonScreen = ({ onBack }: PlanComparisonScreenProps) => {
             successBadge={`${selectedPlan.name} Pack`}
             successButton="Start Creating →"
             variant="plan"
-            onComplete={() => { setSelectedPlan(null); onBack(); }}
+            onComplete={async () => {
+              if (selectedPlan?.planId) {
+                try {
+                  const { checkoutUrl } = await createSubscription({
+                    planId: selectedPlan.planId,
+                    billingType: annual ? 'yearly' : 'monthly',
+                  });
+                  window.open(checkoutUrl, '_blank');
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : 'Failed to start checkout');
+                }
+              }
+              setSelectedPlan(null);
+              onBack();
+            }}
             onCancel={() => setSelectedPlan(null)}
           />
         )}

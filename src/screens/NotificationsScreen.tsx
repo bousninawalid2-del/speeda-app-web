@@ -1,47 +1,19 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-
-interface NotificationItem {
-  icon: string;
-  bg: string;
-  title: string;
-  text: string;
-  time: string;
-  unread: boolean;
-  nav?: string;
-}
-
-const notifications: { groupKey: string; items: NotificationItem[] }[] = [
-  { groupKey: 'notifications.today', items: [
-    { icon: '📢', bg: 'bg-green-soft', title: 'Campaign Milestone', text: 'Your Ramadan campaign reached 15K people today', time: '10m ago', unread: true, nav: 'campaigns' },
-    { icon: '✦', bg: 'bg-purple-soft', title: 'AI Content Ready', text: '3 new posts generated for your approval', time: '1h ago', unread: true, nav: 'create' },
-    { icon: '⭐', bg: 'bg-orange-soft', title: 'New Reviews', text: 'You received 4 new Google reviews', time: '2h ago', unread: true, nav: 'chat-engagement-reviews' },
-    { icon: '⚠️', bg: 'bg-red-soft', title: 'Budget Alert', text: 'Instagram ad budget 80% consumed', time: '3h ago', unread: false, nav: 'campaigns' },
-    { icon: '📡', bg: 'bg-purple-soft', title: 'RSS Auto-Post', text: 'New article "Perfect Shawarma Tips" published to Instagram & Facebook', time: '4h ago', unread: false, nav: 'create' },
-    { icon: '🔗', bg: 'bg-green-soft', title: 'Webhook: Post Published', text: 'Your scheduled post went live on Instagram successfully', time: '4h ago', unread: false, nav: 'create' },
-  ]},
-  { groupKey: 'notifications.yesterday', items: [
-    { icon: '📊', bg: 'bg-purple-soft', title: 'Weekly Report', text: 'Your weekly analytics report is ready', time: 'Yesterday', unread: false, nav: 'weeklyReport' },
-    { icon: '💜', bg: 'bg-green-soft', title: 'Engagement Milestone', text: 'You hit 10K total followers across platforms', time: 'Yesterday', unread: false, nav: 'analytics' },
-    { icon: '🔴', bg: 'bg-red-soft', title: 'Platform Disconnected', text: 'X (Twitter) connection lost — tap to reconnect', time: 'Yesterday', unread: false, nav: 'social' },
-    { icon: '🔗', bg: 'bg-green-soft', title: 'Webhook: Boost Complete', text: 'Your boosted post reached 12.4K impressions', time: 'Yesterday', unread: false, nav: 'campaigns' },
-  ]},
-  { groupKey: 'notifications.earlier', items: [
-    { icon: '✅', bg: 'bg-green-soft', title: 'Campaign Completed', text: 'Weekend Special campaign ended with 2.3x ROI', time: '2 days ago', unread: false, nav: 'campaigns' },
-    { icon: '🔗', bg: 'bg-orange-soft', title: 'Webhook: Post Failed', text: 'TikTok post failed — media format error', time: '3 days ago', unread: false, nav: 'postHistory' },
-  ]},
-];
+import { useNotifications } from '@/hooks/useNotifications';
 
 interface NotificationsScreenProps {
-  onBack: () => void;
+  onBack:      () => void;
   onNavigate?: (screen: string) => void;
 }
 
 export const NotificationsScreen = ({ onBack, onNavigate }: NotificationsScreenProps) => {
   const { t } = useTranslation();
   const [readAll, setReadAll] = useState(false);
+
+  const { data: groups, isLoading } = useNotifications();
 
   return (
     <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="bg-background min-h-screen pb-24">
@@ -51,31 +23,44 @@ export const NotificationsScreen = ({ onBack, onNavigate }: NotificationsScreenP
           <h1 className="text-[20px] font-bold text-foreground flex-1">{t('notifications.title')}</h1>
           <button onClick={() => setReadAll(true)} className="text-brand-blue text-[13px] font-medium">{t('notifications.markAllRead')}</button>
         </div>
-        {notifications.map((group, gi) => (
-          <div key={gi} className="mb-5">
-            <h3 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t(group.groupKey)}</h3>
-            <div className="space-y-2">
-              {group.items.map((n, i) => (
-                <motion.button
-                  key={i}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.04 }}
-                  onClick={() => n.nav && onNavigate?.(n.nav)}
-                  className="w-full bg-card rounded-2xl p-4 border border-border-light flex gap-3 items-start text-left"
-                >
-                  <div className={`w-10 h-10 rounded-2xl ${n.bg} flex items-center justify-center text-lg flex-shrink-0`}>{n.icon}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-bold text-foreground">{n.title}</p>
-                    <p className="text-[13px] text-muted-foreground mt-0.5">{n.text}</p>
-                    <p className="text-[11px] text-muted-foreground mt-1">{n.time}</p>
-                  </div>
-                  {n.unread && !readAll && <div className="w-2 h-2 rounded-full bg-brand-blue flex-shrink-0 mt-1.5" />}
-                </motion.button>
-              ))}
-            </div>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 size={28} className="text-brand-blue animate-spin" />
           </div>
-        ))}
+        ) : !groups || groups.every(g => g.items.length === 0) ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <span className="text-4xl">🔔</span>
+            <p className="text-[15px] font-semibold text-foreground mt-3">No notifications yet</p>
+            <p className="text-[13px] text-muted-foreground mt-1">We'll notify you about campaigns, posts, and more.</p>
+          </div>
+        ) : (
+          groups.map((group, gi) => (
+            <div key={gi} className="mb-5">
+              <h3 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t(group.groupKey)}</h3>
+              <div className="space-y-2">
+                {group.items.map((n, i) => (
+                  <motion.button
+                    key={n.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    onClick={() => n.nav && onNavigate?.(n.nav)}
+                    className="w-full bg-card rounded-2xl p-4 border border-border-light flex gap-3 items-start text-left"
+                  >
+                    <div className={`w-10 h-10 rounded-2xl ${n.bg} flex items-center justify-center text-lg flex-shrink-0`}>{n.icon}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[14px] font-bold text-foreground">{n.title}</p>
+                      <p className="text-[13px] text-muted-foreground mt-0.5">{n.text}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">{n.time}</p>
+                    </div>
+                    {n.unread && !readAll && <div className="w-2 h-2 rounded-full bg-brand-blue flex-shrink-0 mt-1.5" />}
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </motion.div>
   );

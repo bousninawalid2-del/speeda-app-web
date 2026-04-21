@@ -1,11 +1,10 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, RefreshCw, AlertTriangle, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { InstagramLogo, TikTokLogo, SnapchatLogo, FacebookLogo, XLogo, YouTubeLogo, LinkedInLogo, GoogleLogo, PinterestLogo, ThreadsLogo } from '../components/PlatformLogos';
 import { useTranslation } from 'react-i18next';
+import { useAccountHealth, useInvalidateAccountHealth } from '@/hooks/useAccountHealth';
 import type { SocialAccount } from '@/services/social.service';
 
-// ── Platform logo map ────────────────────────────────────────────────────────
 const LOGOS: Record<string, React.FC<{ size?: number }>> = {
   instagram: InstagramLogo, tiktok: TikTokLogo, snapchat: SnapchatLogo,
   facebook: FacebookLogo, x: XLogo, youtube: YouTubeLogo,
@@ -36,21 +35,6 @@ function socialAccountToDisplay(acc: SocialAccount): PlatformDisplay {
   };
 }
 
-// ── Fallback demo data ───────────────────────────────────────────────────────
-const DEMO_PLATFORMS: PlatformDisplay[] = [
-  { Logo: InstagramLogo, name: 'Instagram', status: 'healthy', lastSync: '2 min ago', tokenExpiry: 'Jun 15, 2026', postsThisMonth: 12, errors: 0 },
-  { Logo: TikTokLogo, name: 'TikTok', status: 'healthy', lastSync: '5 min ago', tokenExpiry: 'May 20, 2026', postsThisMonth: 8, errors: 0 },
-  { Logo: SnapchatLogo, name: 'Snapchat', status: 'warning', lastSync: '1h ago', tokenExpiry: 'Apr 2, 2026', postsThisMonth: 3, errors: 1 },
-  { Logo: FacebookLogo, name: 'Facebook', status: 'healthy', lastSync: '3 min ago', tokenExpiry: 'Jul 10, 2026', postsThisMonth: 10, errors: 0 },
-  { Logo: XLogo, name: 'X (Twitter)', status: 'error', lastSync: '3h ago', tokenExpiry: 'Expired', postsThisMonth: 5, errors: 3 },
-];
-
-const DEMO_ERRORS = [
-  { platform: 'X (Twitter)', error: 'Authentication token expired', time: '3h ago', severity: 'critical' as const },
-  { platform: 'Snapchat', error: 'Rate limit reached — retrying in 15 min', time: '1h ago', severity: 'warning' as const },
-];
-
-// ── Component ────────────────────────────────────────────────────────────────
 const statusConfig: Record<string, { color: string; icon: typeof CheckCircle; label: string }> = {
   healthy: { color: 'text-green-accent', icon: CheckCircle, label: 'Healthy' },
   warning: { color: 'text-orange-accent', icon: AlertTriangle, label: 'Warning' },
@@ -60,30 +44,23 @@ const statusConfig: Record<string, { color: string; icon: typeof CheckCircle; la
 interface AccountHealthScreenProps {
   onBack:      () => void;
   onNavigate?: (screen: string) => void;
-  /** Live social accounts from /api/social. Falls back to demo data. */
-  accounts?:   SocialAccount[];
-  isLoading?:  boolean;
-  onRefresh?:  () => void;
 }
 
 export const AccountHealthScreen = ({
   onBack,
   onNavigate,
-  accounts: liveAccounts,
-  isLoading,
-  onRefresh,
 }: AccountHealthScreenProps) => {
   const { t } = useTranslation();
+  const { data: accounts, isLoading } = useAccountHealth();
+  const invalidate = useInvalidateAccountHealth();
 
-  const platforms: PlatformDisplay[] = liveAccounts
-    ? liveAccounts.filter(a => a.connected).map(socialAccountToDisplay)
-    : DEMO_PLATFORMS;
+  const platforms: PlatformDisplay[] = (accounts ?? [])
+    .filter(a => a.connected)
+    .map(socialAccountToDisplay);
 
-  const recentErrors = liveAccounts
-    ? platforms
-        .filter(p => p.errors > 0)
-        .map(p => ({ platform: p.name, error: `${p.errors} posting error(s) this month`, time: p.lastSync, severity: p.status === 'error' ? 'critical' as const : 'warning' as const }))
-    : DEMO_ERRORS;
+  const recentErrors = platforms
+    .filter(p => p.errors > 0)
+    .map(p => ({ platform: p.name, error: `${p.errors} posting error(s) this month`, time: p.lastSync, severity: p.status === 'error' ? 'critical' as const : 'warning' as const }));
 
   const healthyCount = platforms.filter(p => p.status === 'healthy').length;
   const warningCount = platforms.filter(p => p.status === 'warning').length;
@@ -95,7 +72,7 @@ export const AccountHealthScreen = ({
         <div className="flex items-center gap-3 mb-4">
           <button onClick={onBack}><ChevronLeft size={24} className="text-foreground" /></button>
           <h1 className="text-[20px] font-extrabold text-foreground">{t('accountHealth.title', 'Account Health')}</h1>
-          <button onClick={onRefresh} className="ml-auto p-2 rounded-xl bg-card border border-border-light">
+          <button onClick={() => invalidate()} className="ml-auto p-2 rounded-xl bg-card border border-border-light">
             {isLoading
               ? <Loader2 size={16} className="text-brand-blue animate-spin" />
               : <RefreshCw size={16} className="text-muted-foreground" />}

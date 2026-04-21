@@ -1,42 +1,49 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTokenPackages, usePurchaseTokenPackage, type TokenPackage } from '@/hooks/useTokens';
+import { useTokens } from '@/hooks/useTokens';
 
 interface TopUpScreenProps {
-  onBack:       () => void;
-  /** Live ad balance from tokens/billing API */
-  adBalance?:   number;
-  isLoading?:   boolean;
-  /** Called with the selected amount in SAR; should trigger MamoPay checkout */
-  onTopUp?:     (amount: number) => Promise<void>;
+  onBack: () => void;
 }
 
-const PRESET_AMOUNTS = [500, 1000, 2500, 5000];
+export const TopUpScreen = ({ onBack }: TopUpScreenProps) => {
+  const { data: packages, isLoading: packagesLoading } = useTokenPackages();
+  const { data: tokensData } = useTokens();
+  const { mutateAsync: purchaseTokens, isPending } = usePurchaseTokenPackage();
 
-export const TopUpScreen = ({ onBack, adBalance, isLoading, onTopUp }: TopUpScreenProps) => {
-  const [amount, setAmount] = useState(1000);
+  const [selectedPkg, setSelectedPkg] = useState<TokenPackage | null>(null);
   const [custom, setCustom] = useState('');
   const [isCustom, setIsCustom] = useState(false);
-  const [processing, setProcessing] = useState(false);
 
-  const displayAmount = isCustom ? (parseInt(custom) || 0) : amount;
+  const displayAmount = isCustom ? (parseInt(custom) || 0) : (selectedPkg?.price ?? 0);
 
-  const handleContinue = async () => {
-    if (displayAmount <= 0) {
-      toast.error('Please enter a valid amount');
+  const handlePurchase = async () => {
+    if (isCustom) {
+      toast.error('Custom amounts require selecting a predefined package');
       return;
     }
-    if (!onTopUp) return;
-    setProcessing(true);
+    if (!selectedPkg) {
+      toast.error('Please select a package');
+      return;
+    }
     try {
-      await onTopUp(displayAmount);
+      const { checkoutUrl } = await purchaseTokens(selectedPkg.id);
+      window.open(checkoutUrl, '_blank');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to process top-up');
-    } finally {
-      setProcessing(false);
     }
   };
+
+  if (packagesLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <Loader2 size={32} className="text-brand-blue animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="bg-background min-h-screen pb-8">
@@ -48,24 +55,22 @@ export const TopUpScreen = ({ onBack, adBalance, isLoading, onTopUp }: TopUpScre
 
         <div className="bg-card rounded-2xl p-5 border border-border-light text-center mb-6">
           <p className="text-[13px] text-muted-foreground">Current Balance</p>
-          {isLoading ? (
-            <Loader2 size={24} className="text-brand-blue animate-spin mx-auto mt-1" />
-          ) : (
-            <p className="text-[32px] font-extrabold text-foreground mt-1">
-              SAR {(adBalance ?? 0).toLocaleString()}
-            </p>
-          )}
+          <p className="text-[32px] font-extrabold text-foreground mt-1">
+            SAR {(tokensData?.balance ?? 0).toLocaleString()}
+          </p>
         </div>
 
-        <h3 className="text-[16px] font-bold text-foreground mb-3">Select Amount</h3>
+        <h3 className="text-[16px] font-bold text-foreground mb-3">Select Package</h3>
         <div className="flex flex-wrap gap-2 mb-2">
-          {PRESET_AMOUNTS.map(a => (
-            <button key={a} onClick={() => { setAmount(a); setIsCustom(false); }}
-              className={`rounded-3xl px-5 py-[9px] text-[13px] font-semibold transition-all ${!isCustom && amount === a ? 'bg-brand-blue text-primary-foreground' : 'bg-card text-muted-foreground border border-border'}`}>
-              SAR {a.toLocaleString()}
+          {(packages ?? []).map(pkg => (
+            <button key={pkg.id} onClick={() => { setSelectedPkg(pkg); setIsCustom(false); }}
+              disabled={isPending}
+              className={`rounded-3xl px-5 py-[9px] text-[13px] font-semibold transition-all ${!isCustom && selectedPkg?.id === pkg.id ? 'bg-brand-blue text-primary-foreground' : 'bg-card text-muted-foreground border border-border'}`}>
+              {pkg.tokenCount} tokens — SAR {pkg.price.toLocaleString()}
             </button>
           ))}
           <button onClick={() => setIsCustom(true)}
+            disabled={isPending}
             className={`rounded-3xl px-5 py-[9px] text-[13px] font-semibold transition-all ${isCustom ? 'bg-brand-blue text-primary-foreground' : 'bg-card text-muted-foreground border border-border'}`}>
             Custom
           </button>
@@ -91,11 +96,11 @@ export const TopUpScreen = ({ onBack, adBalance, isLoading, onTopUp }: TopUpScre
         </div>
 
         <button
-          onClick={handleContinue}
-          disabled={processing || !onTopUp || displayAmount <= 0}
+          onClick={handlePurchase}
+          disabled={isPending || (!selectedPkg && !isCustom) || displayAmount <= 0}
           className="w-full h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press mt-6 disabled:opacity-60 flex items-center justify-center gap-2"
         >
-          {processing && <Loader2 size={16} className="animate-spin" />}
+          {isPending && <Loader2 size={16} className="animate-spin" />}
           Continue to Payment — SAR {displayAmount.toLocaleString()}
         </button>
 
