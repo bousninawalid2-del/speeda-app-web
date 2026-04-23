@@ -67,7 +67,7 @@ export const PostTranslation = ({ currentLang = 'en', onUseTranslation }: PostTr
       <AnimatePresence>
         {showDropdown && (
           <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-            className="absolute top-12 left-0 z-40 bg-card rounded-2xl border border-border shadow-xl p-2 min-w-[220px]">
+            className="absolute top-12 start-0 z-40 bg-card rounded-2xl border border-border shadow-xl p-2 min-w-[220px]">
             {languages.filter(l => l.code !== currentLang).map(l => (
               <button key={l.code} onClick={() => handleTranslate(l.code)}
                 className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-muted transition-colors text-start">

@@ -57,7 +57,7 @@ export const PaymentRedirectScreen = ({ title, subtitle, summaryLabel, summaryVa
       onClick={onConfirm}
       className="w-full max-w-[340px] h-[52px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press flex items-center justify-center gap-2 mb-3"
     >
-      Continue to Payment <ArrowRight size={16} />
+      Continue to Payment <ArrowRight size={16} className="rtl:rotate-180" />
     </button>
     <button onClick={onCancel} className="text-muted-foreground text-[13px] font-medium mb-6">Cancel</button>
 

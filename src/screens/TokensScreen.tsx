@@ -119,7 +119,7 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, tokenPackages, i
       <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="bg-background min-h-screen pb-24">
         <div className="px-5 pt-6">
           <div className="flex items-center gap-3 mb-5">
-            <button onClick={onBack}><ChevronLeft size={24} className="text-foreground" /></button>
+            <button onClick={onBack}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
             <h1 className="text-[20px] font-bold text-foreground">{t('tokens.title')}</h1>
           </div>
 

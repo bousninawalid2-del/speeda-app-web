@@ -44,7 +44,7 @@ export const MediaDetailPanel = ({ item, mode, isMobile, onClose, onSelect }: Me
             exit={isMobile ? { y: '100%' } : { x: '100%' }}
             className={isMobile
               ? 'fixed inset-x-0 bottom-0 z-50 bg-card rounded-t-3xl max-h-[90vh] overflow-y-auto'
-              : 'fixed top-0 right-0 bottom-0 w-[400px] z-50 bg-card border-l border-border overflow-y-auto'
+              : 'fixed top-0 end-0 bottom-0 w-[400px] z-50 bg-card border-s border-border overflow-y-auto'
             }
           >
             {isMobile && <div className="mx-auto mt-3 mb-1 h-1.5 w-12 rounded-full bg-muted" />}

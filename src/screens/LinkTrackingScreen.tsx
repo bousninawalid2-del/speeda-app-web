@@ -53,7 +53,7 @@ export const LinkTrackingScreen = ({ onBack, onNavigate }: LinkTrackingScreenPro
   const maxVal = Math.max(...clickTrend.map(d => d.val));
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => toast.success('Copied ✓'));
+    navigator.clipboard.writeText(text).then(() => toast.success(t('linkTracking.copied')));
   };
 
   const handleShortenLink = () => {
@@ -66,20 +66,20 @@ export const LinkTrackingScreen = ({ onBack, onNavigate }: LinkTrackingScreenPro
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="bg-background min-h-screen pb-24">
       <div className="px-5 pt-6">
         <div className="flex items-center gap-3 mb-1">
-          <button onClick={onBack}><ChevronLeft size={24} className="text-foreground" /></button>
+          <button onClick={onBack}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
           <div>
-            <h1 className="text-[24px] font-extrabold tracking-[-0.02em]">🔗 Link Tracking</h1>
-            <p className="text-[14px] text-muted-foreground">Track every click from your social media posts</p>
+            <h1 className="text-[24px] font-extrabold tracking-[-0.02em]">{t('linkTracking.title')}</h1>
+            <p className="text-[14px] text-muted-foreground">{t('linkTracking.subtitle')}</p>
           </div>
         </div>
 
         {/* KPIs */}
         <div className="grid grid-cols-2 gap-3 mt-5">
           {[
-            { icon: '🔗', value: '47', label: 'Total Links Created' },
-            { icon: '👆', value: '1,284', label: 'Total Clicks This Month' },
-            { icon: '👤', value: '892', label: 'Unique Clicks' },
-            { icon: '🏆', value: topLink.short, label: `Top Link · ${topLink.clicks} clicks` },
+            { icon: '🔗', value: '47', label: t('linkTracking.kpi.totalLinks') },
+            { icon: '👆', value: '1,284', label: t('linkTracking.kpi.totalClicks') },
+            { icon: '👤', value: '892', label: t('linkTracking.kpi.uniqueClicks') },
+            { icon: '🏆', value: topLink.short, label: t('linkTracking.kpi.topLink', { count: topLink.clicks }) },
           ].map((kpi, i) => (
             <motion.div key={i} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.08 }} className="bg-card rounded-2xl p-4 border border-border-light">
               <span className="text-lg">{kpi.icon}</span>
@@ -91,16 +91,16 @@ export const LinkTrackingScreen = ({ onBack, onNavigate }: LinkTrackingScreenPro
 
         {/* Click Trend Chart */}
         <div className="mt-5">
-          <h2 className="text-[18px] font-bold text-foreground">Click Trend (30 days)</h2>
+          <h2 className="text-[18px] font-bold text-foreground">{t('linkTracking.clickTrend')}</h2>
           <div className="bg-card rounded-2xl p-5 border border-border-light mt-3">
             <div className="relative" style={{ height: 160 }}>
-              <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-[10px] text-muted-foreground w-8">
+              <div className="absolute start-0 top-0 h-full flex flex-col justify-between text-[10px] text-muted-foreground w-8">
                 <span>{maxVal}</span><span>{Math.round(maxVal / 2)}</span><span>0</span>
               </div>
-              <div className="flex items-end gap-1 h-full ml-9">
+              <div className="flex items-end gap-1 h-full ms-9">
                 {clickTrend.map((d, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center justify-end h-full group relative">
-                    <div className="absolute -top-6 bg-foreground text-primary-foreground text-[10px] px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">{d.val} clicks</div>
+                    <div className="absolute -top-6 bg-foreground text-primary-foreground text-[10px] px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">{t('linkTracking.clicksTooltip', { count: d.val })}</div>
                     <motion.div initial={{ height: 0 }} animate={{ height: `${(d.val / maxVal) * 100}%` }} transition={{ delay: 0.1 + i * 0.03, duration: 0.5 }} className="w-full rounded-t-sm gradient-hero opacity-80 cursor-pointer" />
                   </div>
                 ))}
@@ -112,8 +112,8 @@ export const LinkTrackingScreen = ({ onBack, onNavigate }: LinkTrackingScreenPro
         {/* Search + Filter */}
         <div className="mt-5 flex gap-2 items-center flex-wrap">
           <div className="relative flex-1 min-w-[180px]">
-            <Search size={16} className="absolute left-3 top-[12px] text-muted-foreground" />
-            <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search URLs..." className="w-full h-10 rounded-xl bg-card border border-border-light pl-9 pr-3 text-[13px] focus:outline-none focus:border-primary" />
+            <Search size={16} className="absolute start-3 top-[12px] text-muted-foreground" />
+            <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder={t('linkTracking.searchPlaceholder')} className="w-full h-10 rounded-xl bg-card border border-border-light ps-9 pe-3 text-[13px] focus:outline-none focus:border-primary" />
           </div>
           <div className="flex gap-1.5 overflow-x-auto">
             {platformFilters.map(pf => (
@@ -124,7 +124,7 @@ export const LinkTrackingScreen = ({ onBack, onNavigate }: LinkTrackingScreenPro
 
         {/* Sort */}
         <div className="mt-3 flex gap-2">
-          {[{ key: 'clicks' as const, label: 'Most Clicks' }, { key: 'unique' as const, label: 'Most Unique' }].map(s => (
+          {[{ key: 'clicks' as const, label: t('linkTracking.sort.clicks') }, { key: 'unique' as const, label: t('linkTracking.sort.unique') }].map(s => (
             <button key={s.key} onClick={() => setSortBy(s.key)} className={`text-[11px] font-semibold px-3 py-1 rounded-lg ${sortBy === s.key ? 'bg-purple-soft text-primary' : 'text-muted-foreground'}`}>{s.label}</button>
           ))}
         </div>
@@ -133,7 +133,7 @@ export const LinkTrackingScreen = ({ onBack, onNavigate }: LinkTrackingScreenPro
         <div className="mt-4 overflow-x-auto -mx-5 px-5">
           <div className="bg-card rounded-2xl border border-border-light overflow-hidden min-w-[750px]">
             <div className="grid grid-cols-[130px_1fr_60px_1fr_60px_60px_90px_40px_80px] gap-2 px-4 py-2.5 bg-muted text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-              <span>Short URL</span><span>Original</span><span>Platform</span><span>Post</span><span>Clicks</span><span>Unique</span><span>Top Source</span><span>QR</span><span>Actions</span>
+              <span>{t('linkTracking.headers.shortUrl')}</span><span>{t('linkTracking.headers.original')}</span><span>{t('linkTracking.headers.platform')}</span><span>{t('linkTracking.headers.post')}</span><span>{t('linkTracking.headers.clicks')}</span><span>{t('linkTracking.headers.unique')}</span><span>{t('linkTracking.headers.topSource')}</span><span>{t('linkTracking.headers.qr')}</span><span>{t('linkTracking.headers.actions')}</span>
             </div>
             {filtered.map((link, i) => (
               <div key={link.id} className={`grid grid-cols-[130px_1fr_60px_1fr_60px_60px_90px_40px_80px] gap-2 px-4 py-3 items-center cursor-pointer hover:bg-muted/50 transition-colors ${i > 0 ? 'border-t border-border-light' : ''}`} onClick={() => setSelectedLink(link)}>
@@ -148,8 +148,8 @@ export const LinkTrackingScreen = ({ onBack, onNavigate }: LinkTrackingScreenPro
                   <QrCode size={16} className="text-muted-foreground hover:text-brand-blue cursor-pointer transition-colors" />
                 </span>
                 <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-                  <button onClick={() => setSelectedLink(link)} className="text-[11px] font-semibold text-brand-blue">View</button>
-                  <button onClick={() => copyToClipboard(link.short)} className="text-[11px] font-semibold text-muted-foreground">Copy</button>
+                  <button onClick={() => setSelectedLink(link)} className="text-[11px] font-semibold text-brand-blue">{t('linkTracking.view')}</button>
+                  <button onClick={() => copyToClipboard(link.short)} className="text-[11px] font-semibold text-muted-foreground">{t('linkTracking.copy')}</button>
                 </div>
               </div>
             ))}
@@ -158,7 +158,7 @@ export const LinkTrackingScreen = ({ onBack, onNavigate }: LinkTrackingScreenPro
 
         {/* Create Short Link Button */}
         <button onClick={() => setShowCreateLink(!showCreateLink)} className="w-full h-12 rounded-2xl gradient-btn text-primary-foreground font-bold text-[14px] shadow-btn btn-press flex items-center justify-center gap-2 mt-6">
-          <Link2 size={18} /> + Create Short Link
+          <Link2 size={18} /> {t('linkTracking.createShortLink')}
         </button>
       </div>
 
@@ -167,24 +167,24 @@ export const LinkTrackingScreen = ({ onBack, onNavigate }: LinkTrackingScreenPro
         {showCreateLink && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden px-5 mt-4">
             <div className="bg-card rounded-2xl p-5 border border-border-light space-y-4">
-              <h3 className="text-[16px] font-bold text-foreground">Create Short Link</h3>
-              <input value={newUrl} onChange={e => { setNewUrl(e.target.value); setShortenedUrl(''); }} placeholder="Paste your URL here..." className="w-full h-12 rounded-xl bg-muted border-none px-4 text-[14px] focus:outline-none" />
+              <h3 className="text-[16px] font-bold text-foreground">{t('linkTracking.createPanel')}</h3>
+              <input value={newUrl} onChange={e => { setNewUrl(e.target.value); setShortenedUrl(''); }} placeholder={t('linkTracking.urlPlaceholder')} className="w-full h-12 rounded-xl bg-muted border-none px-4 text-[14px] focus:outline-none" />
               <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[12px] text-brand-blue font-medium flex items-center gap-1">
-                <ChevronDown size={14} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} /> Advanced (UTM)
+                <ChevronDown size={14} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} /> {t('linkTracking.advanced')}
               </button>
               {showAdvanced && (
                 <div className="space-y-2">
-                  {['Campaign Name', 'Source', 'Medium', 'Term', 'Content'].map(f => (
-                    <input key={f} placeholder={f} className="w-full h-10 rounded-xl bg-muted border-none px-4 text-[13px] focus:outline-none" />
+                  {(['campaign', 'source', 'medium', 'term', 'content'] as const).map(f => (
+                    <input key={f} placeholder={t(`linkTracking.utm.${f}`)} className="w-full h-10 rounded-xl bg-muted border-none px-4 text-[13px] focus:outline-none" />
                   ))}
                 </div>
               )}
-              <button onClick={handleShortenLink} className="w-full h-12 rounded-2xl gradient-btn text-primary-foreground font-bold text-[14px] shadow-btn btn-press">Shorten Link</button>
+              <button onClick={handleShortenLink} className="w-full h-12 rounded-2xl gradient-btn text-primary-foreground font-bold text-[14px] shadow-btn btn-press">{t('linkTracking.shortenLink')}</button>
               {shortenedUrl && (
                 <div className="bg-green-soft rounded-xl p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[11px] text-muted-foreground">Your short link:</p>
+                      <p className="text-[11px] text-muted-foreground">{t('linkTracking.yourShortLink')}</p>
                       <p className="text-[16px] font-bold text-green-accent">{shortenedUrl}</p>
                     </div>
                     <div className="flex gap-2">
@@ -207,26 +207,26 @@ export const LinkTrackingScreen = ({ onBack, onNavigate }: LinkTrackingScreenPro
         {selectedLink && (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedLink(null)} className="fixed inset-0 bg-foreground/30 z-40" />
-            <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 30 }} className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl shadow-xl max-w-[430px] md:max-w-[600px] mx-auto max-h-[85vh] flex flex-col">
+            <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 30 }} className="fixed bottom-0 start-0 end-0 z-50 bg-card rounded-t-3xl shadow-xl max-w-[430px] md:max-w-[600px] mx-auto max-h-[85vh] flex flex-col">
               <div className="p-5 pb-3 flex items-center justify-between border-b border-border-light">
-                <h3 className="text-[16px] font-bold text-foreground">Link Details</h3>
+                <h3 className="text-[16px] font-bold text-foreground">{t('linkTracking.linkDetails')}</h3>
                 <button onClick={() => setSelectedLink(null)}><X size={20} className="text-muted-foreground" /></button>
               </div>
               <div className="flex-1 overflow-y-auto p-5 space-y-5">
                 <div className="flex items-center gap-3">
                   <p className="text-[18px] font-bold text-brand-blue flex-1">{selectedLink.short}</p>
-                  <button onClick={() => copyToClipboard(selectedLink.short)} className="h-9 px-3 rounded-lg bg-brand-blue text-primary-foreground text-[12px] font-bold flex items-center gap-1"><Copy size={12} /> Copy</button>
+                  <button onClick={() => copyToClipboard(selectedLink.short)} className="h-9 px-3 rounded-lg bg-brand-blue text-primary-foreground text-[12px] font-bold flex items-center gap-1"><Copy size={12} /> {t('linkTracking.copy')}</button>
                 </div>
                 <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
                   <ExternalLink size={14} /><span className="truncate">{selectedLink.original}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-muted rounded-xl p-3 text-center"><p className="text-[18px] font-bold text-foreground">{selectedLink.clicks}</p><span className="text-[10px] text-muted-foreground">Total Clicks</span></div>
-                  <div className="bg-muted rounded-xl p-3 text-center"><p className="text-[18px] font-bold text-foreground">{selectedLink.unique}</p><span className="text-[10px] text-muted-foreground">Unique</span></div>
-                  <div className="bg-muted rounded-xl p-3 text-center"><p className="text-[12px] font-bold text-foreground">{selectedLink.topSource}</p><span className="text-[10px] text-muted-foreground">Top Source</span></div>
+                  <div className="bg-muted rounded-xl p-3 text-center"><p className="text-[18px] font-bold text-foreground">{selectedLink.clicks}</p><span className="text-[10px] text-muted-foreground">{t('linkTracking.stats.total')}</span></div>
+                  <div className="bg-muted rounded-xl p-3 text-center"><p className="text-[18px] font-bold text-foreground">{selectedLink.unique}</p><span className="text-[10px] text-muted-foreground">{t('linkTracking.stats.unique')}</span></div>
+                  <div className="bg-muted rounded-xl p-3 text-center"><p className="text-[12px] font-bold text-foreground">{selectedLink.topSource}</p><span className="text-[10px] text-muted-foreground">{t('linkTracking.stats.topSource')}</span></div>
                 </div>
                 <div>
-                  <h4 className="text-[14px] font-bold text-foreground mb-2">Click Sources</h4>
+                  <h4 className="text-[14px] font-bold text-foreground mb-2">{t('linkTracking.sections.sources')}</h4>
                   {selectedLink.sources.map((s, i) => (
                     <div key={i} className="mb-2">
                       <div className="flex justify-between text-[12px]"><span className="text-foreground">{s.name}</span><span className="font-bold">{s.pct}%</span></div>
@@ -235,7 +235,7 @@ export const LinkTrackingScreen = ({ onBack, onNavigate }: LinkTrackingScreenPro
                   ))}
                 </div>
                 <div>
-                  <h4 className="text-[14px] font-bold text-foreground mb-2">Geography</h4>
+                  <h4 className="text-[14px] font-bold text-foreground mb-2">{t('linkTracking.sections.geography')}</h4>
                   {selectedLink.geo.map((g, i) => (
                     <div key={i} className="mb-2">
                       <div className="flex justify-between text-[12px]"><span className="text-foreground">{g.name}</span><span className="font-bold">{g.pct}%</span></div>
@@ -244,7 +244,7 @@ export const LinkTrackingScreen = ({ onBack, onNavigate }: LinkTrackingScreenPro
                   ))}
                 </div>
                 <div>
-                  <h4 className="text-[14px] font-bold text-foreground mb-2">Device</h4>
+                  <h4 className="text-[14px] font-bold text-foreground mb-2">{t('linkTracking.sections.device')}</h4>
                   <div className="flex gap-3">
                     {selectedLink.device.map((d, i) => (
                       <div key={i} className="flex-1 bg-muted rounded-xl p-3 text-center"><p className="text-[16px] font-bold text-foreground">{d.pct}%</p><span className="text-[11px] text-muted-foreground">{d.name}</span></div>
@@ -254,7 +254,7 @@ export const LinkTrackingScreen = ({ onBack, onNavigate }: LinkTrackingScreenPro
                 <div className="bg-muted rounded-xl p-3">
                   <div className="flex items-center gap-2"><selectedLink.Logo size={16} /><p className="text-[13px] font-semibold text-foreground truncate">{selectedLink.post}</p></div>
                 </div>
-                <button onClick={() => { setSelectedLink(null); onNavigate?.('create'); }} className="w-full h-12 rounded-2xl gradient-btn text-primary-foreground font-bold text-[13px] shadow-btn btn-press">Create New Post with This Link</button>
+                <button onClick={() => { setSelectedLink(null); onNavigate?.('create'); }} className="w-full h-12 rounded-2xl gradient-btn text-primary-foreground font-bold text-[13px] shadow-btn btn-press">{t('linkTracking.createNewPost')}</button>
               </div>
             </motion.div>
           </>

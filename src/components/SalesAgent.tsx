@@ -164,7 +164,7 @@ export const SalesChatWidget = ({ onNavigate, onClose, contextFeature }: SalesCh
       initial={{ opacity: 0, y: 20, scale: 0.9 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 20, scale: 0.9 }}
-      className="fixed bottom-4 right-4 z-[80] w-[380px] max-w-[calc(100vw-32px)] shadow-2xl rounded-2xl overflow-hidden border border-border-light"
+      className="fixed bottom-4 end-4 z-[80] w-[380px] max-w-[calc(100vw-32px)] shadow-2xl rounded-2xl overflow-hidden border border-border-light"
     >
       {/* Header */}
       <div className="gradient-hero px-4 py-3 flex items-center justify-between">
@@ -191,8 +191,8 @@ export const SalesChatWidget = ({ onNavigate, onClose, contextFeature }: SalesCh
           >
             <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed ${
               msg.role === 'user'
-                ? 'bg-brand-blue text-primary-foreground rounded-br-md'
-                : 'bg-muted text-foreground rounded-bl-md'
+                ? 'bg-brand-blue text-primary-foreground rounded-be-md'
+                : 'bg-muted text-foreground rounded-bs-md'
             }`}>
               {msg.text.split('\n').map((line, i) => (
                 <span key={i}>
@@ -209,7 +209,7 @@ export const SalesChatWidget = ({ onNavigate, onClose, contextFeature }: SalesCh
         ))}
         {typing && (
           <div className="flex justify-start">
-            <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3 flex gap-1.5">
+            <div className="bg-muted rounded-2xl rounded-bs-md px-4 py-3 flex gap-1.5">
               {[0, 1, 2].map(i => (
                 <motion.div key={i} className="w-2 h-2 rounded-full bg-muted-foreground/40"
                   animate={{ y: [0, -4, 0] }}
@@ -364,7 +364,7 @@ export const SalesAgent = ({
         animate={{ scale: [1, 1.05, 1] }}
         transition={{ duration: 2, repeat: Infinity }}
         onClick={() => setMinimized(false)}
-        className="fixed bottom-24 right-5 z-[60] w-12 h-12 rounded-full gradient-hero shadow-btn flex items-center justify-center btn-press"
+        className="fixed bottom-24 end-5 z-[60] w-12 h-12 rounded-full gradient-hero shadow-btn flex items-center justify-center btn-press"
       >
         <Sparkles size={20} className="text-primary-foreground" />
       </motion.button>
@@ -377,7 +377,7 @@ export const SalesAgent = ({
     <motion.div
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      className="fixed bottom-24 left-4 right-4 z-[60] max-w-[400px] mx-auto"
+      className="fixed bottom-24 start-4 end-4 z-[60] max-w-[400px] mx-auto"
     >
       <div className="bg-card rounded-2xl border border-border-light shadow-xl overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-border-light">

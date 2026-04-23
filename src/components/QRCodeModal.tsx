@@ -176,7 +176,7 @@ export const QRCodeModal = ({ url, onClose }: QRCodeModalProps) => {
       <>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-foreground/30 z-50" />
         <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 30 }}
-          className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl shadow-xl max-h-[85vh] flex flex-col">
+          className="fixed bottom-0 start-0 end-0 z-50 bg-card rounded-t-3xl shadow-xl max-h-[85vh] flex flex-col">
           <div className="p-5 pb-3 flex items-center justify-between border-b border-border-light">
             <h3 className="text-[16px] font-bold text-foreground">{t('qr.generate', 'Generate QR Code')}</h3>
             <button onClick={onClose}><X size={20} className="text-muted-foreground" /></button>
@@ -191,7 +191,7 @@ export const QRCodeModal = ({ url, onClose }: QRCodeModalProps) => {
     <>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-foreground/30 z-50" />
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-card rounded-2xl shadow-xl w-[400px] max-h-[85vh] flex flex-col">
+        className="fixed top-1/2 start-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-card rounded-2xl shadow-xl w-[400px] max-h-[85vh] flex flex-col">
         <div className="p-5 pb-3 flex items-center justify-between border-b border-border-light">
           <h3 className="text-[16px] font-bold text-foreground">{t('qr.generate', 'Generate QR Code')}</h3>
           <button onClick={onClose}><X size={20} className="text-muted-foreground" /></button>

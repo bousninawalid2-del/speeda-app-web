@@ -85,7 +85,7 @@ export const DesktopSidebar = ({ active, onNavigate, collapsed, onToggleCollapse
       initial={false}
       animate={{ width: collapsed ? 72 : 260 }}
       transition={{ duration: 0.25, ease: 'easeInOut' }}
-      className={`fixed top-0 h-screen bg-card z-50 flex flex-col ${isRTL ? 'right-0' : 'left-0'}`}
+      className={`fixed top-0 h-screen bg-card z-50 flex flex-col ${isRTL ? 'end-0' : 'start-0'}`}
       style={{
         borderRight: isRTL ? undefined : '1px solid hsl(264 30% 92%)',
         borderLeft: isRTL ? '1px solid hsl(264 30% 92%)' : undefined,

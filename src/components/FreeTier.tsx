@@ -238,7 +238,7 @@ export const UpgradePrompt = ({ feature, benefit, open, onClose, onUpgrade }: Up
             onClick={e => e.stopPropagation()}
             className="bg-card rounded-3xl p-8 w-full max-w-[380px] text-center relative"
           >
-            <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground">
+            <button onClick={onClose} className="absolute top-4 end-4 text-muted-foreground">
               <X size={18} />
             </button>
 

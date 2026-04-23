@@ -87,7 +87,7 @@ export const ComingSoonModal = ({ feature, open, onClose }: ComingSoonModalProps
             className="relative bg-card rounded-3xl p-8 max-w-[380px] w-full border border-border-light shadow-xl text-center z-10"
             onClick={(e) => e.stopPropagation()}
           >
-            <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors">
+            <button onClick={onClose} className="absolute top-4 end-4 text-muted-foreground hover:text-foreground transition-colors">
               <X size={20} />
             </button>
 

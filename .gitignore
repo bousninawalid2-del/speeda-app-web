@@ -32,6 +32,7 @@ Thumbs.db
 
 # prisma
 prisma/migrations/*.sql.bak
+prisma/seed.local.ts
 
 # typescript
 *.tsbuildinfo

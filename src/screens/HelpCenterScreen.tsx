@@ -19,13 +19,13 @@ export const HelpCenterScreen = ({ onBack }: HelpCenterScreenProps) => {
     <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="bg-background min-h-screen pb-24">
       <div className="px-5 pt-6">
         <div className="flex items-center gap-3 mb-5">
-          <button onClick={onBack}><ChevronLeft size={24} className="text-foreground" /></button>
+          <button onClick={onBack}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
           <h1 className="text-[20px] font-bold text-foreground">{t('helpCenter.title')}</h1>
         </div>
         <div className="space-y-2">
           {faqs.map((faq, i) => (
             <div key={i} className="bg-card rounded-2xl border border-border-light overflow-hidden">
-              <button onClick={() => setOpenIdx(openIdx === i ? null : i)} className="w-full flex items-center justify-between px-4 py-3.5 text-left">
+              <button onClick={() => setOpenIdx(openIdx === i ? null : i)} className="w-full flex items-center justify-between px-4 py-3.5 text-start">
                 <span className="text-[14px] font-medium text-foreground flex-1 me-2">{faq.q}</span>
                 {openIdx === i ? <ChevronUp size={16} className="text-muted-foreground flex-shrink-0" /> : <ChevronDown size={16} className="text-muted-foreground flex-shrink-0" />}
               </button>

@@ -11,25 +11,27 @@ type Category = 'All' | 'Content' | 'Campaigns' | 'Engagement' | 'Optimization';
 
 const activityData = {
   today: [
-    { desc: 'Published Instagram Reel: Chicken Shawarma', cat: 'Content', time: '10:30 AM' },
-    { desc: 'Auto-responded to comment from Ahmed K.', cat: 'Engagement', time: '10:15 AM' },
-    { desc: 'Optimized Ramadan campaign: shifted 200 SAR to Instagram', cat: 'Optimization', time: '9:45 AM' },
-    { desc: 'Generated 3 posts for approval queue', cat: 'Content', time: '9:00 AM' },
-    { desc: 'Morning briefing prepared', cat: 'System', time: '8:30 AM' },
+    { slug: 'publishedReel', cat: 'Content', timeKey: 't1030am' },
+    { slug: 'autoReplyAhmed', cat: 'Engagement', timeKey: 't1015am' },
+    { slug: 'optimizedRamadan', cat: 'Optimization', timeKey: 't945am' },
+    { slug: 'generated3Posts', cat: 'Content', timeKey: 't900am' },
+    { slug: 'morningBriefing', cat: 'System', timeKey: 't830am' },
   ],
   yesterday: [
-    { desc: 'Paused Facebook ad (ROAS dropped below 1.0)', cat: 'Optimization', time: '8:15 PM' },
-    { desc: 'Scheduled 2 posts for Thursday peak hours', cat: 'Content', time: '6:00 PM' },
-    { desc: 'Auto-responded to 5 Instagram comments', cat: 'Engagement', time: '3:30 PM' },
-    { desc: 'New Menu TikTok ad reached 8.7K impressions', cat: 'Campaigns', time: '12:00 PM' },
-    { desc: 'Boosted Weekend Brunch post (engagement >5%)', cat: 'Optimization', time: '10:00 AM' },
+    { slug: 'pausedFacebook', cat: 'Optimization', timeKey: 't815pm' },
+    { slug: 'scheduled2Posts', cat: 'Content', timeKey: 't600pm' },
+    { slug: 'autoReply5', cat: 'Engagement', timeKey: 't330pm' },
+    { slug: 'newMenuReach', cat: 'Campaigns', timeKey: 't1200pm' },
+    { slug: 'boostedBrunch', cat: 'Optimization', timeKey: 't1000am' },
   ],
   earlier: [
-    { desc: 'Weekly performance report generated', cat: 'System', time: 'Monday' },
-    { desc: 'Competitor alert: Shawarmer launched weekend promo', cat: 'Intelligence', time: 'Monday' },
-    { desc: 'Created Eid Al-Fitr campaign draft', cat: 'Campaigns', time: 'Sunday' },
+    { slug: 'weeklyReport', cat: 'System', timeKey: 'monday' },
+    { slug: 'competitorAlert', cat: 'Intelligence', timeKey: 'monday' },
+    { slug: 'eidDraft', cat: 'Campaigns', timeKey: 'sunday' },
   ],
 };
+
+type ActivityItem = { slug: string; cat: string; timeKey: string };
 
 const catColors: Record<string, string> = {
   Content: 'bg-purple-soft text-purple',
@@ -45,10 +47,10 @@ export const AIActivityScreen = ({ onBack }: AIActivityScreenProps) => {
   const [filter, setFilter] = useState<Category>('All');
   const filters: Category[] = ['All', 'Content', 'Campaigns', 'Engagement', 'Optimization'];
 
-  const filterItems = (items: typeof activityData.today) =>
+  const filterItems = (items: ActivityItem[]) =>
     filter === 'All' ? items : items.filter(item => item.cat === filter);
 
-  const Section = ({ title, items }: { title: string; items: typeof activityData.today }) => {
+  const Section = ({ title, items }: { title: string; items: ActivityItem[] }) => {
     const filtered = filterItems(items);
     if (filtered.length === 0) return null;
     return (
@@ -60,10 +62,10 @@ export const AIActivityScreen = ({ onBack }: AIActivityScreenProps) => {
               className={`flex items-start gap-3 px-4 py-3 ${i > 0 ? 'border-t border-border-light' : ''}`}>
               <span className="text-brand-blue text-[12px] mt-0.5 flex-shrink-0">✦</span>
               <div className="flex-1">
-                <p className="text-[14px] text-foreground leading-[1.4]">{item.desc}</p>
+                <p className="text-[14px] text-foreground leading-[1.4]">{t(`activity.items.${item.slug}`)}</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${catColors[item.cat] || 'bg-muted text-muted-foreground'}`}>{item.cat}</span>
-                  <span className="text-[11px] text-muted-foreground">{item.time}</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${catColors[item.cat] || 'bg-muted text-muted-foreground'}`}>{t(`activity.cat.${item.cat}`)}</span>
+                  <span className="text-[11px] text-muted-foreground">{t(`activity.times.${item.timeKey}`)}</span>
                 </div>
               </div>
             </motion.div>
@@ -78,7 +80,7 @@ export const AIActivityScreen = ({ onBack }: AIActivityScreenProps) => {
       <div className="px-5 pt-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <button onClick={onBack}><ChevronLeft size={24} className="text-foreground" /></button>
+            <button onClick={onBack}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
             <h1 className="text-[20px] font-bold text-foreground">{t('activity.title')}</h1>
           </div>
           <Filter size={18} className="text-muted-foreground" />

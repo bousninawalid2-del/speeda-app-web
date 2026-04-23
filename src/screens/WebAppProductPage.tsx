@@ -2,6 +2,7 @@ import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
 import { ArrowRight, Monitor, Smartphone, MessageCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 
 import _webHome from '@/assets/web-screenshot-home.png';
 import _webAiChat from '@/assets/web-screenshot-ai-chat.png';
@@ -39,7 +40,7 @@ const MacBookFrame = ({
     {/* Screen bezel */}
     <div className="bg-[#1a1a1a] rounded-t-[12px] pt-[8px] px-[8px] pb-0 relative">
       {/* Camera notch */}
-      <div className="absolute top-[3px] left-1/2 -translate-x-1/2 w-[6px] h-[6px] rounded-full bg-[#2a2a2a] border border-[#333]" />
+      <div className="absolute top-[3px] start-1/2 -translate-x-1/2 w-[6px] h-[6px] rounded-full bg-[#2a2a2a] border border-[#333]" />
       {/* Screen */}
       <div className="rounded-[4px] overflow-hidden">
         <img src={src} alt={alt} className="w-full h-auto block" loading="lazy" />
@@ -49,7 +50,7 @@ const MacBookFrame = ({
     <div className="relative">
       <div className="h-[14px] bg-gradient-to-b from-[#c0c0c0] to-[#a8a8a8] rounded-b-[8px]" />
       {/* Hinge indent */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[18%] h-[4px] bg-[#b0b0b0] rounded-b-[4px]" />
+      <div className="absolute top-0 start-1/2 -translate-x-1/2 w-[18%] h-[4px] bg-[#b0b0b0] rounded-b-[4px]" />
     </div>
   </div>
 );
@@ -121,7 +122,7 @@ const FeatureBlock = ({
           <div className="flex flex-col gap-2 items-center">
             {highlights.map((h) => (
               <p key={h} className="text-sm text-foreground/80">
-                <span className="text-brand-blue mr-1.5">✦</span>
+                <span className="text-brand-blue me-1.5">✦</span>
                 {h}
               </p>
             ))}
@@ -159,6 +160,7 @@ const platformLogos = [
 // ── Main Page ──────────────────────────────────────────────────
 const WebAppProductPage = () => {
   const router = useRouter();
+  const { t } = useTranslation();
   const navigate = (path: string) => router.push(path);
 
   return (
@@ -166,8 +168,8 @@ const WebAppProductPage = () => {
       {/* ═══ HERO ═══ */}
       <section className="relative py-20 md:py-28 overflow-hidden">
         {/* Gradient blobs */}
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full opacity-20 blur-[120px]" style={{ background: 'hsl(var(--brand-blue))' }} />
-        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full opacity-15 blur-[100px]" style={{ background: 'hsl(var(--brand-teal))' }} />
+        <div className="absolute top-0 start-1/4 w-[500px] h-[500px] rounded-full opacity-20 blur-[120px]" style={{ background: 'hsl(var(--brand-blue))' }} />
+        <div className="absolute bottom-0 end-1/4 w-[400px] h-[400px] rounded-full opacity-15 blur-[100px]" style={{ background: 'hsl(var(--brand-teal))' }} />
 
         <div className="max-w-[1100px] mx-auto px-4 sm:px-6 relative z-10">
           {/* Text */}
@@ -178,26 +180,26 @@ const WebAppProductPage = () => {
             transition={{ duration: 0.6 }}
           >
             <span className="inline-flex items-center gap-1.5 gradient-hero text-primary-foreground text-xs font-bold px-4 py-1.5 rounded-full mb-5">
-              <Monitor className="w-3.5 h-3.5" /> Web Application
+              <Monitor className="w-3.5 h-3.5" /> {t('webProduct.webApp')}
             </span>
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-foreground leading-tight mb-4 max-w-[700px] mx-auto">
-              The Full Marketing Command Center
+              {t('webProduct.heroTitle')}
             </h1>
             <p className="text-base md:text-lg text-muted-foreground max-w-[560px] mx-auto leading-relaxed mb-8">
-              Everything you need to run your restaurant's marketing — content creation, scheduling, analytics, ads, and AI — on one powerful desktop dashboard.
+              {t('webProduct.heroDesc')}
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
               <button
                 className="gradient-hero text-primary-foreground font-bold text-sm px-7 py-3 rounded-full shadow-btn btn-press flex items-center gap-2"
                 onClick={() => navigate('/')}
               >
-                Try Speeda AI Free <ArrowRight className="w-4 h-4" />
+                {t('webProduct.tryFree')} <ArrowRight className="w-4 h-4 rtl:rotate-180" />
               </button>
               <button
                 className="bg-card text-foreground font-semibold text-sm px-7 py-3 rounded-full border border-border shadow-card btn-press"
                 onClick={() => navigate('/')}
               >
-                View Demo
+                {t('webProduct.viewDemo')}
               </button>
             </div>
           </motion.div>
@@ -236,13 +238,13 @@ const WebAppProductPage = () => {
       <FeatureBlock
         src={webAiChat}
         alt="AI Chat Interface"
-        category="AI Assistant"
-        title="AI Chat — Like ChatGPT, but for your marketing"
-        description="Three intelligent panels working together. Your conversation history on the left, the active AI chat in the center, and a context panel on the right showing full post previews, campaign details, and quick actions. Ask Speeda anything — create content, launch campaigns, check analytics — and see results in real-time."
+        category={t('webProduct.feat.aiCategory')}
+        title={t('webProduct.feat.aiTitle')}
+        description={t('webProduct.feat.aiDesc')}
         highlights={[
-          'Full conversation history across all sessions',
-          'Context panel with post preview and one-click actions',
-          'Approve and schedule without leaving the chat',
+          t('webProduct.feat.aiH1'),
+          t('webProduct.feat.aiH2'),
+          t('webProduct.feat.aiH3'),
         ]}
         bgClass="bg-card"
         tiltDirection="right"
@@ -252,13 +254,13 @@ const WebAppProductPage = () => {
       <FeatureBlock
         src={webContentStudio}
         alt="Content Studio"
-        category="Content Creation"
-        title="Create content with precision and control"
-        description="The Content Studio gives you full control over every post. Choose your platform, content type, tone, and template — then let AI generate. Schedule for the perfect time, preview across platforms, and fine-tune every detail before publishing. Built for marketers who want quality and speed."
+        category={t('webProduct.feat.contentCategory')}
+        title={t('webProduct.feat.contentTitle')}
+        description={t('webProduct.feat.contentDesc')}
         highlights={[
-          'Platform-specific templates and content types',
-          'Schedule for optimal posting times with one click',
-          'Multi-platform strategy builder for weekly plans',
+          t('webProduct.feat.contentH1'),
+          t('webProduct.feat.contentH2'),
+          t('webProduct.feat.contentH3'),
         ]}
         bgClass="bg-[#f8f6fd]"
         tiltDirection="left"
@@ -268,13 +270,13 @@ const WebAppProductPage = () => {
       <FeatureBlock
         src={webCalendar}
         alt="Calendar View"
-        category="Planning"
-        title="Your entire month of marketing — one screen"
-        description="See every post, every campaign, and every gap in your content strategy on a full month calendar. Posts are color-coded by platform. Empty days are flagged by AI with suggestions. Drag and drop to reschedule. Click any post to preview, edit, or boost it directly from the calendar."
+        category={t('webProduct.feat.planningCategory')}
+        title={t('webProduct.feat.planningTitle')}
+        description={t('webProduct.feat.planningDesc')}
         highlights={[
-          'Full month grid view with platform color coding',
-          'AI detects empty days and suggests content',
-          'Boost any post directly from the calendar view',
+          t('webProduct.feat.planningH1'),
+          t('webProduct.feat.planningH2'),
+          t('webProduct.feat.planningH3'),
         ]}
         bgClass="bg-card"
         tiltDirection="right"
@@ -284,13 +286,13 @@ const WebAppProductPage = () => {
       <FeatureBlock
         src={webAnalytics}
         alt="Analytics Dashboard"
-        category="Analytics"
-        title="Data that drives decisions, not confusion"
-        description="Every metric that matters — reach, engagement, followers, conversions — displayed across all your platforms on one dashboard. The weekly engagement chart shows trends at a glance. Platform breakdown with real logos shows where your audience lives. AI insights explain the numbers and tell you exactly what to do next."
+        category={t('webProduct.feat.analyticsCategory')}
+        title={t('webProduct.feat.analyticsTitle')}
+        description={t('webProduct.feat.analyticsDesc')}
         highlights={[
-          'Cross-platform KPIs with real-time updates',
-          'Platform breakdown with actual social media logos',
-          'AI-powered insights and competitor benchmarking',
+          t('webProduct.feat.analyticsH1'),
+          t('webProduct.feat.analyticsH2'),
+          t('webProduct.feat.analyticsH3'),
         ]}
         bgClass="bg-[#f8f6fd]"
         tiltDirection="left"
@@ -300,13 +302,13 @@ const WebAppProductPage = () => {
       <FeatureBlock
         src={webAds}
         alt="Ads Manager"
-        category="Advertising"
-        title="Launch, optimize, and scale your ads from one place"
-        description="Manage all your advertising campaigns across Instagram, Facebook, and other social platforms from a unified dashboard. See your ad balance, active campaigns, and performance metrics at a glance. AI optimizes your budget allocation 24/7 and pauses underperforming ads automatically."
+        category={t('webProduct.feat.adsCategory')}
+        title={t('webProduct.feat.adsTitle')}
+        description={t('webProduct.feat.adsDesc')}
         highlights={[
-          'Cross-platform ad management in one dashboard',
-          'Real-time ROAS tracking per campaign',
-          'AI budget optimization runs 24/7',
+          t('webProduct.feat.adsH1'),
+          t('webProduct.feat.adsH2'),
+          t('webProduct.feat.adsH3'),
         ]}
         bgClass="bg-card"
         tiltDirection="right"
@@ -317,19 +319,19 @@ const WebAppProductPage = () => {
       <section className="py-16 md:py-24 bg-[#f8f6fd]">
         <div className="max-w-[1000px] mx-auto px-4 sm:px-6">
           <h2 className="text-2xl md:text-3xl font-extrabold text-foreground text-center mb-4">
-            Why serious marketers choose the web app
+            {t('webProduct.whyTitle')}
           </h2>
           <p className="text-muted-foreground text-center max-w-[500px] mx-auto mb-12">
-            The desktop experience gives you the full power of Speeda AI with no compromises.
+            {t('webProduct.whyDesc')}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: '🖥️', title: 'Full-size dashboard', desc: 'See more data, more context, and more detail on every screen.' },
-              { icon: '⌨️', title: 'Keyboard shortcuts', desc: 'Power users move faster with shortcuts for every action.' },
-              { icon: '📊', title: 'Multi-panel views', desc: 'View analytics, chat, and calendar side-by-side.' },
-              { icon: '🎯', title: 'Drag & drop calendar', desc: 'Reschedule posts by dragging them on the full month view.' },
-              { icon: '✏️', title: 'Advanced editing', desc: 'Fine-tune content with the full text editor and preview.' },
-              { icon: '🔒', title: 'Enterprise-grade security', desc: '2FA, session management, and role-based access control.' },
+              { icon: '🖥️', title: t('webProduct.benefits.dashTitle'), desc: t('webProduct.benefits.dashDesc') },
+              { icon: '⌨️', title: t('webProduct.benefits.shortcutsTitle'), desc: t('webProduct.benefits.shortcutsDesc') },
+              { icon: '📊', title: t('webProduct.benefits.multiTitle'), desc: t('webProduct.benefits.multiDesc') },
+              { icon: '🎯', title: t('webProduct.benefits.dragTitle'), desc: t('webProduct.benefits.dragDesc') },
+              { icon: '✏️', title: t('webProduct.benefits.editTitle'), desc: t('webProduct.benefits.editDesc') },
+              { icon: '🔒', title: t('webProduct.benefits.securityTitle'), desc: t('webProduct.benefits.securityDesc') },
             ].map((b) => (
               <div key={b.title} className="bg-card rounded-2xl p-6 shadow-card desktop-hover">
                 <span className="text-2xl mb-3 block">{b.icon}</span>
@@ -345,10 +347,10 @@ const WebAppProductPage = () => {
       <section className="py-16 md:py-20">
         <div className="max-w-[800px] mx-auto px-4 sm:px-6 text-center">
           <h2 className="text-2xl md:text-3xl font-extrabold text-foreground mb-3">
-            Publish to every platform
+            {t('webProduct.publishTitle')}
           </h2>
           <p className="text-muted-foreground mb-10">
-            One dashboard, all your channels.
+            {t('webProduct.publishDesc')}
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             {platformLogos.map((p) => (
@@ -368,7 +370,7 @@ const WebAppProductPage = () => {
       <section className="py-16 md:py-20 bg-[#f8f6fd]">
         <div className="max-w-[900px] mx-auto px-4 sm:px-6">
           <h2 className="text-2xl md:text-3xl font-extrabold text-foreground text-center mb-10">
-            Speeda AI is everywhere you are
+            {t('webProduct.crossTitle')}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Mobile */}
@@ -378,15 +380,15 @@ const WebAppProductPage = () => {
                   <Smartphone className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <div>
-                  <h3 className="text-[15px] font-bold text-foreground">Mobile App</h3>
-                  <p className="text-xs text-muted-foreground">Marketing on the go</p>
+                  <h3 className="text-[15px] font-bold text-foreground">{t('webProduct.mobileApp')}</h3>
+                  <p className="text-xs text-muted-foreground">{t('webProduct.mobileDesc')}</p>
                 </div>
               </div>
               <p className="text-[13px] text-muted-foreground leading-relaxed mb-4">
-                Approve posts, respond to reviews, and check analytics from your phone. Everything syncs with the web app in real-time.
+                {t('webProduct.mobileBody')}
               </p>
               <button className="text-sm font-bold text-brand-blue flex items-center gap-1">
-                Learn more <ArrowRight className="w-3.5 h-3.5" />
+                {t('webProduct.learnMore')} <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
               </button>
             </div>
             {/* WhatsApp */}
@@ -396,15 +398,15 @@ const WebAppProductPage = () => {
                   <MessageCircle className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <div>
-                  <h3 className="text-[15px] font-bold text-foreground">WhatsApp Assistant</h3>
-                  <p className="text-xs text-muted-foreground">AI in your pocket</p>
+                  <h3 className="text-[15px] font-bold text-foreground">{t('webProduct.waTitle')}</h3>
+                  <p className="text-xs text-muted-foreground">{t('webProduct.waDesc')}</p>
                 </div>
               </div>
               <p className="text-[13px] text-muted-foreground leading-relaxed mb-4">
-                Chat with Speeda AI directly on WhatsApp. Create posts, get insights, and manage campaigns without opening any app.
+                {t('webProduct.waBody')}
               </p>
               <button className="text-sm font-bold text-brand-blue flex items-center gap-1">
-                Learn more <ArrowRight className="w-3.5 h-3.5" />
+                {t('webProduct.learnMore')} <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
               </button>
             </div>
           </div>
@@ -415,16 +417,16 @@ const WebAppProductPage = () => {
       <section className="py-20 md:py-28">
         <div className="max-w-[600px] mx-auto px-4 sm:px-6 text-center">
           <h2 className="text-2xl md:text-3xl font-extrabold text-foreground mb-4">
-            Ready to take control of your marketing?
+            {t('webProduct.ctaTitle')}
           </h2>
           <p className="text-muted-foreground mb-8 max-w-[440px] mx-auto">
-            Join thousands of restaurants using Speeda AI to grow faster with less effort.
+            {t('webProduct.ctaDesc')}
           </p>
           <button
             className="gradient-hero text-primary-foreground font-bold text-base px-8 py-3.5 rounded-full shadow-btn btn-press flex items-center gap-2 mx-auto"
             onClick={() => navigate('/')}
           >
-            Get Started Free <ArrowRight className="w-4 h-4" />
+            {t('webProduct.getStarted')} <ArrowRight className="w-4 h-4 rtl:rotate-180" />
           </button>
         </div>
       </section>
@@ -432,10 +434,10 @@ const WebAppProductPage = () => {
       {/* ═══ Mobile hint ═══ */}
       <div className="md:hidden text-center pb-8 px-4">
         <p className="text-xs text-muted-foreground">
-          <Monitor className="w-3 h-3 inline mr-1" />
-          Best experienced on desktop ·{' '}
+          <Monitor className="w-3 h-3 inline me-1" />
+          {t('webProduct.bestDesktop')} ·{' '}
           <a href="https://speeda-ai-companion.lovable.app" className="text-brand-blue underline">
-            Open web app
+            {t('webProduct.openWebApp')}
           </a>
         </p>
       </div>

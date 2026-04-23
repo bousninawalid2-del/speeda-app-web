@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { ChevronLeft, Download, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useBilling, BillingPayment } from '@/hooks/useBilling';
 
 interface BillingHistoryScreenProps {
@@ -10,22 +11,23 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-function statusBadge(status: BillingPayment['status']) {
-  if (status === 'succeeded') return <span className="text-[11px] font-semibold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">✅ Paid</span>;
-  if (status === 'failed')    return <span className="text-[11px] font-semibold text-red-accent bg-red-soft px-2 py-0.5 rounded-md">❌ Failed</span>;
-  if (status === 'refunded')  return <span className="text-[11px] font-semibold text-muted-foreground bg-border px-2 py-0.5 rounded-md">↩ Refunded</span>;
-  return <span className="text-[11px] font-semibold text-orange-accent bg-orange-soft px-2 py-0.5 rounded-md">⏳ Pending</span>;
-}
-
 export const BillingHistoryScreen = ({ onBack }: BillingHistoryScreenProps) => {
+  const { t } = useTranslation();
   const { data: payments, isLoading, isError } = useBilling();
+
+  const statusBadge = (status: BillingPayment['status']) => {
+    if (status === 'succeeded') return <span className="text-[11px] font-semibold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">{t('billingHistory.status.paid')}</span>;
+    if (status === 'failed')    return <span className="text-[11px] font-semibold text-red-accent bg-red-soft px-2 py-0.5 rounded-md">{t('billingHistory.status.failed')}</span>;
+    if (status === 'refunded')  return <span className="text-[11px] font-semibold text-muted-foreground bg-border px-2 py-0.5 rounded-md">{t('billingHistory.status.refunded')}</span>;
+    return <span className="text-[11px] font-semibold text-orange-accent bg-orange-soft px-2 py-0.5 rounded-md">{t('billingHistory.status.pending')}</span>;
+  };
 
   return (
     <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="bg-background min-h-screen pb-8">
       <div className="px-5 pt-6">
         <div className="flex items-center gap-3 mb-6">
           <button onClick={onBack}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
-          <h1 className="text-[20px] font-bold text-foreground">Billing History</h1>
+          <h1 className="text-[20px] font-bold text-foreground">{t('billingHistory.title')}</h1>
         </div>
 
         {isLoading ? (
@@ -34,13 +36,13 @@ export const BillingHistoryScreen = ({ onBack }: BillingHistoryScreenProps) => {
           </div>
         ) : isError ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-[15px] font-semibold text-foreground mb-1">Failed to load billing history</p>
-            <p className="text-[13px] text-muted-foreground">Please try again later.</p>
+            <p className="text-[15px] font-semibold text-foreground mb-1">{t('billingHistory.loadFailed')}</p>
+            <p className="text-[13px] text-muted-foreground">{t('billingHistory.tryAgain')}</p>
           </div>
         ) : !payments || payments.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-[15px] font-semibold text-foreground mb-1">No payments yet</p>
-            <p className="text-[13px] text-muted-foreground">Your billing history will appear here.</p>
+            <p className="text-[15px] font-semibold text-foreground mb-1">{t('billingHistory.empty')}</p>
+            <p className="text-[13px] text-muted-foreground">{t('billingHistory.emptyDesc')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -58,7 +60,7 @@ export const BillingHistoryScreen = ({ onBack }: BillingHistoryScreenProps) => {
                 </div>
                 {tx.status === 'succeeded' && (
                   <button className="flex items-center gap-1 text-brand-blue text-[12px] font-semibold mt-2">
-                    <Download size={12} /> Download Invoice
+                    <Download size={12} /> {t('billingHistory.downloadInvoice')}
                   </button>
                 )}
               </div>

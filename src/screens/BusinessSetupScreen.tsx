@@ -2,46 +2,113 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ChevronDown, Search, X, Upload, Trash2, ExternalLink, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { SetupPayload, ImageMeta } from '../lib/api-client';
 import { InstagramLogo, TikTokLogo, SnapchatLogo, FacebookLogo, XLogo, YouTubeLogo, LinkedInLogo, GoogleLogo, PinterestLogo, ThreadsLogo } from '../components/PlatformLogos';
 
 // ─── Static data ─────────────────────────────────────────────────────────────
+// `label` fields are the stable English labels persisted to the backend.
+// `key` fields are the i18n slug used only for display.
 
-const businessTypes = [
-  { emoji: '🍽️', label: 'Restaurant' },
-  { emoji: '☕', label: 'Café' },
-  { emoji: '🍳', label: 'Cloud Kitchen' },
-  { emoji: '🚚', label: 'Food Truck' },
-  { emoji: '🧁', label: 'Bakery' },
-  { emoji: '📦', label: 'Other' },
+const businessTypes: { emoji: string; key: string; label: string }[] = [
+  { emoji: '🍽️', key: 'restaurant',   label: 'Restaurant' },
+  { emoji: '☕',  key: 'cafe',         label: 'Café' },
+  { emoji: '🍳', key: 'cloudKitchen', label: 'Cloud Kitchen' },
+  { emoji: '🚚', key: 'foodTruck',    label: 'Food Truck' },
+  { emoji: '🧁', key: 'bakery',       label: 'Bakery' },
+  { emoji: '📦', key: 'other',        label: 'Other' },
 ];
 
-const businessSizes = ['Just me', '2-5', '6-15', '16-50', '50+'];
-
-const socialGoals = [
-  'More Followers', 'More Engagement', 'More Orders',
-  'Brand Awareness', 'Customer Loyalty', 'Hiring',
+const businessSizes: { key: string; label: string }[] = [
+  { key: 'solo',   label: 'Just me' },
+  { key: 'small',  label: '2-5' },
+  { key: 'medium', label: '6-15' },
+  { key: 'large',  label: '16-50' },
+  { key: 'xl',     label: '50+' },
 ];
 
-const tones = ['Professional', 'Casual', 'Fun', 'Inspiring', 'Bold', 'Warm'];
-
-const langOptions = [
-  { id: 'saudi',   label: '🇸🇦 Saudi' },
-  { id: 'arabic',  label: 'العربية Arabic' },
-  { id: 'english', label: '🇬🇧 English' },
-  { id: 'other',   label: 'Other (Choose)' },
+const socialGoals: { key: string; label: string }[] = [
+  { key: 'moreFollowers',   label: 'More Followers' },
+  { key: 'moreEngagement',  label: 'More Engagement' },
+  { key: 'moreOrders',      label: 'More Orders' },
+  { key: 'brandAwareness',  label: 'Brand Awareness' },
+  { key: 'customerLoyalty', label: 'Customer Loyalty' },
+  { key: 'hiring',          label: 'Hiring' },
 ];
 
-const countryCityData: Record<string, string[]> = {
-  'Saudi Arabia': ['Riyadh', 'Jeddah', 'Dammam', 'Makkah', 'Madinah', 'Khobar', 'Tabuk', 'Abha', 'Jazan', 'Hail', 'Najran', 'Buraidah', 'Al Ahsa', 'Yanbu', 'Taif'],
-  'UAE': ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Fujairah', 'Al Ain'],
-  'Tunisia': ['Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Bizerte', 'Gabes', 'Ariana', 'Monastir', 'Nabeul'],
-  'Bahrain': ['Manama', 'Muharraq', 'Riffa', 'Hamad Town', 'Isa Town'],
-  'Kuwait': ['Kuwait City', 'Hawalli', 'Salmiya', 'Farwaniya', 'Jahra'],
-  'Qatar': ['Doha', 'Al Wakrah', 'Al Khor', 'Umm Salal', 'Al Rayyan'],
-  'Egypt': ['Cairo', 'Alexandria', 'Giza', 'Sharm El Sheikh', 'Hurghada', 'Luxor', 'Aswan'],
-  'Morocco': ['Casablanca', 'Rabat', 'Marrakech', 'Fes', 'Tangier', 'Agadir'],
-  'France': ['Paris', 'Lyon', 'Marseille', 'Toulouse', 'Nice', 'Bordeaux'],
+const tones: { key: string; label: string }[] = [
+  { key: 'professional', label: 'Professional' },
+  { key: 'casual',       label: 'Casual' },
+  { key: 'fun',          label: 'Fun' },
+  { key: 'inspiring',    label: 'Inspiring' },
+  { key: 'bold',         label: 'Bold' },
+  { key: 'warm',         label: 'Warm' },
+];
+
+const langOptions: { id: string; labelKey: string }[] = [
+  { id: 'saudi',   labelKey: 'saudi' },
+  { id: 'arabic',  labelKey: 'arabic' },
+  { id: 'english', labelKey: 'english' },
+  { id: 'other',   labelKey: 'other' },
+];
+
+// Country/city data: stable slug keys for translation + the canonical English label
+// used for persistence. The top-level country key must match what's stored in the DB.
+const countryCityData: Record<string, { key: string; cities: { key: string; label: string }[] }> = {
+  'Saudi Arabia': { key: 'sa', cities: [
+    { key: 'riyadh', label: 'Riyadh' }, { key: 'jeddah', label: 'Jeddah' },
+    { key: 'dammam', label: 'Dammam' }, { key: 'makkah', label: 'Makkah' },
+    { key: 'madinah', label: 'Madinah' }, { key: 'khobar', label: 'Khobar' },
+    { key: 'tabuk', label: 'Tabuk' }, { key: 'abha', label: 'Abha' },
+    { key: 'jazan', label: 'Jazan' }, { key: 'hail', label: 'Hail' },
+    { key: 'najran', label: 'Najran' }, { key: 'buraidah', label: 'Buraidah' },
+    { key: 'alAhsa', label: 'Al Ahsa' }, { key: 'yanbu', label: 'Yanbu' },
+    { key: 'taif', label: 'Taif' },
+  ]},
+  'UAE': { key: 'ae', cities: [
+    { key: 'dubai', label: 'Dubai' }, { key: 'abuDhabi', label: 'Abu Dhabi' },
+    { key: 'sharjah', label: 'Sharjah' }, { key: 'ajman', label: 'Ajman' },
+    { key: 'rasAlKhaimah', label: 'Ras Al Khaimah' }, { key: 'fujairah', label: 'Fujairah' },
+    { key: 'alAin', label: 'Al Ain' },
+  ]},
+  'Tunisia': { key: 'tn', cities: [
+    { key: 'tunis', label: 'Tunis' }, { key: 'sfax', label: 'Sfax' },
+    { key: 'sousse', label: 'Sousse' }, { key: 'kairouan', label: 'Kairouan' },
+    { key: 'bizerte', label: 'Bizerte' }, { key: 'gabes', label: 'Gabes' },
+    { key: 'ariana', label: 'Ariana' }, { key: 'monastir', label: 'Monastir' },
+    { key: 'nabeul', label: 'Nabeul' },
+  ]},
+  'Bahrain': { key: 'bh', cities: [
+    { key: 'manama', label: 'Manama' }, { key: 'muharraq', label: 'Muharraq' },
+    { key: 'riffa', label: 'Riffa' }, { key: 'hamadTown', label: 'Hamad Town' },
+    { key: 'isaTown', label: 'Isa Town' },
+  ]},
+  'Kuwait': { key: 'kw', cities: [
+    { key: 'kuwaitCity', label: 'Kuwait City' }, { key: 'hawalli', label: 'Hawalli' },
+    { key: 'salmiya', label: 'Salmiya' }, { key: 'farwaniya', label: 'Farwaniya' },
+    { key: 'jahra', label: 'Jahra' },
+  ]},
+  'Qatar': { key: 'qa', cities: [
+    { key: 'doha', label: 'Doha' }, { key: 'alWakrah', label: 'Al Wakrah' },
+    { key: 'alKhor', label: 'Al Khor' }, { key: 'ummSalal', label: 'Umm Salal' },
+    { key: 'alRayyan', label: 'Al Rayyan' },
+  ]},
+  'Egypt': { key: 'eg', cities: [
+    { key: 'cairo', label: 'Cairo' }, { key: 'alexandria', label: 'Alexandria' },
+    { key: 'giza', label: 'Giza' }, { key: 'sharmElSheikh', label: 'Sharm El Sheikh' },
+    { key: 'hurghada', label: 'Hurghada' }, { key: 'luxor', label: 'Luxor' },
+    { key: 'aswan', label: 'Aswan' },
+  ]},
+  'Morocco': { key: 'ma', cities: [
+    { key: 'casablanca', label: 'Casablanca' }, { key: 'rabat', label: 'Rabat' },
+    { key: 'marrakech', label: 'Marrakech' }, { key: 'fes', label: 'Fes' },
+    { key: 'tangier', label: 'Tangier' }, { key: 'agadir', label: 'Agadir' },
+  ]},
+  'France': { key: 'fr', cities: [
+    { key: 'paris', label: 'Paris' }, { key: 'lyon', label: 'Lyon' },
+    { key: 'marseille', label: 'Marseille' }, { key: 'toulouse', label: 'Toulouse' },
+    { key: 'nice', label: 'Nice' }, { key: 'bordeaux', label: 'Bordeaux' },
+  ]},
 };
 
 const countries = Object.keys(countryCityData);
@@ -85,16 +152,16 @@ export interface SocialAccountStatus {
 }
 
 const SOCIAL_PLATFORMS = [
-  { id: 'instagram',       name: 'Instagram',  Logo: InstagramLogo },
-  { id: 'tiktok',          name: 'TikTok',     Logo: TikTokLogo },
-  { id: 'snapchat',        name: 'Snapchat',   Logo: SnapchatLogo },
-  { id: 'facebook',        name: 'Facebook',    Logo: FacebookLogo },
-  { id: 'x',               name: 'X',          Logo: XLogo },
-  { id: 'youtube',         name: 'YouTube',     Logo: YouTubeLogo },
-  { id: 'googlebusiness',  name: 'Google Biz',  Logo: GoogleLogo },
-  { id: 'linkedin',        name: 'LinkedIn',    Logo: LinkedInLogo },
-  { id: 'pinterest',       name: 'Pinterest',   Logo: PinterestLogo },
-  { id: 'threads',         name: 'Threads',     Logo: ThreadsLogo },
+  { id: 'instagram',       name: 'Instagram',     Logo: InstagramLogo },
+  { id: 'tiktok',          name: 'TikTok',        Logo: TikTokLogo },
+  { id: 'snapchat',        name: 'Snapchat',      Logo: SnapchatLogo },
+  { id: 'facebook',        name: 'Facebook',      Logo: FacebookLogo },
+  { id: 'x',               name: 'X',             Logo: XLogo },
+  { id: 'youtube',         name: 'YouTube',       Logo: YouTubeLogo },
+  { id: 'googlebusiness',  name: 'googleBiz',     Logo: GoogleLogo },
+  { id: 'linkedin',        name: 'LinkedIn',      Logo: LinkedInLogo },
+  { id: 'pinterest',       name: 'Pinterest',     Logo: PinterestLogo },
+  { id: 'threads',         name: 'Threads',       Logo: ThreadsLogo },
 ];
 
 interface SetupProps {
@@ -137,6 +204,7 @@ const DropdownButton = ({ value, placeholder, onClick }: { value: string; placeh
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDeleteImage, initialData, onSocialConnect, onFetchSocialAccounts }: SetupProps) => {
+  const { t } = useTranslation();
   const act = initialData?.activity;
   const pref = initialData?.preference;
 
@@ -150,16 +218,26 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
   };
   const parsedHours = parseHours(act?.opening_hours);
 
-  // Match industry to businessTypes emoji+label format
-  const resolveIndustry = (industry?: string | null) => {
+  // Match stored industry to a businessTypes entry; if custom, treat as "other".
+  const resolveIndustryKey = (industry?: string | null): string => {
     if (!industry) return '';
-    const match = businessTypes.find(b => b.label === industry || b.emoji + ' ' + b.label === industry);
-    if (match) return match.emoji + ' ' + match.label;
-    // custom type stored without emoji — treat as "Other"
-    return '📦 Other';
+    const match = businessTypes.find(b =>
+      b.label === industry || `${b.emoji} ${b.label}` === industry
+    );
+    if (match) return match.key;
+    return 'other';
   };
-  const resolvedIndustry = resolveIndustry(act?.industry);
-  const isOtherIndustry = resolvedIndustry === '📦 Other' && act?.industry && act.industry !== 'Other';
+  const resolvedKey = resolveIndustryKey(act?.industry);
+  const isCustomIndustry = resolvedKey === 'other' && !!act?.industry && act.industry !== 'Other';
+
+  // Map stored city English label -> slug key (or keep raw if free-form)
+  const resolveCityKey = (countryName?: string | null, cityLabel?: string | null): string => {
+    if (!cityLabel) return '';
+    const data = countryName ? countryCityData[countryName] : undefined;
+    if (!data) return cityLabel;
+    const match = data.cities.find(c => c.label === cityLabel);
+    return match ? match.key : cityLabel;
+  };
 
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -168,12 +246,16 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
 
   // Step 1 — Business info
   const [bizName, setBizName] = useState(act?.business_name ?? '');
-  const [bizType, setBizType] = useState(resolvedIndustry);
-  const [otherBizType, setOtherBizType] = useState(isOtherIndustry ? act!.industry! : '');
+  // bizTypeKey holds the i18n slug (e.g., "restaurant"); empty string = none selected.
+  const [bizTypeKey, setBizTypeKey] = useState<string>(resolvedKey);
+  const [otherBizType, setOtherBizType] = useState(isCustomIndustry ? act!.industry! : '');
   const [yearFounded, setYearFounded] = useState(act?.year_founded ?? '');
+  // bizSize stores the stable English label (e.g., "Just me"); display is translated.
   const [bizSize, setBizSize] = useState(act?.business_size ?? '');
+  // country stores the English country name (persistence key + map lookup).
   const [country, setCountry] = useState(act?.country ?? 'Saudi Arabia');
-  const [city, setCity] = useState(act?.location ?? '');
+  // city stores slug key OR Saudi special-case labels OR free-text for countries w/o list.
+  const [city, setCity] = useState(resolveCityKey(act?.country, act?.location));
   const [countryOpen, setCountryOpen] = useState(false);
   const [cityOpen, setCityOpen] = useState(false);
   const [countrySearch, setCountrySearch] = useState('');
@@ -183,7 +265,7 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
   const [is24Hours, setIs24Hours] = useState(parsedHours.is24);
   const [hoursVary, setHoursVary] = useState(parsedHours.varies);
 
-  // Step 2 — Marketing
+  // Step 2 — Marketing — goals persist as English labels
   const [targetAudience, setTargetAudience] = useState(act?.audience_target ?? '');
   const [usp, setUsp] = useState(act?.unique_selling_point ?? '');
   const [selectedGoals, setSelectedGoals] = useState<string[]>(
@@ -192,14 +274,13 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
   const [colorPrimary, setColorPrimary] = useState(pref?.color_primary ?? '');
   const [colorSecondary, setColorSecondary] = useState(pref?.color_secondary ?? '');
 
-  // Step 3 — Brand voice
+  // Step 3 — Brand voice — tones persist as English labels
   const [selectedTones, setSelectedTones] = useState<string[]>(
     pref?.tone_of_voice?.split(', ').filter(Boolean) ?? ['Professional']
   );
   const [selectedLangs, setSelectedLangs] = useState<string[]>(() => {
     if (!pref?.language_preference) return ['saudi'];
     const langs = pref.language_preference.split(', ').filter(Boolean);
-    // If there was a custom language stored in "other", add the 'other' flag
     if (pref.other) return [...langs.filter(l => l !== pref.other), 'other'];
     return langs;
   });
@@ -223,7 +304,6 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
     finally { setIsRefreshingSocial(false); }
   }, [onFetchSocialAccounts]);
 
-  // Load social accounts when reaching step 4
   useEffect(() => {
     if (step === 4) refreshSocialAccounts();
   }, [step, refreshSocialAccounts]);
@@ -235,10 +315,10 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
       const url = await onSocialConnect();
       if (url) {
         window.open(url, '_blank', 'noopener,noreferrer');
-        toast.success('Complete the connection in the new tab, then click Refresh.');
+        toast.success(t('setup.toasts.completeInNewTab'));
       }
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Could not start connection');
+      toast.error(err instanceof Error ? err.message : t('setup.toasts.connectStartFailed'));
     } finally {
       setIsConnecting(false);
     }
@@ -252,12 +332,12 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
     } else if (selectedGoals.length < 3) {
       setSelectedGoals(gs => [...gs, g]);
     } else {
-      toast('Maximum 3 goals. Deselect one first.');
+      toast(t('setup.toasts.maxGoals'));
     }
   };
 
-  const toggleTone = (t: string) => setSelectedTones(ts =>
-    ts.includes(t) ? ts.filter(x => x !== t) : [...ts, t]
+  const toggleTone = (tn: string) => setSelectedTones(ts =>
+    ts.includes(tn) ? ts.filter(x => x !== tn) : [...ts, tn]
   );
 
   const toggleLang = (id: string) => {
@@ -266,13 +346,39 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
     } else if (selectedLangs.length < 2) {
       setSelectedLangs(ls => [...ls, id]);
     } else {
-      toast('Maximum 2 languages. Deselect one first.');
+      toast(t('setup.toasts.maxLangs'));
     }
   };
 
-  const availableCities = countryCityData[country] || [];
-  const filteredCountries = countries.filter(c => c.toLowerCase().includes(countrySearch.toLowerCase()));
-  const filteredCities = availableCities.filter(c => c.toLowerCase().includes(citySearch.toLowerCase()));
+  const countryData = countryCityData[country];
+  const availableCities = countryData?.cities ?? [];
+  const filteredCountries = countries.filter(c => {
+    const localized = t(`setup.countries.${countryCityData[c].key}`);
+    return c.toLowerCase().includes(countrySearch.toLowerCase())
+      || localized.toLowerCase().includes(countrySearch.toLowerCase());
+  });
+  const filteredCities = availableCities.filter(c => {
+    const localized = t(`setup.cities.${c.key}`);
+    return c.label.toLowerCase().includes(citySearch.toLowerCase())
+      || localized.toLowerCase().includes(citySearch.toLowerCase());
+  });
+
+  // Resolve the displayed city string (localized slug, raw Saudi chip label, or raw free text)
+  const saudiQuickCities: { key: string; label: string }[] = [
+    { key: 'riyadh', label: 'Riyadh' }, { key: 'jeddah', label: 'Jeddah' },
+    { key: 'dammam', label: 'Dammam' }, { key: 'makkah', label: 'Makkah' },
+    { key: 'madinah', label: 'Madinah' }, { key: 'other', label: 'Other' },
+  ];
+
+  const cityDisplay = (() => {
+    if (!city) return '';
+    const found = availableCities.find(c => c.key === city);
+    if (found) return t(`setup.cities.${found.key}`);
+    // Saudi quick-chip special case
+    const sa = saudiQuickCities.find(c => c.key === city);
+    if (sa) return t(`setup.cities.${sa.key}`);
+    return city; // raw free-text
+  })();
 
   // ─── File upload ──────────────────────────────────────────────────────────
 
@@ -280,7 +386,7 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     if (uploadedImages.length + files.length > 3) {
-      toast.error('Maximum 3 files allowed');
+      toast.error(t('setup.toasts.maxFiles'));
       return;
     }
     setIsUploading(true);
@@ -290,7 +396,6 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
           const meta = await onUploadImage(file);
           setUploadedImages(imgs => [...imgs, meta]);
         } else {
-          // local preview when no handler provided
           setUploadedImages(imgs => [...imgs, {
             id: Math.random().toString(36).slice(2),
             filename: file.name,
@@ -301,7 +406,7 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
         }
       }
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Upload failed');
+      toast.error(err instanceof Error ? err.message : t('setup.toasts.uploadFailed'));
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -313,7 +418,7 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
       if (onDeleteImage) await onDeleteImage(id);
       setUploadedImages(imgs => imgs.filter(i => i.id !== id));
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Could not delete file');
+      toast.error(err instanceof Error ? err.message : t('setup.toasts.deleteFailed'));
     }
   };
 
@@ -322,8 +427,8 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
   const validateStep = (): boolean => {
     setStepError('');
     if (step === 1) {
-      if (!bizName.trim()) { setStepError('Please enter your business name'); return false; }
-      if (!bizType) { setStepError('Please select a business type'); return false; }
+      if (!bizName.trim()) { setStepError(t('setup.validation.nameRequired')); return false; }
+      if (!bizTypeKey) { setStepError(t('setup.validation.typeRequired')); return false; }
     }
     return true;
   };
@@ -346,11 +451,28 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
       ? [...selectedLangs.filter(l => l !== 'other'), otherLang].filter(Boolean).join(', ')
       : selectedLangs.join(', ');
 
+    // Persist industry as English canonical label, with custom text when "Other"
+    const bizTypeEntry = businessTypes.find(b => b.key === bizTypeKey);
+    const industryValue = bizTypeKey === 'other'
+      ? (otherBizType.trim() || 'Other')
+      : bizTypeEntry
+        ? bizTypeEntry.label
+        : undefined;
+
+    // Persist city as the English label where possible; for Saudi chips and free text, keep as-is
+    let cityValue: string | undefined = city || undefined;
+    const found = availableCities.find(c => c.key === city);
+    if (found) cityValue = found.label;
+    else {
+      const sa = saudiQuickCities.find(c => c.key === city);
+      if (sa) cityValue = sa.label;
+    }
+
     return {
       business_name:        bizName.trim(),
-      industry:             bizType === '📦 Other' ? (otherBizType.trim() || 'Other') : bizType || undefined,
+      industry:             industryValue,
       country:              country || undefined,
-      location:             city || undefined,
+      location:             cityValue,
       opening_hours:        openingHours,
       business_size:        bizSize || undefined,
       year_founded:         yearFounded || undefined,
@@ -375,13 +497,11 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
       if (onSubmit) await onSubmit(buildPayload());
       setStep(4);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to save setup');
+      toast.error(err instanceof Error ? err.message : t('setup.toasts.saveFailed'));
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  // ─── Final launch (step 4) ───────────────────────────────────────────────
 
   const handleLaunch = () => {
     onComplete();
@@ -408,15 +528,15 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
       {/* ── Step 1: Business Info ──────────────────────────────────────────── */}
       {step === 1 && (
         <motion.div key="step1" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }}>
-          <h2 className="text-[24px] font-extrabold tracking-[-0.02em]">Tell us about your business</h2>
+          <h2 className="text-[24px] font-extrabold tracking-[-0.02em]">{t('setup.steps.s1Title')}</h2>
 
           <div className="mt-6 space-y-5">
             {/* Business name */}
             <div>
-              <label className="text-[14px] font-semibold text-foreground mb-2 block">Business Name</label>
+              <label className="text-[14px] font-semibold text-foreground mb-2 block">{t('setup.labels.businessName')}</label>
               <input
                 className="w-full h-[56px] rounded-2xl bg-card border border-border px-4 text-[14px] focus:border-primary focus:outline-none transition-colors"
-                placeholder="Your business name"
+                placeholder={t('setup.labels.businessNamePlaceholder')}
                 value={bizName}
                 onChange={e => setBizName(e.target.value)}
               />
@@ -424,23 +544,23 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
 
             {/* Business type */}
             <div>
-              <label className="text-[14px] font-semibold text-foreground mb-2 block">Business Type</label>
+              <label className="text-[14px] font-semibold text-foreground mb-2 block">{t('setup.labels.businessType')}</label>
               <div className="flex flex-wrap gap-2">
-                {businessTypes.map(t => (
+                {businessTypes.map(bt => (
                   <Chip
-                    key={t.label}
-                    label={`${t.emoji} ${t.label}`}
-                    active={bizType === t.label}
-                    onClick={() => setBizType(t.label)}
+                    key={bt.key}
+                    label={`${bt.emoji} ${t(`setup.businessTypes.${bt.key}`)}`}
+                    active={bizTypeKey === bt.key}
+                    onClick={() => setBizTypeKey(bt.key)}
                   />
                 ))}
               </div>
               <AnimatePresence>
-                {bizType === 'Other' && (
+                {bizTypeKey === 'other' && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
                     <input
                       className="w-full h-[48px] rounded-2xl bg-card border border-border px-4 text-[14px] focus:border-primary focus:outline-none mt-2"
-                      placeholder="e.g., Catering service, Juice bar…"
+                      placeholder={t('setup.labels.otherBizTypePlaceholder')}
                       value={otherBizType}
                       onChange={e => setOtherBizType(e.target.value)}
                     />
@@ -451,11 +571,11 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
 
             {/* Year founded */}
             <div>
-              <label className="text-[14px] font-semibold text-foreground mb-2 block">What year did you start?</label>
+              <label className="text-[14px] font-semibold text-foreground mb-2 block">{t('setup.labels.yearFounded')}</label>
               <input
                 type="number"
                 className="w-full h-[56px] rounded-2xl bg-card border border-border px-4 text-[14px] focus:border-primary focus:outline-none"
-                placeholder="2020"
+                placeholder={t('setup.labels.yearFoundedPlaceholder')}
                 value={yearFounded}
                 onChange={e => setYearFounded(e.target.value)}
               />
@@ -463,35 +583,49 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
 
             {/* Team size */}
             <div>
-              <label className="text-[14px] font-semibold text-foreground mb-2 block">How big is your team?</label>
+              <label className="text-[14px] font-semibold text-foreground mb-2 block">{t('setup.labels.teamSize')}</label>
               <div className="flex flex-wrap gap-2">
                 {businessSizes.map(s => (
-                  <Chip key={s} label={s} active={bizSize === s} onClick={() => setBizSize(s)} />
+                  <Chip
+                    key={s.key}
+                    label={t(`setup.sizes.${s.key}`)}
+                    active={bizSize === s.label}
+                    onClick={() => setBizSize(s.label)}
+                  />
                 ))}
               </div>
             </div>
 
             {/* Country */}
             <div>
-              <label className="text-[14px] font-semibold text-foreground mb-2 block">Country</label>
-              <DropdownButton value={country} placeholder="Select country" onClick={() => setCountryOpen(true)} />
+              <label className="text-[14px] font-semibold text-foreground mb-2 block">{t('setup.labels.country')}</label>
+              <DropdownButton
+                value={country ? t(`setup.countries.${countryCityData[country].key}`) : ''}
+                placeholder={t('setup.labels.selectCountry')}
+                onClick={() => setCountryOpen(true)}
+              />
             </div>
 
             {/* City */}
             <div>
-              <label className="text-[14px] font-semibold text-foreground mb-2 block">City</label>
+              <label className="text-[14px] font-semibold text-foreground mb-2 block">{t('setup.labels.city')}</label>
               {country === 'Saudi Arabia' ? (
                 <div className="flex flex-wrap gap-2">
-                  {['Riyadh', 'Jeddah', 'Dammam', 'Makkah', 'Madinah', 'Other'].map(c => (
-                    <Chip key={c} label={c} active={city === c} onClick={() => setCity(c)} />
+                  {saudiQuickCities.map(c => (
+                    <Chip
+                      key={c.key}
+                      label={t(`setup.cities.${c.key}`)}
+                      active={city === c.key}
+                      onClick={() => setCity(c.key)}
+                    />
                   ))}
                 </div>
               ) : availableCities.length > 0 ? (
-                <DropdownButton value={city} placeholder="Select city" onClick={() => setCityOpen(true)} />
+                <DropdownButton value={cityDisplay} placeholder={t('setup.labels.selectCity')} onClick={() => setCityOpen(true)} />
               ) : (
                 <input
                   className="w-full h-[56px] rounded-2xl bg-card border border-border px-4 text-[14px] focus:border-primary focus:outline-none"
-                  placeholder="Enter your city"
+                  placeholder={t('setup.labels.enterCity')}
                   value={city}
                   onChange={e => setCity(e.target.value)}
                 />
@@ -500,11 +634,11 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
 
             {/* Opening hours */}
             <div>
-              <label className="text-[14px] font-semibold text-foreground mb-2 block">Typical opening hours</label>
+              <label className="text-[14px] font-semibold text-foreground mb-2 block">{t('setup.labels.openingHours')}</label>
               {!is24Hours && !hoursVary && (
                 <div className="flex gap-3">
                   <div className="flex-1">
-                    <p className="text-[11px] text-muted-foreground mb-1">Opens at</p>
+                    <p className="text-[11px] text-muted-foreground mb-1">{t('setup.labels.opensAt')}</p>
                     <select
                       className="w-full h-[48px] rounded-2xl bg-card border border-border px-3 text-[13px] focus:border-primary focus:outline-none"
                       value={openTime}
@@ -514,7 +648,7 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
                     </select>
                   </div>
                   <div className="flex-1">
-                    <p className="text-[11px] text-muted-foreground mb-1">Closes at</p>
+                    <p className="text-[11px] text-muted-foreground mb-1">{t('setup.labels.closesAt')}</p>
                     <select
                       className="w-full h-[48px] rounded-2xl bg-card border border-border px-3 text-[13px] focus:border-primary focus:outline-none"
                       value={closeTime}
@@ -528,11 +662,11 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
               <div className="mt-2 space-y-2">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={is24Hours} onChange={() => { setIs24Hours(v => !v); setHoursVary(false); }} className="w-4 h-4 rounded accent-brand-blue" />
-                  <span className="text-[13px] text-foreground">Open 24 hours</span>
+                  <span className="text-[13px] text-foreground">{t('setup.labels.open24')}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={hoursVary} onChange={() => { setHoursVary(v => !v); setIs24Hours(false); }} className="w-4 h-4 rounded accent-brand-blue" />
-                  <span className="text-[13px] text-muted-foreground">Hours vary — I'll set this later</span>
+                  <span className="text-[13px] text-muted-foreground">{t('setup.labels.hoursVary')}</span>
                 </label>
               </div>
             </div>
@@ -543,16 +677,16 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
       {/* ── Step 2: Marketing ─────────────────────────────────────────────── */}
       {step === 2 && (
         <motion.div key="step2" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }}>
-          <h2 className="text-[24px] font-extrabold tracking-[-0.02em]">Tell us about your marketing</h2>
-          <p className="text-[14px] text-muted-foreground mt-2">This helps our AI give you better recommendations</p>
+          <h2 className="text-[24px] font-extrabold tracking-[-0.02em]">{t('setup.steps.s2Title')}</h2>
+          <p className="text-[14px] text-muted-foreground mt-2">{t('setup.steps.s2Subtitle')}</p>
 
           <div className="mt-6 space-y-5">
             {/* Target audience */}
             <div>
-              <label className="text-[14px] font-semibold text-foreground mb-2 block">Who are your customers?</label>
+              <label className="text-[14px] font-semibold text-foreground mb-2 block">{t('setup.labels.targetAudience')}</label>
               <textarea
                 className="w-full min-h-[72px] rounded-2xl bg-card border border-border p-4 text-[14px] focus:border-primary focus:outline-none resize-none"
-                placeholder="e.g., Families in Riyadh, young professionals 22-35, tourists in downtown area…"
+                placeholder={t('setup.labels.targetAudiencePlaceholder')}
                 value={targetAudience}
                 onChange={e => setTargetAudience(e.target.value)}
               />
@@ -560,10 +694,10 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
 
             {/* USP */}
             <div>
-              <label className="text-[14px] font-semibold text-foreground mb-2 block">What makes your business special?</label>
+              <label className="text-[14px] font-semibold text-foreground mb-2 block">{t('setup.labels.usp')}</label>
               <textarea
                 className="w-full min-h-[72px] rounded-2xl bg-card border border-border p-4 text-[14px] focus:border-primary focus:outline-none resize-none"
-                placeholder="e.g., Best garlic sauce in town, unique atmosphere, only halal organic ingredients…"
+                placeholder={t('setup.labels.uspPlaceholder')}
                 value={usp}
                 onChange={e => setUsp(e.target.value)}
               />
@@ -571,18 +705,25 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
 
             {/* Goals */}
             <div>
-              <label className="text-[14px] font-semibold text-foreground mb-2 block">What do you want to achieve?</label>
-              <p className="text-[11px] text-muted-foreground mb-2">Select 1-3 goals</p>
+              <label className="text-[14px] font-semibold text-foreground mb-2 block">{t('setup.labels.goals')}</label>
+              <p className="text-[11px] text-muted-foreground mb-2">{t('setup.labels.goalsHint')}</p>
               <div className="flex flex-wrap gap-2">
                 {socialGoals.map(g => (
-                  <Chip key={g} label={g} active={selectedGoals.includes(g)} onClick={() => toggleGoal(g)} />
+                  <Chip
+                    key={g.key}
+                    label={t(`setup.goals.${g.key}`)}
+                    active={selectedGoals.includes(g.label)}
+                    onClick={() => toggleGoal(g.label)}
+                  />
                 ))}
               </div>
             </div>
 
             {/* Brand colors */}
             <div>
-              <label className="text-[14px] font-semibold text-foreground mb-2 block">Your brand colors <span className="text-muted-foreground font-normal">(optional)</span></label>
+              <label className="text-[14px] font-semibold text-foreground mb-2 block">
+                {t('setup.labels.brandColors')} <span className="text-muted-foreground font-normal">{t('setup.labels.optional')}</span>
+              </label>
               <div className="flex items-center gap-5">
                 <div className="flex flex-col items-center gap-1.5">
                   <label className="relative cursor-pointer">
@@ -594,7 +735,7 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
                     </div>
                     <input type="color" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" value={colorPrimary || '#0020d4'} onChange={e => setColorPrimary(e.target.value)} />
                   </label>
-                  <span className="text-[11px] text-muted-foreground">Primary</span>
+                  <span className="text-[11px] text-muted-foreground">{t('setup.labels.primary')}</span>
                 </div>
                 <div className="flex flex-col items-center gap-1.5">
                   <label className="relative cursor-pointer">
@@ -606,19 +747,19 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
                     </div>
                     <input type="color" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" value={colorSecondary || '#00c7f3'} onChange={e => setColorSecondary(e.target.value)} />
                   </label>
-                  <span className="text-[11px] text-muted-foreground">Secondary</span>
+                  <span className="text-[11px] text-muted-foreground">{t('setup.labels.secondary')}</span>
                 </div>
                 {(colorPrimary || colorSecondary) && (
                   <button
                     type="button"
                     onClick={() => { setColorPrimary(''); setColorSecondary(''); }}
-                    className="text-brand-blue text-[12px] font-medium ml-2"
+                    className="text-brand-blue text-[12px] font-medium ms-2"
                   >
-                    Clear
+                    {t('setup.labels.clear')}
                   </button>
                 )}
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1.5">Skip — AI will use Speeda's default palette</p>
+              <p className="text-[11px] text-muted-foreground mt-1.5">{t('setup.labels.defaultPaletteHint')}</p>
             </div>
           </div>
         </motion.div>
@@ -627,26 +768,36 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
       {/* ── Step 3: Brand Voice ───────────────────────────────────────────── */}
       {step === 3 && (
         <motion.div key="step3" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }}>
-          <h2 className="text-[24px] font-extrabold tracking-[-0.02em]">How should Speeda talk for you?</h2>
+          <h2 className="text-[24px] font-extrabold tracking-[-0.02em]">{t('setup.steps.s3Title')}</h2>
 
           <div className="mt-6 space-y-5">
             {/* Tone */}
             <div>
-              <label className="text-[14px] font-semibold text-foreground mb-2 block">Tone</label>
+              <label className="text-[14px] font-semibold text-foreground mb-2 block">{t('setup.labels.tone')}</label>
               <div className="flex flex-wrap gap-2">
-                {tones.map(t => (
-                  <Chip key={t} label={t} active={selectedTones.includes(t)} onClick={() => toggleTone(t)} />
+                {tones.map(tn => (
+                  <Chip
+                    key={tn.key}
+                    label={t(`setup.tones.${tn.key}`)}
+                    active={selectedTones.includes(tn.label)}
+                    onClick={() => toggleTone(tn.label)}
+                  />
                 ))}
               </div>
             </div>
 
             {/* Language */}
             <div>
-              <label className="text-[14px] font-semibold text-foreground mb-1 block">Language</label>
-              <p className="text-[11px] text-muted-foreground mb-2">Select 1-2 languages for your content</p>
+              <label className="text-[14px] font-semibold text-foreground mb-1 block">{t('setup.labels.language')}</label>
+              <p className="text-[11px] text-muted-foreground mb-2">{t('setup.labels.languageHint')}</p>
               <div className="flex flex-wrap gap-2">
                 {langOptions.map(l => (
-                  <Chip key={l.id} label={l.label} active={selectedLangs.includes(l.id)} onClick={() => toggleLang(l.id)} />
+                  <Chip
+                    key={l.id}
+                    label={t(`setup.langs.${l.labelKey}`)}
+                    active={selectedLangs.includes(l.id)}
+                    onClick={() => toggleLang(l.id)}
+                  />
                 ))}
               </div>
               <AnimatePresence>
@@ -654,7 +805,7 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
                     <input
                       className="w-full h-[48px] rounded-2xl bg-card border border-border px-4 text-[14px] focus:border-primary focus:outline-none mt-2"
-                      placeholder="e.g., French, Urdu, Turkish…"
+                      placeholder={t('setup.labels.otherLangPlaceholder')}
                       value={otherLang}
                       onChange={e => setOtherLang(e.target.value)}
                     />
@@ -665,10 +816,10 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
 
             {/* Business description */}
             <div>
-              <label className="text-[14px] font-semibold text-foreground mb-2 block">Describe your business</label>
+              <label className="text-[14px] font-semibold text-foreground mb-2 block">{t('setup.labels.describeBusiness')}</label>
               <textarea
                 className="w-full min-h-[100px] rounded-2xl bg-card border border-border p-4 text-[14px] focus:border-primary focus:outline-none resize-none"
-                placeholder="e.g., Modern shawarma restaurant in Riyadh, family-friendly, best garlic sauce in town…"
+                placeholder={t('setup.labels.describePlaceholder')}
                 value={bizDescription}
                 onChange={e => setBizDescription(e.target.value)}
               />
@@ -676,10 +827,9 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
 
             {/* Brand identity upload */}
             <div>
-              <label className="text-[14px] font-semibold text-foreground mb-1 block">Upload your brand identity</label>
-              <p className="text-[12px] text-muted-foreground mb-2">Help our AI match your visual identity</p>
+              <label className="text-[14px] font-semibold text-foreground mb-1 block">{t('setup.labels.uploadBrand')}</label>
+              <p className="text-[12px] text-muted-foreground mb-2">{t('setup.labels.uploadBrandHint')}</p>
 
-              {/* Uploaded files list */}
               {uploadedImages.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-3">
                   {uploadedImages.map(img => (
@@ -689,7 +839,7 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
                       <button
                         type="button"
                         onClick={() => handleDeleteImage(img.id)}
-                        className="ml-1 text-muted-foreground hover:text-destructive"
+                        className="ms-1 text-muted-foreground hover:text-destructive"
                       >
                         <Trash2 size={13} />
                       </button>
@@ -712,7 +862,7 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
                       <Upload size={18} className="text-brand-blue" />
                     )}
                     <span className="text-[13px] font-bold text-brand-blue">
-                      {isUploading ? 'Uploading…' : 'Upload logo, brand guidelines, or visual assets'}
+                      {isUploading ? t('setup.labels.uploading') : t('setup.labels.uploadCta')}
                     </span>
                   </button>
                   <input
@@ -725,7 +875,9 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
                   />
                 </>
               )}
-              <p className="text-[11px] text-muted-foreground mt-1">Supports PNG, JPG, PDF — Max 10 MB · Optional ({uploadedImages.length}/3)</p>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {t('setup.labels.uploadSupport', { count: uploadedImages.length })}
+              </p>
             </div>
           </div>
         </motion.div>
@@ -734,10 +886,8 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
       {/* ── Step 4: Connect Social Media ──────────────────────────────────── */}
       {step === 4 && (
         <motion.div key="step4" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }}>
-          <h2 className="text-[24px] font-extrabold tracking-[-0.02em]">Connect your social media</h2>
-          <p className="text-[14px] text-muted-foreground mt-2">
-            Link your accounts so Speeda can publish, track analytics, and manage engagement for you.
-          </p>
+          <h2 className="text-[24px] font-extrabold tracking-[-0.02em]">{t('setup.steps.s4Title')}</h2>
+          <p className="text-[14px] text-muted-foreground mt-2">{t('setup.steps.s4Subtitle')}</p>
 
           {/* Connect button */}
           <div className="mt-6">
@@ -750,17 +900,17 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
               {isConnecting ? (
                 <>
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Opening connection…
+                  {t('setup.social.opening')}
                 </>
               ) : (
                 <>
                   <ExternalLink size={18} />
-                  Connect Platforms via Ayrshare
+                  {t('setup.social.connectCta')}
                 </>
               )}
             </button>
             <p className="text-[11px] text-muted-foreground mt-2 text-center">
-              Opens a secure page where you can connect Instagram, TikTok, Facebook, and more.
+              {t('setup.social.connectHint')}
             </p>
           </div>
 
@@ -773,7 +923,7 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
               className="flex items-center gap-2 text-brand-blue text-[13px] font-semibold hover:underline disabled:opacity-60"
             >
               <RefreshCw size={14} className={isRefreshingSocial ? 'animate-spin' : ''} />
-              {isRefreshingSocial ? 'Checking…' : 'Refresh account status'}
+              {isRefreshingSocial ? t('setup.social.checking') : t('setup.social.refresh')}
             </button>
           </div>
 
@@ -782,6 +932,10 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
             {SOCIAL_PLATFORMS.map(platform => {
               const account = socialAccounts.find(a => a.platform === platform.id);
               const connected = account?.connected ?? false;
+              // Only the Google Business label is translatable; others are brand names
+              const displayName = platform.id === 'googlebusiness'
+                ? t('setup.social.googleBiz')
+                : platform.name;
               return (
                 <div
                   key={platform.id}
@@ -791,17 +945,17 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
                 >
                   <platform.Logo size={28} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-medium text-foreground">{platform.name}</p>
+                    <p className="text-[14px] font-medium text-foreground">{displayName}</p>
                     {connected && account?.username && (
                       <p className="text-[11px] text-muted-foreground truncate">@{account.username}</p>
                     )}
                   </div>
                   {connected ? (
                     <span className="text-[12px] font-semibold text-green-accent flex items-center gap-1">
-                      <Check size={14} /> Connected
+                      <Check size={14} /> {t('setup.social.connected')}
                     </span>
                   ) : (
-                    <span className="text-[12px] text-muted-foreground">Not connected</span>
+                    <span className="text-[12px] text-muted-foreground">{t('setup.social.notConnected')}</span>
                   )}
                 </div>
               );
@@ -810,7 +964,9 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
 
           {connectedCount > 0 && (
             <p className="mt-4 text-[13px] text-green-accent font-medium text-center">
-              {connectedCount} platform{connectedCount > 1 ? 's' : ''} connected
+              {connectedCount === 1
+                ? t('setup.social.oneConnected', { count: connectedCount })
+                : t('setup.social.manyConnected', { count: connectedCount })}
             </p>
           )}
         </motion.div>
@@ -833,27 +989,27 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
             isSubmitting ? (
               <span className="flex items-center justify-center gap-2">
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Saving…
+                {t('setup.buttons.saving')}
               </span>
-            ) : 'Save & Connect Platforms'
-          ) : step === totalSteps ? 'Launch My Marketing OS' : 'Next'}
+            ) : t('setup.buttons.saveAndConnect')
+          ) : step === totalSteps ? t('setup.buttons.launch') : t('setup.buttons.next')}
         </button>
 
         {step === 2 && (
           <button type="button" onClick={() => setStep(3)} className="text-muted-foreground text-[13px] font-medium text-center">
-            Skip for now
+            {t('setup.buttons.skipForNow')}
           </button>
         )}
 
         {step === 4 && (
           <button type="button" onClick={handleLaunch} className="text-muted-foreground text-[13px] font-medium text-center">
-            Skip — I'll connect later
+            {t('setup.buttons.skipConnectLater')}
           </button>
         )}
 
         {step > 1 && (
           <button type="button" onClick={() => { setStep(s => s - 1); setStepError(''); }} className="text-brand-blue text-[13px] font-medium text-center">
-            ← Back
+            {t('setup.buttons.back')}
           </button>
         )}
       </div>
@@ -863,21 +1019,21 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
         {countryOpen && (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setCountryOpen(false)} className="fixed inset-0 bg-foreground/30 z-40" />
-            <motion.div initial={{ y: 400 }} animate={{ y: 0 }} exit={{ y: 400 }} className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl shadow-xl max-w-[430px] mx-auto max-h-[60vh] flex flex-col">
+            <motion.div initial={{ y: 400 }} animate={{ y: 0 }} exit={{ y: 400 }} className="fixed bottom-0 start-0 end-0 z-50 bg-card rounded-t-3xl shadow-xl max-w-[430px] mx-auto max-h-[60vh] flex flex-col">
               <div className="p-5 pb-3 flex items-center justify-between">
-                <h3 className="text-[16px] font-bold text-foreground">Select Country</h3>
+                <h3 className="text-[16px] font-bold text-foreground">{t('setup.dropdown.selectCountry')}</h3>
                 <button type="button" onClick={() => setCountryOpen(false)}><X size={20} className="text-muted-foreground" /></button>
               </div>
               <div className="px-5 py-2">
                 <div className="relative">
-                  <Search size={16} className="absolute left-3 top-[11px] text-muted-foreground" />
-                  <input className="w-full h-[40px] rounded-xl bg-muted border-none pl-10 pr-4 text-[14px] focus:outline-none" placeholder="Search…" value={countrySearch} onChange={e => setCountrySearch(e.target.value)} autoFocus />
+                  <Search size={16} className="absolute start-3 top-[11px] text-muted-foreground" />
+                  <input className="w-full h-[40px] rounded-xl bg-muted border-none ps-10 pe-4 text-[14px] focus:outline-none" placeholder={t('setup.dropdown.search')} value={countrySearch} onChange={e => setCountrySearch(e.target.value)} autoFocus />
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto px-2 pb-5">
                 {filteredCountries.map(c => (
                   <button key={c} type="button" onClick={() => { setCountry(c); setCity(''); setCountryOpen(false); setCountrySearch(''); }} className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-start ${country === c ? 'bg-purple-soft' : 'hover:bg-muted'}`}>
-                    <span className="text-[14px] font-medium text-foreground flex-1">{c}</span>
+                    <span className="text-[14px] font-medium text-foreground flex-1">{t(`setup.countries.${countryCityData[c].key}`)}</span>
                     {country === c && <Check size={16} className="text-brand-blue" />}
                   </button>
                 ))}
@@ -892,22 +1048,22 @@ export const BusinessSetupScreen = ({ onComplete, onSubmit, onUploadImage, onDel
         {cityOpen && (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setCityOpen(false)} className="fixed inset-0 bg-foreground/30 z-40" />
-            <motion.div initial={{ y: 400 }} animate={{ y: 0 }} exit={{ y: 400 }} className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl shadow-xl max-w-[430px] mx-auto max-h-[60vh] flex flex-col">
+            <motion.div initial={{ y: 400 }} animate={{ y: 0 }} exit={{ y: 400 }} className="fixed bottom-0 start-0 end-0 z-50 bg-card rounded-t-3xl shadow-xl max-w-[430px] mx-auto max-h-[60vh] flex flex-col">
               <div className="p-5 pb-3 flex items-center justify-between">
-                <h3 className="text-[16px] font-bold text-foreground">Select City</h3>
+                <h3 className="text-[16px] font-bold text-foreground">{t('setup.dropdown.selectCity')}</h3>
                 <button type="button" onClick={() => setCityOpen(false)}><X size={20} className="text-muted-foreground" /></button>
               </div>
               <div className="px-5 py-2">
                 <div className="relative">
-                  <Search size={16} className="absolute left-3 top-[11px] text-muted-foreground" />
-                  <input className="w-full h-[40px] rounded-xl bg-muted border-none pl-10 pr-4 text-[14px] focus:outline-none" placeholder="Search…" value={citySearch} onChange={e => setCitySearch(e.target.value)} autoFocus />
+                  <Search size={16} className="absolute start-3 top-[11px] text-muted-foreground" />
+                  <input className="w-full h-[40px] rounded-xl bg-muted border-none ps-10 pe-4 text-[14px] focus:outline-none" placeholder={t('setup.dropdown.search')} value={citySearch} onChange={e => setCitySearch(e.target.value)} autoFocus />
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto px-2 pb-5">
                 {filteredCities.map(c => (
-                  <button key={c} type="button" onClick={() => { setCity(c); setCityOpen(false); setCitySearch(''); }} className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-start ${city === c ? 'bg-purple-soft' : 'hover:bg-muted'}`}>
-                    <span className="text-[14px] font-medium text-foreground flex-1">{c}</span>
-                    {city === c && <Check size={16} className="text-brand-blue" />}
+                  <button key={c.key} type="button" onClick={() => { setCity(c.key); setCityOpen(false); setCitySearch(''); }} className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-start ${city === c.key ? 'bg-purple-soft' : 'hover:bg-muted'}`}>
+                    <span className="text-[14px] font-medium text-foreground flex-1">{t(`setup.cities.${c.key}`)}</span>
+                    {city === c.key && <Check size={16} className="text-brand-blue" />}
                   </button>
                 ))}
               </div>

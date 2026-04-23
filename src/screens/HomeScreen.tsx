@@ -19,6 +19,7 @@ import { useDashboardHome } from '@/hooks/useDashboardHome';
 const MOS_TOOLTIP_KEY = 'speeda_mos_tooltip_shown';
 
 const TappableMosRing = ({ size, score, onTap }: { size: number; score: number; onTap: () => void }) => {
+  const { t } = useTranslation();
   const [showTooltip, setShowTooltip] = useState(false);
 
   useEffect(() => {
@@ -54,11 +55,11 @@ const TappableMosRing = ({ size, score, onTap }: { size: number; score: number; 
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 whitespace-nowrap"
+            className="absolute top-full start-1/2 -translate-x-1/2 mt-2 z-50 whitespace-nowrap"
           >
             <div className="bg-[#1a1a2e] text-primary-foreground text-[12px] px-3 py-1.5 rounded-lg relative">
-              <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#1a1a2e] rotate-45" />
-              Tap to see your score details ›
+              <div className="absolute -top-1 start-1/2 -translate-x-1/2 w-2 h-2 bg-[#1a1a2e] rotate-45" />
+              {t('homeExtra.tapMosTooltip')}
             </div>
           </motion.div>
         )}
@@ -81,6 +82,7 @@ interface StrategyCard {
 
 // Completion card shown when all cards are dismissed
 const CompletionCard = ({ doneCount, totalCount }: { doneCount: number; totalCount: number }) => {
+  const { t } = useTranslation();
   const allDone = doneCount === totalCount;
   const allSkipped = doneCount === 0;
 
@@ -93,7 +95,7 @@ const CompletionCard = ({ doneCount, totalCount }: { doneCount: number; totalCou
         className="gradient-hero rounded-3xl p-6 relative overflow-hidden"
       >
         {/* Sparkles */}
-        {['top-3 left-6', 'top-5 right-8', 'bottom-4 left-10', 'bottom-3 right-12'].map((pos, i) => (
+        {['top-3 start-6', 'top-5 end-8', 'bottom-4 start-10', 'bottom-3 end-12'].map((pos, i) => (
           <motion.span
             key={i}
             className={`absolute ${pos} text-primary-foreground/60 text-[14px]`}
@@ -102,9 +104,9 @@ const CompletionCard = ({ doneCount, totalCount }: { doneCount: number; totalCou
             transition={{ duration: 1.5, delay: i * 0.2, repeat: 1 }}
           >✦</motion.span>
         ))}
-        <p className="text-[16px] font-bold text-primary-foreground text-center relative z-10">✦ All actions completed! Great job today.</p>
+        <p className="text-[16px] font-bold text-primary-foreground text-center relative z-10">{t('homeExtra.allCompleted')}</p>
         <div className="flex justify-center mt-3 relative z-10">
-          <span className="bg-primary-foreground/20 text-primary-foreground text-[12px] font-bold px-3 py-1 rounded-lg">🔥 Streak +1</span>
+          <span className="bg-primary-foreground/20 text-primary-foreground text-[12px] font-bold px-3 py-1 rounded-lg">{t('homeExtra.streakPlus')}</span>
         </div>
       </motion.div>
     );
@@ -118,7 +120,7 @@ const CompletionCard = ({ doneCount, totalCount }: { doneCount: number; totalCou
         transition={{ duration: 0.3 }}
         className="bg-muted rounded-3xl p-6"
       >
-        <p className="text-[14px] text-muted-foreground text-center">No actions for today. Your AI will prepare new recommendations tomorrow.</p>
+        <p className="text-[14px] text-muted-foreground text-center">{t('homeExtra.noActionsToday')}</p>
       </motion.div>
     );
   }
@@ -132,7 +134,7 @@ const CompletionCard = ({ doneCount, totalCount }: { doneCount: number; totalCou
       transition={{ duration: 0.3 }}
       className="bg-purple-soft rounded-3xl p-6"
     >
-      <p className="text-[15px] font-bold text-foreground text-center">✦ You completed {doneCount} out of {totalCount} actions today. Nice work!</p>
+      <p className="text-[15px] font-bold text-foreground text-center">{t('homeExtra.completedSome', { done: doneCount, total: totalCount })}</p>
       <div className="h-2.5 rounded-full bg-border mt-4 overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
@@ -191,13 +193,13 @@ const DesktopStrategyScroller = ({ cards, onDismiss, onDoAction, pendingDoneId, 
   return (
     <div className="relative mt-3 group">
       {showLeft && (
-        <button onClick={() => scroll(-1)} className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-card border border-border-light shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <ChevronLeft size={18} className="text-foreground" />
+        <button onClick={() => scroll(-1)} className="absolute -start-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-card border border-border-light shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <ChevronLeft size={18} className="text-foreground rtl:rotate-180" />
         </button>
       )}
       {showRight && (
-        <button onClick={() => scroll(1)} className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-card border border-border-light shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <ChevronRight size={18} className="text-foreground" />
+        <button onClick={() => scroll(1)} className="absolute -end-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-card border border-border-light shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <ChevronRight size={18} className="text-foreground rtl:rotate-180" />
         </button>
       )}
       <div ref={scrollRef} onScroll={updateArrows} className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth" style={{ scrollSnapType: 'x mandatory' }}>
@@ -241,10 +243,10 @@ const DesktopStrategyScroller = ({ cards, onDismiss, onDoAction, pendingDoneId, 
               <span className={`text-[10px] font-bold uppercase tracking-[0.05em] text-primary-foreground px-3 py-1 rounded-lg ${card.color}`}>{card.priority}</span>
               <h3 className="text-[16px] font-bold text-foreground mt-3">{card.title}</h3>
               <p className="text-[13px] text-muted-foreground leading-[1.5] mt-2">{card.desc}</p>
-              <p className="text-[12px] font-semibold text-green-accent mt-3">{card.impactIcon} Est. impact: {card.impact}</p>
+              <p className="text-[12px] font-semibold text-green-accent mt-3">{card.impactIcon} {t('homeExtra.estImpact')}: {card.impact}</p>
               <div className="flex gap-2 mt-4">
-                <button onClick={() => onDoAction(card)} className="flex-1 h-10 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold btn-press hover:brightness-105 transition-all">✓ Do It</button>
-                <button onClick={() => onDismiss(card.id, 'skip')} className="h-10 px-3 rounded-xl border border-border text-muted-foreground text-[12px] font-medium btn-press hover:bg-muted transition-colors">✗ Skip</button>
+                <button onClick={() => onDoAction(card)} className="flex-1 h-10 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold btn-press hover:brightness-105 transition-all">{t('homeExtra.doIt')}</button>
+                <button onClick={() => onDismiss(card.id, 'skip')} className="h-10 px-3 rounded-xl border border-border text-muted-foreground text-[12px] font-medium btn-press hover:bg-muted transition-colors">{t('homeExtra.skipAction')}</button>
               </div>
             </motion.div>
           ))}
@@ -365,10 +367,10 @@ const MobileStrategyCards = ({ cards, onDismiss, onDoAction, pendingDoneId, t }:
               <span className={`text-[10px] font-bold uppercase tracking-[0.05em] text-primary-foreground px-3 py-1 rounded-lg ${card.color}`}>{card.priority}</span>
               <h3 className="text-[17px] font-bold text-foreground mt-3">{card.title}</h3>
               <p className="text-[13px] text-muted-foreground leading-[1.5] mt-1.5">{card.desc}</p>
-              <p className="text-[12px] font-semibold text-green-accent mt-2">{card.impactIcon} Est. impact: {card.impact}</p>
+              <p className="text-[12px] font-semibold text-green-accent mt-2">{card.impactIcon} {t('homeExtra.estImpact')}: {card.impact}</p>
               <div className="flex gap-2 mt-3">
-                <button onClick={() => onDoAction(card)} className="flex-1 h-11 rounded-2xl gradient-btn text-primary-foreground text-[13px] font-bold btn-press">✓ Do It</button>
-                <button onClick={() => onDismiss(card.id, 'skip')} className="h-11 px-4 rounded-2xl border border-border text-muted-foreground text-[13px] font-medium btn-press">✗ Skip</button>
+                <button onClick={() => onDoAction(card)} className="flex-1 h-11 rounded-2xl gradient-btn text-primary-foreground text-[13px] font-bold btn-press">{t('homeExtra.doIt')}</button>
+                <button onClick={() => onDismiss(card.id, 'skip')} className="h-11 px-4 rounded-2xl border border-border text-muted-foreground text-[13px] font-medium btn-press">{t('homeExtra.skipAction')}</button>
               </div>
             </motion.div>
           ))}
@@ -391,11 +393,11 @@ interface HomeScreenProps {
   onClearPendingAction?: () => void;
 }
 
-function getGreeting(): string {
+function getGreetingKey(): string {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  return 'Good evening';
+  if (h < 12) return 'homeExtra.goodMorning';
+  if (h < 18) return 'homeExtra.goodAfternoon';
+  return 'homeExtra.goodEvening';
 }
 
 function formatFollowerCount(n: number): string {
@@ -420,7 +422,7 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
   const hasNegativeReview = false;
 
   // Dynamic data from APIs
-  const displayName = user?.name?.split(' ')[0] ?? 'there';
+  const displayName = user?.name?.split(' ')[0] ?? t('homeExtra.there');
   const tokenCount = tokensData?.balance ?? 0;
   const tokenLow = tokenCount < 50;
   const mosScore = analyticsData?.mosScore ?? 0;
@@ -452,9 +454,9 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
         if (disconnectedAccounts.length > 0) {
           fallbackCards.push({
             id: cardId++, priority: t('strategy.critical'), color: 'bg-red-accent',
-            title: `Reconnect ${disconnectedAccounts[0].platform}`,
-            desc: `Your ${disconnectedAccounts[0].platform} account is disconnected. Reconnect to keep publishing.`,
-            impact: 'Restore publishing', impactIcon: '🔗', nav: 'social',
+            title: t('homeExtra.reconnectTitle', { platform: disconnectedAccounts[0].platform }),
+            desc: t('homeExtra.reconnectDesc', { platform: disconnectedAccounts[0].platform }),
+            impact: t('homeExtra.reconnectImpact'), impactIcon: '🔗', nav: 'social',
           });
         }
 
@@ -462,32 +464,32 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
           fallbackCards.push({
             id: cardId++, priority: t('strategy.high'), color: 'bg-orange-accent',
             title: t('strategy.postPeak'), desc: t('strategy.postPeakDesc'),
-            impact: '+40% reach', impactIcon: '📈', nav: 'create',
+            impact: t('homeExtra.postPeakImpact'), impactIcon: '📈', nav: 'create',
           });
         }
 
         if (tokenLow) {
           fallbackCards.push({
             id: cardId++, priority: t('strategy.high'), color: 'bg-orange-accent',
-            title: 'Top up your AI tokens',
-            desc: `You have ${tokenCount} tokens left. Buy more to keep creating content.`,
-            impact: 'Uninterrupted AI', impactIcon: '✦', nav: 'tokens-packs',
+            title: t('homeExtra.topUpTitle'),
+            desc: t('homeExtra.topUpDesc', { count: tokenCount }),
+            impact: t('homeExtra.topUpImpact'), impactIcon: '✦', nav: 'tokens-packs',
           });
         }
 
         if (connectedCount === 0) {
           fallbackCards.push({
             id: cardId++, priority: t('strategy.critical'), color: 'bg-red-accent',
-            title: 'Connect your social media',
-            desc: 'Connect at least one platform to start publishing content and tracking analytics.',
-            impact: 'Enable publishing', impactIcon: '🔗', nav: 'social',
+            title: t('homeExtra.connectSocialTitle'),
+            desc: t('homeExtra.connectSocialDesc'),
+            impact: t('homeExtra.connectSocialImpact'), impactIcon: '🔗', nav: 'social',
           });
         }
 
         fallbackCards.push({
           id: cardId++, priority: t('strategy.recommended'), color: 'bg-brand-blue',
           title: t('strategy.postPeak'), desc: t('strategy.postPeakDesc'),
-          impact: '+40% reach', impactIcon: '📈', nav: 'create',
+          impact: t('homeExtra.postPeakImpact'), impactIcon: '📈', nav: 'create',
         });
 
         return fallbackCards;
@@ -566,10 +568,10 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
             <div className="mb-4 bg-red-accent/10 border border-red-accent/30 rounded-2xl p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-red-accent/20 flex items-center justify-center text-lg flex-shrink-0">🔴</div>
               <div className="flex-1">
-                <p className="text-[14px] font-bold text-foreground">Platform Disconnected</p>
-                <p className="text-[12px] text-muted-foreground">{disconnectedAccounts.map(a => a.platform).join(', ')} needs to be reconnected</p>
+                <p className="text-[14px] font-bold text-foreground">{t('homeExtra.platformDisconnected')}</p>
+                <p className="text-[12px] text-muted-foreground">{t('homeExtra.platformNeedsReconnect', { platforms: disconnectedAccounts.map(a => a.platform).join(', ') })}</p>
               </div>
-              <button onClick={() => onNavigate('social')} className="text-[12px] font-bold text-brand-blue bg-brand-blue/10 px-3 py-1.5 rounded-lg whitespace-nowrap">Reconnect Now</button>
+              <button onClick={() => onNavigate('social')} className="text-[12px] font-bold text-brand-blue bg-brand-blue/10 px-3 py-1.5 rounded-lg whitespace-nowrap">{t('homeExtra.reconnectNow')}</button>
             </div>
           )}
 
@@ -579,22 +581,22 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
             <div className="col-span-3">
               {!briefingDismissed ? (
                 <div className="gradient-hero rounded-3xl p-8 relative overflow-hidden shadow-hero h-full desktop-hover">
-                  <div className="absolute w-40 h-40 rounded-full bg-primary-foreground/5 -top-10 -right-10" />
-                  <div className="absolute w-24 h-24 rounded-full bg-primary-foreground/[0.03] bottom-2 -left-6" />
+                  <div className="absolute w-40 h-40 rounded-full bg-primary-foreground/5 -top-10 -end-10" />
+                  <div className="absolute w-24 h-24 rounded-full bg-primary-foreground/[0.03] bottom-2 -start-6" />
                   <div className="relative z-10">
                     <span className="text-[11px] uppercase font-bold tracking-[1px] text-primary-foreground/70">
-                      ✦ AI MORNING BRIEFING · <span className="animate-pulse-learning">Learning...</span>
+                      {t('homeExtra.aiMorningBriefingLabel')} · <span className="animate-pulse-learning">{t('homeExtra.aiBriefingLearning')}</span>
                     </span>
-                    <p className="text-[18px] font-semibold text-primary-foreground leading-[1.5] mt-4">I'm getting to know your business. The more you use Speeda — posting content, launching campaigns, engaging with customers — the smarter and more personalized my briefings become. Keep going, I'm learning every day.</p>
+                    <p className="text-[18px] font-semibold text-primary-foreground leading-[1.5] mt-4">{t('homeExtra.aiBriefingBodyLearning')}</p>
                     <div className="flex gap-3 mt-6">
-                      <button onClick={() => onNavigate('aiBriefingPreview')} className="px-5 py-2.5 rounded-xl bg-primary-foreground/20 backdrop-blur text-primary-foreground text-[14px] font-bold btn-press hover:bg-primary-foreground/30 transition-colors">See what's coming</button>
+                      <button onClick={() => onNavigate('aiBriefingPreview')} className="px-5 py-2.5 rounded-xl bg-primary-foreground/20 backdrop-blur text-primary-foreground text-[14px] font-bold btn-press hover:bg-primary-foreground/30 transition-colors">{t('homeExtra.seeWhatsComing')}</button>
                       <button onClick={() => setBriefingDismissed(true)} className="px-5 py-2.5 rounded-xl bg-primary-foreground/10 text-primary-foreground/70 text-[14px] font-medium btn-press hover:bg-primary-foreground/15 transition-colors">{t('home.dismiss')}</button>
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="bg-card rounded-3xl border border-border-light p-8 h-full flex items-center justify-center">
-                  <p className="text-muted-foreground text-[14px]">AI briefing dismissed for today</p>
+                  <p className="text-muted-foreground text-[14px]">{t('homeExtra.briefingDismissed')}</p>
                 </div>
               )}
             </div>
@@ -603,7 +605,7 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
             <div className="col-span-2 space-y-4">
               <div className="bg-card rounded-3xl border border-border-light p-6 shadow-card desktop-hover flex flex-col items-center">
                 <TappableMosRing size={120} score={mosScore} onTap={() => onNavigate('mosScore')} />
-                <p className="text-[11px] text-muted-foreground font-medium mt-2">Marketing Operating System Score</p>
+                <p className="text-[11px] text-muted-foreground font-medium mt-2">{t('mosScore.mosLabel')}</p>
               </div>
               <button onClick={() => setQuestsOpen(!questsOpen)} className="w-full bg-card rounded-2xl border border-border-light p-4 flex items-center justify-between desktop-hover">
                 <span className="text-[13px] font-bold gradient-streak">{t('home.streak', { count: 12 })}</span>
@@ -652,7 +654,7 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
               <h2 className="text-[20px] font-bold text-foreground">{t('home.todaysActions')}</h2>
               <AnimatePresence mode="wait">
                 <motion.span key={activeCards.length} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="text-[12px] font-semibold text-muted-foreground bg-muted px-3 py-1 rounded-lg">
-                  {activeCards.length} remaining
+                  {t('homeExtra.remaining', { count: activeCards.length })}
                 </motion.span>
               </AnimatePresence>
             </div>
@@ -698,7 +700,7 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
                   <button key={i} onClick={() => onNavigate(item.nav)} className="w-full flex items-center gap-3 bg-card rounded-2xl p-4 border border-border-light desktop-hover">
                     <div className={`w-11 h-11 rounded-2xl ${item.bg} flex items-center justify-center text-lg`}>{item.icon}</div>
                     <span className="text-[14px] font-medium text-foreground flex-1 text-start">{item.text}</span>
-                    <ChevronRight size={16} className="text-muted-foreground" />
+                    <ChevronRight size={16} className="text-muted-foreground rtl:rotate-180" />
                   </button>
                 ))}
               </div>
@@ -724,7 +726,7 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
               <div>
                 <Globe size={20} className="text-brand-blue" />
                 <h3 className="text-[15px] font-bold text-foreground mt-2">{t('home.socialMedia')}</h3>
-                <p className="text-[12px] text-muted-foreground mt-1">{connectedCount} platforms · {formatFollowerCount(totalFollowers)} followers</p>
+                <p className="text-[12px] text-muted-foreground mt-1">{t('homeExtra.socialMediaSummary', { platforms: connectedCount, followers: formatFollowerCount(totalFollowers) })}</p>
               </div>
               <div className="flex gap-1 mt-2">
                 {connectedPlatforms.slice(0, 5).map((a) => {
@@ -742,7 +744,7 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
                 <h3 className="text-[15px] font-bold text-foreground mt-2">{t('home.engagement')}</h3>
                 <p className="text-[12px] text-muted-foreground mt-1">{t('home.engagementDesc')}</p>
                 {hasNegativeReview && (
-                  <p className="text-[11px] text-red-accent font-semibold mt-1">⚠️ 1 negative review needs attention</p>
+                  <p className="text-[11px] text-red-accent font-semibold mt-1">{t('homeExtra.negativeReviewAlert')}</p>
                 )}
               </div>
               <span className="absolute top-3 end-3 w-6 h-6 rounded-lg bg-red-accent text-primary-foreground text-[11px] font-bold flex items-center justify-center">6</span>
@@ -770,11 +772,11 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <p className="text-[14px] text-muted-foreground">{getGreeting()},</p>
+            <p className="text-[14px] text-muted-foreground">{t(getGreetingKey())},</p>
             <h1 className="text-[28px] font-extrabold tracking-[-0.02em] text-foreground">{displayName}</h1>
             <div className="flex items-center gap-1.5 mt-0.5">
               <div className="w-1.5 h-1.5 rounded-full bg-green-accent animate-pulse-dot" />
-              <span className="text-[12px] text-green-accent font-medium">Marketing OS · Active</span>
+              <span className="text-[12px] text-green-accent font-medium">{t('homeExtra.marketingOsActive')}</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -785,9 +787,9 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
               {langMenuOpen && (
                 <div className="absolute top-10 end-0 bg-card rounded-2xl border border-border-light shadow-xl z-50 overflow-hidden w-44">
                   {[
-                    { code: 'en', flag: '🇬🇧', label: 'English' },
-                    { code: 'ar', flag: '🇸🇦', label: 'العربية' },
-                    { code: 'fr', flag: '🇫🇷', label: 'Français' },
+                    { code: 'en', flag: '🇬🇧', label: t('homeExtra.langLabels.en') },
+                    { code: 'ar', flag: '🇸🇦', label: t('homeExtra.langLabels.ar') },
+                    { code: 'fr', flag: '🇫🇷', label: t('homeExtra.langLabels.fr') },
                   ].map(l => (
                     <button key={l.code} onClick={() => switchLang(l.code)} className={`w-full flex items-center gap-2 px-4 py-3 text-start text-[14px] font-medium transition-colors ${i18n.language === l.code ? 'bg-purple-soft text-brand-blue' : 'text-foreground hover:bg-muted'}`}>
                       <span>{l.flag}</span>
@@ -853,25 +855,25 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
           <div className="mt-4 bg-red-accent/10 border border-red-accent/30 rounded-2xl p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-red-accent/20 flex items-center justify-center text-lg flex-shrink-0">🔴</div>
             <div className="flex-1">
-              <p className="text-[14px] font-bold text-foreground">Platform Disconnected</p>
-              <p className="text-[12px] text-muted-foreground">{disconnectedAccounts.map(a => a.platform).join(', ')} needs to be reconnected</p>
+              <p className="text-[14px] font-bold text-foreground">{t('homeExtra.platformDisconnected')}</p>
+              <p className="text-[12px] text-muted-foreground">{t('homeExtra.platformNeedsReconnect', { platforms: disconnectedAccounts.map(a => a.platform).join(', ') })}</p>
             </div>
-            <button onClick={() => onNavigate('social')} className="text-[12px] font-bold text-brand-blue bg-brand-blue/10 px-3 py-1.5 rounded-lg whitespace-nowrap">Reconnect Now</button>
+            <button onClick={() => onNavigate('social')} className="text-[12px] font-bold text-brand-blue bg-brand-blue/10 px-3 py-1.5 rounded-lg whitespace-nowrap">{t('homeExtra.reconnectNow')}</button>
           </div>
         )}
 
         {/* AI Morning Briefing */}
         {!briefingDismissed && (
           <div className="mt-4 gradient-hero rounded-3xl p-6 relative overflow-hidden shadow-hero">
-            <div className="absolute w-32 h-32 rounded-full bg-primary-foreground/5 -top-8 -right-8" />
-            <div className="absolute w-20 h-20 rounded-full bg-primary-foreground/[0.03] bottom-2 -left-4" />
+            <div className="absolute w-32 h-32 rounded-full bg-primary-foreground/5 -top-8 -end-8" />
+            <div className="absolute w-20 h-20 rounded-full bg-primary-foreground/[0.03] bottom-2 -start-4" />
             <div className="relative z-10">
               <span className="text-[11px] uppercase font-bold tracking-[1px] text-primary-foreground/70">
-                ✦ AI MORNING BRIEFING · <span className="animate-pulse-learning">Learning...</span>
+                {t('homeExtra.aiMorningBriefingLabel')} · <span className="animate-pulse-learning">{t('homeExtra.aiBriefingLearning')}</span>
               </span>
-              <p className="text-[16px] font-semibold text-primary-foreground leading-[1.5] mt-3">I'm getting to know your business. The more you use Speeda — posting content, launching campaigns, engaging with customers — the smarter and more personalized my briefings become. Keep going, I'm learning every day.</p>
+              <p className="text-[16px] font-semibold text-primary-foreground leading-[1.5] mt-3">{t('homeExtra.aiBriefingBodyLearning')}</p>
               <div className="flex gap-2 mt-4">
-                <button onClick={() => onNavigate('aiBriefingPreview')} className="px-4 py-2 rounded-xl bg-primary-foreground/20 backdrop-blur text-primary-foreground text-[13px] font-bold btn-press">See what's coming</button>
+                <button onClick={() => onNavigate('aiBriefingPreview')} className="px-4 py-2 rounded-xl bg-primary-foreground/20 backdrop-blur text-primary-foreground text-[13px] font-bold btn-press">{t('homeExtra.seeWhatsComing')}</button>
                 <button onClick={() => setBriefingDismissed(true)} className="px-4 py-2 rounded-xl bg-primary-foreground/10 text-primary-foreground/70 text-[13px] font-medium btn-press">{t('home.dismiss')}</button>
               </div>
             </div>
@@ -969,7 +971,7 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
               <div>
                 <Globe size={20} className="text-brand-blue" />
                 <h3 className="text-[15px] font-bold text-foreground mt-2">{t('home.socialMedia')}</h3>
-                <p className="text-[12px] text-muted-foreground mt-1">{connectedCount} platforms · {formatFollowerCount(totalFollowers)} followers</p>
+                <p className="text-[12px] text-muted-foreground mt-1">{t('homeExtra.socialMediaSummary', { platforms: connectedCount, followers: formatFollowerCount(totalFollowers) })}</p>
               </div>
               <div className="flex gap-1 mt-2">
                 {connectedPlatforms.slice(0, 5).map((a) => {
@@ -985,7 +987,7 @@ export const HomeScreen = ({ onNavigate, pendingActionCardId, onClearPendingActi
                 <h3 className="text-[15px] font-bold text-foreground mt-2">{t('home.engagement')}</h3>
                 <p className="text-[12px] text-muted-foreground mt-1">{t('home.engagementDesc')}</p>
                 {hasNegativeReview && (
-                  <p className="text-[11px] text-red-accent font-semibold mt-1">⚠️ 1 negative review needs attention</p>
+                  <p className="text-[11px] text-red-accent font-semibold mt-1">{t('homeExtra.negativeReviewAlert')}</p>
                 )}
               </div>
               {hasNegativeReview && (

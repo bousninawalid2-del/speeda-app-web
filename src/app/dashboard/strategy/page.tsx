@@ -90,7 +90,7 @@ export default function StrategyPage() {
       <div className="flex-shrink-0 px-5 pt-3 pb-3 flex items-center gap-3 bg-background z-30 border-b border-border-light">
         <button onClick={() => router.push('/dashboard')}
           className="w-10 h-10 rounded-xl border border-border flex items-center justify-center hover:bg-muted transition-colors">
-          <ArrowLeft size={16} className="text-muted-foreground" />
+          <ArrowLeft size={16} className="text-muted-foreground rtl:rotate-180" />
         </button>
         <h2 className="text-[15px] font-bold text-foreground">AI Strategy</h2>
       </div>
@@ -156,7 +156,7 @@ export default function StrategyPage() {
                     <div className="w-8 h-8 rounded-lg gradient-hero flex items-center justify-center">
                       <span className="text-primary-foreground text-[13px] font-bold">{week.weekNumber}</span>
                     </div>
-                    <div className="text-left">
+                    <div className="text-start">
                       <p className="text-[14px] font-semibold text-foreground">Week {week.weekNumber}</p>
                       {week.weeklyGoal && (
                         <p className="text-[12px] text-muted-foreground truncate max-w-[200px]">{week.weeklyGoal}</p>

@@ -142,7 +142,7 @@ const InlineComposer = ({ platform, Logo, isReview, messageText, contextType, on
               <button
                 key={i}
                 onClick={() => setValue(s)}
-                className="text-[11px] px-3 py-1.5 rounded-full bg-brand-blue/10 text-brand-blue font-medium hover:bg-brand-blue/20 transition-colors text-left leading-snug"
+                className="text-[11px] px-3 py-1.5 rounded-full bg-brand-blue/10 text-brand-blue font-medium hover:bg-brand-blue/20 transition-colors text-start leading-snug"
               >
                 ✦ {s.length > 50 ? s.slice(0, 50) + '…' : s}
               </button>
@@ -198,7 +198,7 @@ const QUICK_EMOJIS = ['😊', '❤️', '🔥', '👏', '🙏', '😍', '💯', 
 
 const EmojiPicker = ({ onSelect, onClose }: { onSelect: (e: string) => void; onClose: () => void }) => (
   <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-    className="absolute bottom-full mb-2 left-0 bg-card border border-border-light rounded-xl p-2 shadow-lg z-20 grid grid-cols-6 gap-1">
+    className="absolute bottom-full mb-2 start-0 bg-card border border-border-light rounded-xl p-2 shadow-lg z-20 grid grid-cols-6 gap-1">
     {QUICK_EMOJIS.map(e => (
       <button key={e} onClick={() => { onSelect(e); onClose(); }} className="w-8 h-8 flex items-center justify-center text-[18px] hover:bg-muted rounded-lg">{e}</button>
     ))}
@@ -401,7 +401,7 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
       <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col h-full">
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border-light bg-card">
-          <button onClick={() => setSelectedDM(null)}><ArrowLeft size={20} className="text-foreground" /></button>
+          <button onClick={() => setSelectedDM(null)}><ArrowLeft size={20} className="text-foreground rtl:rotate-180" /></button>
           <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-[18px]">{activeDM.avatar}</div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
@@ -418,8 +418,8 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
             <div key={i} className={`flex ${msg.from === 'us' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
                 msg.from === 'us'
-                  ? 'bg-brand-blue text-primary-foreground rounded-br-md'
-                  : 'bg-card border border-border-light text-foreground rounded-bl-md'
+                  ? 'bg-brand-blue text-primary-foreground rounded-be-md'
+                  : 'bg-card border border-border-light text-foreground rounded-bs-md'
               }`}>
                 <p className="text-[14px] leading-relaxed">{msg.text}</p>
                 <p className={`text-[10px] mt-1 flex items-center gap-1 ${msg.from === 'us' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
@@ -450,7 +450,7 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
           <div className="flex flex-wrap gap-1.5">
             {suggestions.map((s, i) => (
               <button key={i} onClick={() => setDmInput(s)}
-                className="text-[11px] px-3 py-1.5 rounded-full bg-brand-blue/10 text-brand-blue font-medium hover:bg-brand-blue/20 transition-colors text-left leading-snug">
+                className="text-[11px] px-3 py-1.5 rounded-full bg-brand-blue/10 text-brand-blue font-medium hover:bg-brand-blue/20 transition-colors text-start leading-snug">
                 ✦ {s.length > 40 ? s.slice(0, 40) + '…' : s}
               </button>
             ))}
@@ -479,12 +479,12 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
     <div className="space-y-0">
       <div className="px-1 mb-3 flex gap-2">
         <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Search size={16} className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             value={dmSearch}
             onChange={e => setDmSearch(e.target.value)}
             placeholder={t('engagement.searchMessages', 'Search messages...')}
-            className="w-full h-10 rounded-xl bg-card border border-border-light pl-9 pr-4 text-[13px] text-foreground placeholder:text-muted-foreground outline-none"
+            className="w-full h-10 rounded-xl bg-card border border-border-light ps-9 pe-4 text-[13px] text-foreground placeholder:text-muted-foreground outline-none"
           />
         </div>
         <button onClick={() => setShowAutoResponses(true)} className="h-10 w-10 rounded-xl bg-card border border-border-light flex items-center justify-center">
@@ -503,10 +503,10 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
 
       {filteredDMs.map(dm => (
         <button key={dm.id} onClick={() => setSelectedDM(dm.id)}
-          className="w-full flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-card transition-colors text-left">
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-card transition-colors text-start">
           <div className="relative">
             <div className="w-11 h-11 rounded-full bg-muted flex items-center justify-center text-[20px]">{dm.avatar}</div>
-            <div className="absolute -bottom-0.5 -right-0.5"><dm.Logo size={16} /></div>
+            <div className="absolute -bottom-0.5 -end-0.5"><dm.Logo size={16} /></div>
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
@@ -525,7 +525,7 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
 
   const DesktopDMView = () => (
     <div className="flex gap-0 bg-card rounded-2xl border border-border-light overflow-hidden" style={{ height: 'calc(100vh - 220px)' }}>
-      <div className="w-[320px] border-r border-border-light p-4 overflow-y-auto">
+      <div className="w-[320px] border-e border-border-light p-4 overflow-y-auto">
         {showAutoResponses ? <AutoResponsePanel /> : <DMListView />}
       </div>
       <div className="flex-1 flex flex-col">
@@ -574,7 +574,7 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
           <m.Logo size={16} />
           <span className="text-[11px] text-muted-foreground">{m.platform}</span>
           <span className="text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded-md">{m.type}</span>
-          <span className="text-[11px] text-muted-foreground ml-auto">{m.time}</span>
+          <span className="text-[11px] text-muted-foreground ms-auto">{m.time}</span>
         </div>
 
         {/* Rating for reviews */}
@@ -651,9 +651,9 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
                   onChange={e => setCommentInputs(prev => ({ ...prev, [m.id]: e.target.value }))}
                   onKeyDown={e => e.key === 'Enter' && handleCommentBarSend(m.id)}
                   placeholder={t('engagement.writeReply', 'Write your reply...')}
-                  className="w-full h-9 rounded-xl bg-muted px-3 pr-16 text-[12px] text-foreground placeholder:text-muted-foreground border-0 outline-none"
+                  className="w-full h-9 rounded-xl bg-muted px-3 pe-16 text-[12px] text-foreground placeholder:text-muted-foreground border-0 outline-none"
                 />
-                <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                <div className="absolute end-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
                   <button onClick={() => setShowEmoji(showEmoji === m.id ? null : m.id)} className="p-1 text-muted-foreground hover:text-foreground">
                     <Smile size={14} />
                   </button>
@@ -686,7 +686,7 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-background min-h-screen pb-24">
           <div className="px-5 pt-6">
             <div className="flex items-center gap-3 mb-4">
-              <button onClick={() => setShowAutoResponses(false)}><ChevronLeft size={24} className="text-foreground" /></button>
+              <button onClick={() => setShowAutoResponses(false)}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
               <h1 className="text-[20px] font-extrabold text-foreground">{t('engagement.autoResponses', 'Auto-Responses')}</h1>
             </div>
             <AutoResponsePanel />
@@ -707,7 +707,7 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
       <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="bg-background min-h-screen pb-24">
         <div className="px-5 pt-6">
           <div className="flex items-center gap-3 mb-4">
-            <button onClick={onBack}><ChevronLeft size={24} className="text-foreground" /></button>
+            <button onClick={onBack}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
             <h1 className="text-[20px] font-extrabold text-foreground">{t('engagement.title')}</h1>
             <span className="w-6 h-6 rounded-full bg-brand-blue text-primary-foreground text-[11px] font-bold flex items-center justify-center">{messagesData.length + unreadCount}</span>
           </div>
@@ -719,7 +719,7 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
                 }`}>
                 {t(`engagement.${f.toLowerCase()}`, f)}
                 {f === 'DMs' && unreadCount > 0 && (
-                  <span className="ml-1.5 w-4 h-4 rounded-full bg-red-accent text-primary-foreground text-[9px] font-bold inline-flex items-center justify-center">{unreadCount}</span>
+                  <span className="ms-1.5 w-4 h-4 rounded-full bg-red-accent text-primary-foreground text-[9px] font-bold inline-flex items-center justify-center">{unreadCount}</span>
                 )}
               </button>
             ))}
@@ -736,7 +736,7 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
     <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="bg-background min-h-screen pb-24">
       <div className="px-5 pt-6">
         <div className="flex items-center gap-3 mb-4">
-          <button onClick={onBack}><ChevronLeft size={24} className="text-foreground" /></button>
+          <button onClick={onBack}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
           <h1 className="text-[20px] font-extrabold text-foreground">{t('engagement.title')}</h1>
           <span className="w-6 h-6 rounded-full bg-brand-blue text-primary-foreground text-[11px] font-bold flex items-center justify-center">{messagesData.length + unreadCount}</span>
         </div>
@@ -748,7 +748,7 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
               }`}>
               {t(`engagement.${f.toLowerCase()}`, f)}
               {f === 'DMs' && unreadCount > 0 && (
-                <span className="ml-1.5 w-4 h-4 rounded-full bg-red-accent text-primary-foreground text-[9px] font-bold inline-flex items-center justify-center">{unreadCount}</span>
+                <span className="ms-1.5 w-4 h-4 rounded-full bg-red-accent text-primary-foreground text-[9px] font-bold inline-flex items-center justify-center">{unreadCount}</span>
               )}
             </button>
           ))}

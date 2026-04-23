@@ -728,12 +728,12 @@ export const AnalyticsScreen = ({ onNavigate, externalData, isLoading, onPeriodC
             const insightsContent = (
               <div className="mt-3 space-y-2">
                 {[
-                  { border: 'border-l-purple', icon: '⏰', text: 'Post Reels between 7-9 PM for 40% more reach', cta: 'Schedule Now →', nav: 'create' },
-                  { border: 'border-l-green-accent', icon: '📈', text: 'Your TikTok is 3x above industry avg', cta: 'Create TikTok Reel →', nav: 'create' },
-                  { border: 'border-l-orange-accent', icon: '📸', text: 'Food photography posts get 2.5x more saves', cta: 'Use Photo Template →', nav: 'create' },
-                  { border: 'border-l-brand-teal', icon: '🌙', text: 'Ramadan in 3 weeks — plan content now', cta: 'Generate Ramadan Plan →', nav: 'create' },
+                  { border: 'border-s-purple', icon: '⏰', text: 'Post Reels between 7-9 PM for 40% more reach', cta: 'Schedule Now →', nav: 'create' },
+                  { border: 'border-s-green-accent', icon: '📈', text: 'Your TikTok is 3x above industry avg', cta: 'Create TikTok Reel →', nav: 'create' },
+                  { border: 'border-s-orange-accent', icon: '📸', text: 'Food photography posts get 2.5x more saves', cta: 'Use Photo Template →', nav: 'create' },
+                  { border: 'border-s-brand-teal', icon: '🌙', text: 'Ramadan in 3 weeks — plan content now', cta: 'Generate Ramadan Plan →', nav: 'create' },
                 ].map((ins, i) => (
-                  <div key={i} className={`bg-card rounded-2xl p-4 border border-border-light border-l-4 ${ins.border}`}>
+                  <div key={i} className={`bg-card rounded-2xl p-4 border border-border-light border-s-4 ${ins.border}`}>
                     <p className="text-[13px] text-foreground">{ins.icon} {ins.text}</p>
                     <button onClick={() => onNavigate?.(ins.nav)} className="text-brand-blue text-[12px] font-bold mt-1">{ins.cta}</button>
                   </div>
@@ -779,12 +779,12 @@ export const AnalyticsScreen = ({ onNavigate, externalData, isLoading, onPeriodC
 
         {/* Post History & Link Tracking */}
         <div className="mt-5 grid grid-cols-2 gap-3">
-          <button onClick={() => onNavigate?.('postHistory')} className="bg-card rounded-2xl p-4 border border-border-light text-left">
+          <button onClick={() => onNavigate?.('postHistory')} className="bg-card rounded-2xl p-4 border border-border-light text-start">
             <span className="text-lg">📋</span>
             <h3 className="text-[15px] font-bold text-foreground mt-2">Post History</h3>
             <p className="text-[12px] text-muted-foreground mt-1">View all published posts</p>
           </button>
-          <button onClick={() => setComingSoonFeature('Link Tracking')} className="bg-card rounded-2xl p-4 border border-border-light text-left">
+          <button onClick={() => setComingSoonFeature('Link Tracking')} className="bg-card rounded-2xl p-4 border border-border-light text-start">
             <span className="text-lg">🔗</span>
             <h3 className="text-[15px] font-bold text-foreground mt-2">Link Tracking</h3>
             <p className="text-[12px] text-muted-foreground mt-1">Track link clicks & UTMs</p>

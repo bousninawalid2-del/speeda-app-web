@@ -82,7 +82,7 @@ export const CaptionEditor = ({ caption, onUpdate }: CaptionEditorProps) => {
       <AnimatePresence>
         {showUndo && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-            className="absolute -bottom-12 left-0 right-0 bg-foreground text-primary-foreground rounded-xl px-4 py-2.5 flex items-center justify-between text-[12px] font-medium shadow-lg z-10">
+            className="absolute -bottom-12 start-0 end-0 bg-foreground text-primary-foreground rounded-xl px-4 py-2.5 flex items-center justify-between text-[12px] font-medium shadow-lg z-10">
             <span>Caption rewritten ✓</span>
             <button onClick={handleUndo} className="font-bold underline">Undo (5s)</button>
           </motion.div>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Check, X, MessageSquare, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { PaymentFlow } from '../components/PaymentFlow';
 import { SalesChatWidget } from '../components/SalesAgent';
 import { usePlanComparisonPlans, type PlanComparisonPlan } from '@/hooks/usePlanComparisonPlans';
@@ -45,6 +46,7 @@ const mapDynamicPlansToCards = (plans: PlanComparisonPlan[]): PlanCard[] => {
 };
 
 export const PlanComparisonScreen = ({ onBack }: PlanComparisonScreenProps) => {
+  const { t } = useTranslation();
   const { data: dynamicPlans, isLoading, isError } = usePlanComparisonPlans();
   const { mutateAsync: createSubscription } = useCreateSubscription();
 
@@ -75,11 +77,11 @@ export const PlanComparisonScreen = ({ onBack }: PlanComparisonScreenProps) => {
         <div className="px-5 pt-6">
           <div className="flex items-center gap-3 mb-6">
             <button onClick={onBack}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
-            <h1 className="text-[20px] font-bold text-foreground">Compare Plans</h1>
+            <h1 className="text-[20px] font-bold text-foreground">{t('planComparison.title')}</h1>
           </div>
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-[15px] font-semibold text-foreground mb-1">Unable to load plans</p>
-            <p className="text-[13px] text-muted-foreground">Please try again later.</p>
+            <p className="text-[15px] font-semibold text-foreground mb-1">{t('planComparison.loadFailed')}</p>
+            <p className="text-[13px] text-muted-foreground">{t('planComparison.tryAgain')}</p>
           </div>
         </div>
       </div>
@@ -92,17 +94,17 @@ export const PlanComparisonScreen = ({ onBack }: PlanComparisonScreenProps) => {
         <div className="px-5 pt-6">
           <div className="flex items-center gap-3 mb-6">
             <button onClick={onBack}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
-            <h1 className="text-[20px] font-bold text-foreground">Compare Plans</h1>
+            <h1 className="text-[20px] font-bold text-foreground">{t('planComparison.title')}</h1>
           </div>
 
           {/* Annual toggle */}
           <div className="flex items-center justify-center gap-3 mb-5">
-            <span className={`text-[13px] font-semibold ${!annual ? 'text-foreground' : 'text-muted-foreground'}`}>Monthly</span>
+            <span className={`text-[13px] font-semibold ${!annual ? 'text-foreground' : 'text-muted-foreground'}`}>{t('planComparison.monthly')}</span>
             <button onClick={() => setAnnual(!annual)} className={`w-12 h-7 rounded-full p-0.5 transition-colors ${annual ? 'bg-green-accent' : 'bg-border'}`}>
               <div className={`w-6 h-6 rounded-full bg-card shadow transition-transform ${annual ? 'translate-x-5 rtl:-translate-x-5' : ''}`} />
             </button>
-            <span className={`text-[13px] font-semibold ${annual ? 'text-foreground' : 'text-muted-foreground'}`}>Annual</span>
-            {annual && <span className="text-[10px] font-bold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">Save 20%</span>}
+            <span className={`text-[13px] font-semibold ${annual ? 'text-foreground' : 'text-muted-foreground'}`}>{t('planComparison.annual')}</span>
+            {annual && <span className="text-[10px] font-bold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">{t('planComparison.save20')}</span>}
           </div>
 
           <div className="space-y-4">
@@ -111,11 +113,11 @@ export const PlanComparisonScreen = ({ onBack }: PlanComparisonScreenProps) => {
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-[18px] font-bold text-foreground">{plan.name}</h3>
                   {plan.badge && <span className="text-[10px] font-bold text-primary-foreground gradient-btn px-2 py-0.5 rounded-md">{plan.badge}</span>}
-                  {plan.popular && <span className="text-[10px] font-bold text-brand-blue bg-purple-soft px-2 py-0.5 rounded-md">Most Popular</span>}
+                  {plan.popular && <span className="text-[10px] font-bold text-brand-blue bg-purple-soft px-2 py-0.5 rounded-md">{t('planComparison.mostPopular')}</span>}
                 </div>
                 <p className="text-[24px] font-extrabold text-foreground mt-2">{getPrice(plan)} ﷼<span className="text-[14px] font-medium text-muted-foreground">/{annual ? 'mo' : 'mo'}</span></p>
-                {annual && <p className="text-[11px] text-green-accent font-medium">Billed yearly · Save {formatPrice(Math.round(plan.monthlyPrice * 12 * 0.2))} ﷼/year</p>}
-                {plan.watermark && <p className="text-[10px] text-muted-foreground mt-1">Includes &quot;Powered by Speeda AI ✦&quot; watermark</p>}
+                {annual && <p className="text-[11px] text-green-accent font-medium">{t('planComparison.billedYearly', { amount: formatPrice(Math.round(plan.monthlyPrice * 12 * 0.2)) })}</p>}
+                {plan.watermark && <p className="text-[10px] text-muted-foreground mt-1">{t('planComparison.watermarkNote')}</p>}
                 <div className="mt-3 space-y-2">
                   {plan.features.map((f, j) => (
                     <div key={j} className="flex items-center gap-2">
@@ -129,11 +131,11 @@ export const PlanComparisonScreen = ({ onBack }: PlanComparisonScreenProps) => {
                   ))}
                 </div>
                 {plan.current ? (
-                  <div className="mt-4 h-[44px] rounded-2xl bg-muted flex items-center justify-center text-[13px] font-bold text-muted-foreground">Current Plan</div>
+                  <div className="mt-4 h-[44px] rounded-2xl bg-muted flex items-center justify-center text-[13px] font-bold text-muted-foreground">{t('planComparison.currentPlan')}</div>
                 ) : i > currentPlanIndex ? (
-                  <button onClick={() => setSelectedPlan(plan)} className="w-full mt-4 h-[44px] rounded-2xl gradient-btn text-primary-foreground text-[13px] font-bold btn-press">Upgrade</button>
+                  <button onClick={() => setSelectedPlan(plan)} className="w-full mt-4 h-[44px] rounded-2xl gradient-btn text-primary-foreground text-[13px] font-bold btn-press">{t('planComparison.upgrade')}</button>
                 ) : (
-                  <button className="w-full mt-4 text-muted-foreground text-[13px] font-medium">Downgrade</button>
+                  <button className="w-full mt-4 text-muted-foreground text-[13px] font-medium">{t('planComparison.downgrade')}</button>
                 )}
               </div>
             ))}
@@ -142,7 +144,7 @@ export const PlanComparisonScreen = ({ onBack }: PlanComparisonScreenProps) => {
           {/* Chat with Speeda */}
           <div className="text-center mt-5 mb-4">
             <button onClick={() => setShowSalesChat(true)} className="text-[13px] font-bold text-brand-blue flex items-center gap-1.5 mx-auto">
-              <MessageSquare size={14} /> ✦ Need help choosing? Chat with Speeda
+              <MessageSquare size={14} /> {t('planComparison.helpChoose')}
             </button>
           </div>
         </div>
@@ -157,15 +159,15 @@ export const PlanComparisonScreen = ({ onBack }: PlanComparisonScreenProps) => {
       <AnimatePresence>
         {selectedPlan && (
           <PaymentFlow
-            redirectTitle="Completing your upgrade…"
-            redirectSubtitle="You'll be redirected to our secure payment page"
-            summaryLabel={`${selectedPlan.name} Plan${annual ? ' (Annual)' : ''}`}
-            summaryValue={`${getPrice(selectedPlan)} ﷼/month`}
+            redirectTitle={t('planComparison.redirectTitle')}
+            redirectSubtitle={t('planComparison.redirectSubtitle')}
+            summaryLabel={t('planComparison.planLabel', { name: selectedPlan.name, annual: annual ? t('planComparison.annualSuffix') : '' })}
+            summaryValue={`${getPrice(selectedPlan)} ﷼/${t('subscription.perMonth')}`}
             summaryDetails={selectedPlan.features.filter(f => f.included).map(f => f.name).slice(0, 6)}
-            successTitle={`Welcome to ${selectedPlan.name}! ✦`}
-            successSubtitle="Your plan has been upgraded successfully"
-            successBadge={`${selectedPlan.name} Pack`}
-            successButton="Start Creating →"
+            successTitle={t('planComparison.welcomeTo', { name: selectedPlan.name })}
+            successSubtitle={t('planComparison.successSubtitle')}
+            successBadge={t('planComparison.successBadge', { name: selectedPlan.name })}
+            successButton={t('planComparison.successButton')}
             variant="plan"
             onComplete={async () => {
               if (selectedPlan?.planId) {
@@ -176,7 +178,7 @@ export const PlanComparisonScreen = ({ onBack }: PlanComparisonScreenProps) => {
                   });
                   window.open(checkoutUrl, '_blank');
                 } catch (err) {
-                  toast.error(err instanceof Error ? err.message : 'Failed to start checkout');
+                  toast.error(err instanceof Error ? err.message : t('subscription.toasts.checkoutFailed'));
                 }
               }
               setSelectedPlan(null);

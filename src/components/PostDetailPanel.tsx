@@ -235,7 +235,7 @@ export const PostDetailPanel = ({ post, onClose, onBoostComplete, onEditPost, on
       animate={{ x: 0 }}
       exit={{ x: '100%' }}
       transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-      className="w-[400px] border-l border-border bg-card h-full flex-shrink-0 overflow-hidden flex flex-col"
+      className="w-[400px] border-s border-border bg-card h-full flex-shrink-0 overflow-hidden flex flex-col"
     >
       {content}
     </motion.div>

@@ -215,7 +215,7 @@ export const PostEditScreen = ({ post, onBack, onSave }: PostEditScreenProps) =>
               className={`w-full min-h-[120px] rounded-xl bg-card border border-border-light p-4 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none resize-y ${rewriting ? 'animate-pulse' : ''}`}
               placeholder={t('postEdit.captionPlaceholder', 'Write your caption...')}
             />
-            <span className="absolute bottom-3 right-3 text-[11px] text-muted-foreground">
+            <span className="absolute bottom-3 end-3 text-[11px] text-muted-foreground">
               {caption.length}/{charLimit}
             </span>
           </div>
@@ -267,7 +267,7 @@ export const PostEditScreen = ({ post, onBack, onSave }: PostEditScreenProps) =>
             <button onClick={handleCheckBanned} disabled={checkingBanned} className="text-muted-foreground text-[11px] font-semibold flex items-center gap-1">
               <Ban size={10} /> {checkingBanned ? 'Checking...' : t('postEdit.checkBanned', '🚫 Check Banned')}
             </button>
-            <span className="text-[11px] text-muted-foreground ml-auto">{hashtags.length}/30</span>
+            <span className="text-[11px] text-muted-foreground ms-auto">{hashtags.length}/30</span>
           </div>
         </div>
 
@@ -349,7 +349,7 @@ export const PostEditScreen = ({ post, onBack, onSave }: PostEditScreenProps) =>
       </div>
 
       {/* Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border-light px-5 py-4 flex items-center justify-between z-50" style={!isMobile ? { maxWidth: 600, margin: '0 auto' } : {}}>
+      <div className="fixed bottom-0 start-0 end-0 bg-card border-t border-border-light px-5 py-4 flex items-center justify-between z-50" style={!isMobile ? { maxWidth: 600, margin: '0 auto' } : {}}>
         <button onClick={handleBack} className="text-muted-foreground text-[13px] font-medium">
           {t('common.cancel', 'Cancel')}
         </button>

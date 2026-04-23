@@ -78,7 +78,7 @@ export const BottomNav = ({ active, onNavigate }: BottomNavProps) => {
   const showSubscriptionNav = !isTrialActive && !hasSubscription;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border-light shadow-nav">
+    <div className="fixed bottom-0 start-0 end-0 z-50 bg-card border-t border-border-light shadow-nav">
       {/* Subscription banner — shown only after free trial ends */}
       {showSubscriptionNav && (
         <button

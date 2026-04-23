@@ -78,9 +78,9 @@ export const ProfileScreen = ({ onBack, onNavigate, initialData, isLoading, onSa
         city: form.city,
         industry: form.businessType,
       });
-      toast.success('Profile saved');
+      toast.success(t('profile.toasts.saved'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to save');
+      toast.error(err instanceof Error ? err.message : t('profile.toasts.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -89,14 +89,14 @@ export const ProfileScreen = ({ onBack, onNavigate, initialData, isLoading, onSa
   // User status
   const accountStatus: 'active' | 'pending' | 'unverified' =
     initialData?.isVerified === false ? 'unverified' : 'active';
-  const accountRole = 'Client';
+  const accountRole = t('profile.roleClient');
 
   const inputClass = "w-full h-[50px] rounded-2xl bg-card border border-border px-4 text-[14px] text-foreground focus:border-primary focus:outline-none";
 
   const statusConfig = {
-    active: { label: 'Active ✓', bg: 'bg-green-soft', text: 'text-green-accent' },
-    pending: { label: 'Pending — Subscribe to activate', bg: 'bg-orange-soft', text: 'text-orange-accent' },
-    unverified: { label: 'Unverified — Check your email', bg: 'bg-red-soft', text: 'text-red-accent' },
+    active: { label: t('profile.status.active'), bg: 'bg-green-soft', text: 'text-green-accent' },
+    pending: { label: t('profile.status.pending'), bg: 'bg-orange-soft', text: 'text-orange-accent' },
+    unverified: { label: t('profile.status.unverified'), bg: 'bg-red-soft', text: 'text-red-accent' },
   };
 
   const status = statusConfig[accountStatus as keyof typeof statusConfig];
@@ -131,26 +131,26 @@ export const ProfileScreen = ({ onBack, onNavigate, initialData, isLoading, onSa
             </button>
           </div>
           <p className="text-[12px] text-muted-foreground mt-2 text-center max-w-[280px]">
-            Your logo appears in AI-generated content, reports, and customer communications
+            {t('profile.logoHint')}
           </p>
-          {hasLogo && <button className="text-brand-blue text-[12px] font-semibold mt-1">Change Logo</button>}
+          {hasLogo && <button className="text-brand-blue text-[12px] font-semibold mt-1">{t('profile.changeLogo')}</button>}
         </div>
 
         {/* Account Status & Role */}
         <div className="bg-card rounded-2xl border border-border-light p-4 mb-5 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-semibold text-foreground">Account Status</span>
+            <span className="text-[13px] font-semibold text-foreground">{t('profile.accountStatus')}</span>
             <span className={`text-[11px] font-bold px-3 py-1 rounded-full ${status.bg} ${status.text}`}>
               {status.label}
             </span>
           </div>
           {(accountStatus as string) === 'pending' && (
             <button onClick={() => onNavigate?.('subscription')} className="text-brand-blue text-[12px] font-semibold">
-              Activate your account →
+              {t('profile.activate')}
             </button>
           )}
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-semibold text-foreground">Role</span>
+            <span className="text-[13px] font-semibold text-foreground">{t('profile.role')}</span>
             <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-purple-soft text-purple">
               {accountRole}
             </span>
@@ -159,12 +159,12 @@ export const ProfileScreen = ({ onBack, onNavigate, initialData, isLoading, onSa
 
         {/* Form fields */}
         <div className="space-y-4">
-          {[
-            { label: t('settings.businessName'), key: 'businessName' },
-            { label: 'Owner Name', key: 'ownerName' },
-            { label: t('settings.email'), key: 'email' },
-            { label: t('settings.phone'), key: 'phone' },
-          ].map((field: { label: string; key: keyof FormState }) => (
+          {([
+            { label: t('settings.businessName'), key: 'businessName' as const },
+            { label: t('profile.ownerName'),     key: 'ownerName'    as const },
+            { label: t('settings.email'),        key: 'email'        as const },
+            { label: t('settings.phone'),        key: 'phone'        as const },
+          ]).map((field) => (
             <div key={field.key}>
               <label className="text-[13px] font-semibold text-foreground mb-1.5 block">{field.label}</label>
               <input
@@ -176,7 +176,7 @@ export const ProfileScreen = ({ onBack, onNavigate, initialData, isLoading, onSa
           ))}
 
           <div>
-            <label className="text-[13px] font-semibold text-foreground mb-1.5 block">Country</label>
+            <label className="text-[13px] font-semibold text-foreground mb-1.5 block">{t('profile.country')}</label>
             <select className={inputClass} value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value }))}>
               {['Saudi Arabia', 'UAE', 'Bahrain', 'Kuwait', 'Qatar', 'Egypt', 'Tunisia', 'Morocco', 'France'].map(c => (
                 <option key={c}>{c}</option>
@@ -185,7 +185,7 @@ export const ProfileScreen = ({ onBack, onNavigate, initialData, isLoading, onSa
           </div>
 
           <div>
-            <label className="text-[13px] font-semibold text-foreground mb-1.5 block">City</label>
+            <label className="text-[13px] font-semibold text-foreground mb-1.5 block">{t('profile.city')}</label>
             <select className={inputClass} value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))}>
               {['Riyadh', 'Jeddah', 'Dammam', 'Makkah', 'Madinah'].map(c => (
                 <option key={c}>{c}</option>
@@ -194,7 +194,7 @@ export const ProfileScreen = ({ onBack, onNavigate, initialData, isLoading, onSa
           </div>
 
           <div>
-            <label className="text-[13px] font-semibold text-foreground mb-1.5 block">Business Type</label>
+            <label className="text-[13px] font-semibold text-foreground mb-1.5 block">{t('profile.businessType')}</label>
             <input className={inputClass} value={form.businessType} readOnly />
           </div>
         </div>
@@ -205,7 +205,7 @@ export const ProfileScreen = ({ onBack, onNavigate, initialData, isLoading, onSa
           className="w-full h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press mt-8 disabled:opacity-60 flex items-center justify-center gap-2"
         >
           {saving && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-          {t('common.save')} Changes
+          {t('profile.saveChanges')}
         </button>
       </div>
     </motion.div>

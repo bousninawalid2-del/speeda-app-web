@@ -31,7 +31,7 @@ export const ResetPasswordScreen = ({ onComplete, token, onForgot, onReset }: Re
   const [formError, setFormError] = useState('');
 
   const strength = getStrength(newPw, t);
-  const inputClass = "w-full h-[52px] rounded-2xl bg-card border border-border pl-12 pr-12 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors";
+  const inputClass = "w-full h-[52px] rounded-2xl bg-card border border-border ps-12 pe-12 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors";
 
   const handleReset = async () => {
     setFormError('');
@@ -96,9 +96,9 @@ export const ResetPasswordScreen = ({ onComplete, token, onForgot, onReset }: Re
           <h1 className="text-[24px] font-extrabold text-foreground">{t('resetPassword.forgotPassword')}</h1>
           <p className="text-[14px] text-muted-foreground mt-2">{t('resetPassword.forgotDesc')}</p>
 
-          <div className="mt-8 text-left">
+          <div className="mt-8 text-start">
             <div className="relative">
-              <Mail size={18} className="absolute left-4 top-[17px] text-muted-foreground" />
+              <Mail size={18} className="absolute start-4 top-[17px] text-muted-foreground" />
               <input
                 className={inputClass}
                 placeholder={t('resetPassword.emailAddress')}
@@ -143,11 +143,11 @@ export const ResetPasswordScreen = ({ onComplete, token, onForgot, onReset }: Re
         <h1 className="text-[24px] font-extrabold text-foreground">{t('resetPassword.createNewPassword')}</h1>
         <p className="text-[14px] text-muted-foreground mt-2">{t('resetPassword.enterNewPassword')}</p>
 
-        <div className="mt-8 space-y-3 text-left">
+        <div className="mt-8 space-y-3 text-start">
           <div className="relative">
-            <Lock size={18} className="absolute left-4 top-[17px] text-muted-foreground" />
+            <Lock size={18} className="absolute start-4 top-[17px] text-muted-foreground" />
             <input className={inputClass} placeholder={t('resetPassword.newPassword')} type={showNew ? 'text' : 'password'} value={newPw} onChange={e => setNewPw(e.target.value)} />
-            <button onClick={() => setShowNew(!showNew)} className="absolute right-4 top-[16px] text-muted-foreground">
+            <button onClick={() => setShowNew(!showNew)} className="absolute end-4 top-[16px] text-muted-foreground">
               {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
@@ -165,9 +165,9 @@ export const ResetPasswordScreen = ({ onComplete, token, onForgot, onReset }: Re
             </div>
           )}
           <div className="relative">
-            <Lock size={18} className="absolute left-4 top-[17px] text-muted-foreground" />
+            <Lock size={18} className="absolute start-4 top-[17px] text-muted-foreground" />
             <input className={inputClass} placeholder={t('resetPassword.confirmPassword')} type={showConfirm ? 'text' : 'password'} value={confirmPw} onChange={e => setConfirmPw(e.target.value)} />
-            <button onClick={() => setShowConfirm(!showConfirm)} className="absolute right-4 top-[16px] text-muted-foreground">
+            <button onClick={() => setShowConfirm(!showConfirm)} className="absolute end-4 top-[16px] text-muted-foreground">
               {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>

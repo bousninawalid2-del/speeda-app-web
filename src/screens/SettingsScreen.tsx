@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, User, Shield, CreditCard, Globe2, Wifi, Brain, Bell, BellDot, BellRing, Languages, HelpCircle, MessageCircle, Sparkles, Info, Gift, MoreVertical, Rss, ExternalLink, Pause, Play, Trash2, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +13,12 @@ import { useTokens } from '../hooks/useTokens';
 import { useSubscription } from '../hooks/useSubscription';
 import { useSocialAccounts } from '../hooks/useSocialAccounts';
 import { useBilling } from '../hooks/useBilling';
+import { useConnectedPlatforms, useInvalidateConnectedPlatforms } from '../hooks/useConnectedPlatforms';
+import { useRssFeeds, useAddRssFeed, useDeleteRssFeed } from '../hooks/useRssFeeds';
+import { usePostingSchedule, useSavePostingSchedule, useDeletePostingSchedule } from '../hooks/usePostingSchedule';
+import { useDmAutoResponse, useSaveDmAutoResponse } from '../hooks/useDmAutoResponse';
+import { useBrandVoiceSettings } from '../hooks/useBrandVoiceSettings';
+import { useSettingsMenu } from '../hooks/useSettingsMenu';
 import { apiFetch } from '@/lib/api-client';
 
 interface SettingsScreenProps {
@@ -28,6 +34,20 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
   const { data: subData } = useSubscription();
   const { data: socialData, refetch: refetchSocial } = useSocialAccounts();
   const { data: billingData } = useBilling();
+  const { data: connectedPlatformsData, isLoading: platformsLoading } = useConnectedPlatforms();
+  const invalidateConnectedPlatforms = useInvalidateConnectedPlatforms();
+  const { data: brandVoiceData, isLoading: brandVoiceLoading } = useBrandVoiceSettings({
+    tones: [], langs: [], keywords: [], businessDescription: '', sampleContent: '', otherLang: '',
+  });
+  const { data: menuItems } = useSettingsMenu([]);
+  const { data: rssFeedsData, isLoading: rssLoading, error: rssError, refetch: refetchRss } = useRssFeeds();
+  const addRssFeed = useAddRssFeed();
+  const deleteRssFeed = useDeleteRssFeed();
+  const { data: scheduleData, isLoading: scheduleLoading } = usePostingSchedule();
+  const savePostingSchedule = useSavePostingSchedule();
+  const deletePostingSchedule = useDeletePostingSchedule();
+  const { data: dmAutoResponseData } = useDmAutoResponse();
+  const saveDmAutoResponse = useSaveDmAutoResponse();
 
   const tokenBalance = tokensData?.balance ?? 0;
   const tokenTotal = tokensData?.total ?? 500;
@@ -42,41 +62,61 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
   const [managePlatform, setManagePlatform] = useState<string | null>(null);
   const [disconnectPlatform, setDisconnectPlatform] = useState<string | null>(null);
 
-  const connectedPlatforms = useMemo(() => {
-    const map: Record<string, boolean> = {
-      Instagram: false, TikTok: false, Snapchat: false, Facebook: false, X: false,
-      YouTube: false, 'Google Business': false, LinkedIn: false, Pinterest: false, Threads: false,
+  const normalizePlatformName = (platform: string) => {
+    const p = platform.toLowerCase();
+    if (p === 'instagram') return 'Instagram';
+    if (p === 'tiktok' || p === 'tik_tok') return 'TikTok';
+    if (p === 'snapchat') return 'Snapchat';
+    if (p === 'facebook') return 'Facebook';
+    if (p === 'x' || p === 'twitter') return 'X';
+    if (p === 'youtube') return 'YouTube';
+    if (p === 'google' || p === 'googlebusiness' || p === 'google_business' || p === 'google business' || p === 'gmb') return 'Google Business';
+    if (p === 'linkedin') return 'LinkedIn';
+    if (p === 'pinterest') return 'Pinterest';
+    if (p === 'threads') return 'Threads';
+    return platform;
+  };
+
+  interface PlatformInfo {
+    connected: boolean;
+    username?: string | null;
+    refreshWarning?: boolean;
+    refreshDaysRemaining?: number | null;
+  }
+
+  const connectedPlatforms = useMemo<Record<string, PlatformInfo>>(() => {
+    const map: Record<string, PlatformInfo> = {
+      Instagram: { connected: false }, TikTok: { connected: false }, Snapchat: { connected: false },
+      Facebook: { connected: false }, X: { connected: false }, YouTube: { connected: false },
+      'Google Business': { connected: false }, LinkedIn: { connected: false },
+      Pinterest: { connected: false }, Threads: { connected: false },
     };
 
-    let accounts: any[] = [];
-    if (Array.isArray(socialData)) {
-      accounts = socialData;
-    } else if (Array.isArray((socialData as any)?.accounts)) {
-      accounts = (socialData as any).accounts;
+    if (Array.isArray(connectedPlatformsData) && connectedPlatformsData.length > 0) {
+      connectedPlatformsData.forEach((p) => {
+        const key = normalizePlatformName(p.platform);
+        if (key in map) {
+          map[key] = {
+            connected: p.connected,
+            username: p.username,
+            refreshWarning: p.refreshWarning,
+            refreshDaysRemaining: p.refreshDaysRemaining,
+          };
+        }
+      });
+      return map;
     }
 
-    const normalizePlatform = (platform: string) => {
-      const p = platform.toLowerCase();
-      if (p === 'instagram') return 'Instagram';
-      if (p === 'tiktok' || p === 'tik_tok') return 'TikTok';
-      if (p === 'snapchat') return 'Snapchat';
-      if (p === 'facebook') return 'Facebook';
-      if (p === 'x' || p === 'twitter') return 'X';
-      if (p === 'youtube') return 'YouTube';
-      if (p === 'google' || p === 'googlebusiness' || p === 'google_business' || p === 'google business') return 'Google Business';
-      if (p === 'linkedin') return 'LinkedIn';
-      if (p === 'pinterest') return 'Pinterest';
-      if (p === 'threads') return 'Threads';
-      return platform;
-    };
-
+    // Fallback to legacy /api/social data
+    let accounts: any[] = [];
+    if (Array.isArray(socialData)) accounts = socialData;
+    else if (Array.isArray((socialData as any)?.accounts)) accounts = (socialData as any).accounts;
     accounts.forEach((acc: any) => {
-      const key = normalizePlatform(String(acc?.platform ?? ''));
-      if (key in map) map[key] = !!acc?.connected;
+      const key = normalizePlatformName(String(acc?.platform ?? ''));
+      if (key in map) map[key] = { connected: !!acc?.connected, username: acc?.username };
     });
-
     return map;
-  }, [socialData]);
+  }, [connectedPlatformsData, socialData]);
 
   const paymentMethods = useMemo(() => {
     const methods = Array.isArray((billingData as any)?.paymentMethods) ? (billingData as any).paymentMethods : [];
@@ -107,16 +147,30 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
     return <CreditCard size={24} className="text-muted-foreground" />;
   };
 
-  // RSS Feed state
-  const [rssFeeds, setRssFeeds] = useState<Array<{ url: string; title: string; active: boolean; postsCount: number; lastPost: string }>>([
-    { url: 'https://malekskitchen.com/rss', title: "Malek's Kitchen Blog", active: true, postsCount: 12, lastPost: 'How to Make the Perfect Shawarma — Mar 18' },
-  ]);
+  // RSS Feed state (server-backed via Ayrshare /feed)
   const [showAddRss, setShowAddRss] = useState(false);
   const [rssUrl, setRssUrl] = useState('');
+  const rssFeeds = rssFeedsData ?? [];
+
+  const feedTitle = (feed: any) => feed.title || feed.lastItem?.title || feed.url;
+  const feedLastArticle = (feed: any) => {
+    const t = feed.lastItem?.title; const d = feed.lastItem?.pubDate;
+    if (t && d) return `${t} — ${new Date(d).toLocaleDateString()}`;
+    if (t) return t;
+    return 'No posts yet';
+  };
+  const feedActive = (feed: any) => feed.active !== false && feed.status !== 'paused';
 
   const RSSFeedSection = () => (
     <div className="px-4 py-3">
-      {rssFeeds.length === 0 && !showAddRss ? (
+      {rssLoading ? (
+        <div className="bg-muted rounded-2xl p-4 animate-pulse h-24" />
+      ) : rssError ? (
+        <div className="border border-red-accent/40 rounded-2xl p-4 text-center">
+          <p className="text-[13px] text-red-accent">Failed to load RSS feeds</p>
+          <button onClick={() => refetchRss()} className="mt-2 text-[12px] text-brand-blue font-semibold">Retry</button>
+        </div>
+      ) : rssFeeds.length === 0 && !showAddRss ? (
         <div className="border-2 border-dashed border-border rounded-2xl p-6 text-center">
           <Rss size={40} className="mx-auto text-muted-foreground mb-3" />
           <p className="text-[16px] font-semibold text-foreground">Connect your blog or newsletter</p>
@@ -125,35 +179,55 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
         </div>
       ) : (
         <>
-          {rssFeeds.map((feed, idx) => (
-            <div key={idx} className="bg-muted rounded-2xl p-4 mb-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Rss size={16} className="text-brand-blue" />
-                <span className="text-[14px] font-semibold text-foreground flex-1">{feed.title}</span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${feed.active ? 'bg-green-accent/20 text-green-accent' : 'bg-muted-foreground/20 text-muted-foreground'}`}>
-                  {feed.active ? 'Active ✓' : 'Paused'}
-                </span>
+          {rssFeeds.map((feed) => {
+            const active = feedActive(feed);
+            return (
+              <div key={feed.id} className="bg-muted rounded-2xl p-4 mb-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Rss size={16} className="text-brand-blue" />
+                  <span className="text-[14px] font-semibold text-foreground flex-1 truncate">{feedTitle(feed)}</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${active ? 'bg-green-accent/20 text-green-accent' : 'bg-muted-foreground/20 text-muted-foreground'}`}>
+                    {active ? 'Active ✓' : 'Paused'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground mb-1 truncate">{feed.url}</p>
+                <p className="text-[12px] text-foreground">Last article: {feedLastArticle(feed)}</p>
+                {feed.platforms && feed.platforms.length > 0 && (
+                  <p className="text-[11px] text-muted-foreground mt-1">Platforms: {feed.platforms.join(', ')}</p>
+                )}
+                <div className="flex items-center gap-3 mt-3">
+                  <button
+                    disabled={deleteRssFeed.isPending}
+                    onClick={() => deleteRssFeed.mutate(feed.id)}
+                    className="text-red-accent text-[12px] font-semibold disabled:opacity-50"
+                  >
+                    {t('common.delete')}
+                  </button>
+                </div>
               </div>
-              <p className="text-[11px] text-muted-foreground mb-1">{feed.url}</p>
-              <p className="text-[12px] text-foreground">Last article: {feed.lastPost}</p>
-              <p className="text-[12px] text-muted-foreground">{feed.postsCount} articles posted automatically</p>
-              <div className="flex items-center gap-3 mt-3">
-                <button className="text-brand-blue text-[12px] font-semibold">{t('common.edit')}</button>
-                <button onClick={() => setRssFeeds(f => f.map((ff, fi) => fi === idx ? { ...ff, active: !ff.active } : ff))} className="text-muted-foreground text-[12px] font-semibold">
-                  {feed.active ? 'Pause' : 'Resume'}
-                </button>
-                <button onClick={() => setRssFeeds(f => f.filter((_, fi) => fi !== idx))} className="text-red-accent text-[12px] font-semibold">{t('common.delete')}</button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
           <button onClick={() => setShowAddRss(true)} className="text-brand-blue text-[13px] font-semibold">+ Add Feed</button>
           {showAddRss && (
             <div className="bg-card rounded-2xl border border-border-light p-4 mt-3">
               <p className="text-[14px] font-semibold text-foreground mb-3">Add New Feed</p>
               <input value={rssUrl} onChange={e => setRssUrl(e.target.value)} placeholder="https://yourblog.com/rss" className="w-full h-10 rounded-xl bg-muted px-4 text-[13px] text-foreground placeholder:text-muted-foreground border-0 outline-none mb-3" />
+              {addRssFeed.isError && <p className="text-[11px] text-red-accent mb-2">Failed to add feed. Check the URL.</p>}
               <div className="flex gap-2">
-                <button onClick={() => { if (rssUrl.trim()) { setRssFeeds(f => [...f, { url: rssUrl, title: 'New Feed', active: true, postsCount: 0, lastPost: 'No posts yet' }]); setRssUrl(''); setShowAddRss(false); } }} className="flex-1 h-10 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold btn-press">Connect Feed</button>
-                <button onClick={() => { setShowAddRss(false); setRssUrl(''); }} className="h-10 px-4 rounded-xl border border-border text-muted-foreground text-[13px] font-medium btn-press">{t('common.cancel')}</button>
+                <button
+                  disabled={addRssFeed.isPending || !rssUrl.trim()}
+                  onClick={() => {
+                    if (!rssUrl.trim()) return;
+                    addRssFeed.mutate(
+                      { url: rssUrl.trim() },
+                      { onSuccess: () => { setRssUrl(''); setShowAddRss(false); } },
+                    );
+                  }}
+                  className="flex-1 h-10 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold btn-press disabled:opacity-50"
+                >
+                  {addRssFeed.isPending ? 'Connecting…' : 'Connect Feed'}
+                </button>
+                <button onClick={() => { setShowAddRss(false); setRssUrl(''); addRssFeed.reset(); }} className="h-10 px-4 rounded-xl border border-border text-muted-foreground text-[13px] font-medium btn-press">{t('common.cancel')}</button>
               </div>
             </div>
           )}
@@ -162,17 +236,72 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
     </div>
   );
 
-  // Auto-Schedule state
+  // Auto-Schedule state (server-backed via Ayrshare /auto-schedule)
+  const AUTO_SCHEDULE_TITLE = 'speeda-auto';
+  const DAY_KEYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] as const; // Sunday=0 per Ayrshare
+
+  // Convert "8:00 AM" ↔ "08:00Z"
+  const ampmToUtc = (s: string): string => {
+    const m = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(s.trim());
+    if (!m) return s;
+    let h = parseInt(m[1], 10); const min = m[2]; const ap = m[3].toUpperCase();
+    if (ap === 'PM' && h < 12) h += 12;
+    if (ap === 'AM' && h === 12) h = 0;
+    return `${String(h).padStart(2, '0')}:${min}Z`;
+  };
+  const utcToAmpm = (s: string): string => {
+    const m = /^(\d{1,2}):(\d{2})Z?$/.exec(s.trim());
+    if (!m) return s;
+    let h = parseInt(m[1], 10); const min = m[2];
+    const ap = h >= 12 ? 'PM' : 'AM';
+    if (h === 0) h = 12; else if (h > 12) h -= 12;
+    return `${h}:${min} ${ap}`;
+  };
+
   const [autoScheduleOn, setAutoScheduleOn] = useState(false);
   const [schedule, setSchedule] = useState<Record<string, string[]>>({
-    Mon: ['8:00 AM', '12:00 PM', '8:00 PM'], Tue: ['8:00 AM', '8:00 PM'], Wed: ['12:00 PM', '8:00 PM'],
-    Thu: ['8:00 AM', '12:00 PM'], Fri: ['8:00 PM'], Sat: ['12:00 PM', '8:00 PM'], Sun: ['8:00 AM'],
+    Sun: [], Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [],
   });
+  const [scheduleHydrated, setScheduleHydrated] = useState(false);
+
+  useEffect(() => {
+    if (scheduleHydrated || !scheduleData) return;
+    const first = scheduleData[0];
+    if (!first) { setScheduleHydrated(true); return; }
+    setAutoScheduleOn(true);
+    const times = (first.schedule || []).map(utcToAmpm);
+    const days = first.daysOfWeek && first.daysOfWeek.length > 0 ? first.daysOfWeek : [0,1,2,3,4,5,6];
+    const next: Record<string, string[]> = { Sun: [], Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [] };
+    for (const d of days) {
+      const key = DAY_KEYS[d];
+      if (key) next[key] = [...times];
+    }
+    setSchedule(next);
+    setScheduleHydrated(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scheduleData, scheduleHydrated]);
+
   const removeSlot = (day: string, idx: number) => setSchedule(s => ({ ...s, [day]: s[day].filter((_, i) => i !== idx) }));
   const addSlot = (day: string) => {
     const opts = ['6:00 AM','8:00 AM','10:00 AM','12:00 PM','2:00 PM','4:00 PM','6:00 PM','8:00 PM','10:00 PM'];
     const next = opts.find(t => !(schedule[day] || []).includes(t));
     if (next) setSchedule(s => ({ ...s, [day]: [...(s[day] || []), next] }));
+  };
+  const handleSaveSchedule = () => {
+    const allTimes = Array.from(new Set(Object.values(schedule).flat().map(ampmToUtc))).sort();
+    const daysOfWeek = DAY_KEYS
+      .map((k, i) => (schedule[k] && schedule[k].length > 0 ? i : -1))
+      .filter((i) => i >= 0);
+    if (allTimes.length === 0 || daysOfWeek.length === 0) {
+      deletePostingSchedule.mutate(AUTO_SCHEDULE_TITLE);
+      return;
+    }
+    savePostingSchedule.mutate({ title: AUTO_SCHEDULE_TITLE, schedule: allTimes, daysOfWeek });
+  };
+  const handleToggleAutoSchedule = () => {
+    const next = !autoScheduleOn;
+    setAutoScheduleOn(next);
+    if (!next) deletePostingSchedule.mutate(AUTO_SCHEDULE_TITLE);
   };
   const AutoScheduleSection = () => (
     <div className="border-b border-border-light">
@@ -181,10 +310,13 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
           <p className="text-[14px] text-foreground font-medium">📅 Posting Schedule</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">Set recurring time slots for auto-scheduling</p>
         </div>
-        <button onClick={() => setAutoScheduleOn(!autoScheduleOn)} className={`w-11 h-6 rounded-full p-0.5 transition-colors ${autoScheduleOn ? 'bg-green-accent' : 'bg-border'}`}>
+        <button onClick={handleToggleAutoSchedule} className={`w-11 h-6 rounded-full p-0.5 transition-colors ${autoScheduleOn ? 'bg-green-accent' : 'bg-border'}`}>
           <div className={`w-5 h-5 rounded-full bg-card shadow transition-transform ${autoScheduleOn ? 'translate-x-5 rtl:-translate-x-5' : ''}`} />
         </button>
       </div>
+      {scheduleLoading && !scheduleHydrated && (
+        <div className="px-4 pb-3 text-[11px] text-muted-foreground">Loading…</div>
+      )}
       {autoScheduleOn && (
         <div className="px-4 pb-4">
           <p className="text-[14px] font-semibold text-foreground mb-3">Your Weekly Posting Schedule</p>
@@ -212,7 +344,16 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
               ))}
             </div>
           </div>
-          <button className="w-full h-10 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold btn-press mt-4">Save Schedule</button>
+          <button
+            onClick={handleSaveSchedule}
+            disabled={savePostingSchedule.isPending}
+            className="w-full h-10 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold btn-press mt-4 disabled:opacity-50"
+          >
+            {savePostingSchedule.isPending ? 'Saving…' : savePostingSchedule.isSuccess ? 'Saved ✓' : 'Save Schedule'}
+          </button>
+          {savePostingSchedule.isError && (
+            <p className="text-[11px] text-red-accent mt-2">Failed to save. Try again.</p>
+          )}
         </div>
       )}
     </div>
@@ -233,7 +374,7 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
   );
 
   const Row = ({ label, value, icon: Icon, onClick }: { label: string; value?: string; icon?: any; onClick?: () => void }) => (
-    <button onClick={onClick} className="w-full flex items-center gap-3 px-4 py-3.5 border-b border-border-light last:border-0 text-left">
+    <button onClick={onClick} className="w-full flex items-center gap-3 px-4 py-3.5 border-b border-border-light last:border-0 text-start">
       {Icon && <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center"><Icon size={16} className="text-muted-foreground" /></div>}
       <span className="text-[14px] text-foreground flex-1">{label}</span>
       {value && <span className="text-[13px] text-muted-foreground">{value}</span>}
@@ -257,11 +398,21 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
     </div>
   );
 
-  const PlatformRow = ({ Logo, name, connected, onConnect }: { Logo: any; name: string; connected: boolean; onConnect?: () => void }) => (
+  const PlatformRow = ({ Logo, name, info, onConnect }: { Logo: any; name: string; info: PlatformInfo; onConnect?: () => void }) => (
     <div className="flex items-center gap-3 px-4 py-3 border-b border-border-light last:border-0">
       <Logo size={24} />
-      <span className="text-[14px] text-foreground flex-1">{name}</span>
-      {connected ? (
+      <div className="flex-1 min-w-0">
+        <span className="text-[14px] text-foreground block truncate">{name}</span>
+        {info.connected && info.username && (
+          <span className="text-[11px] text-muted-foreground block truncate">{info.username}</span>
+        )}
+        {info.refreshWarning && (
+          <span className="text-[10px] font-semibold text-orange-accent block">
+            ⚠ Refresh required soon{typeof info.refreshDaysRemaining === 'number' ? ` (${info.refreshDaysRemaining}d)` : ''}
+          </span>
+        )}
+      </div>
+      {info.connected ? (
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-semibold text-green-accent">✓ {t('common.connected')}</span>
           <button onClick={() => setManagePlatform(name)} className="p-1"><MoreVertical size={14} className="text-muted-foreground" /></button>
@@ -311,7 +462,7 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
 
         {/* Tokens */}
         <Section title={t('settings.tokensSection')}>
-          <button onClick={() => onNavigate?.('tokens')} className="w-full px-4 py-3.5 text-left">
+          <button onClick={() => onNavigate?.('tokens')} className="w-full px-4 py-3.5 text-start">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[14px] font-medium text-foreground">{t('settings.tokensRemaining', { count: tokenBalance })}</p>
@@ -342,33 +493,59 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
             { Logo: ThreadsLogo, name: 'Threads' },
           ].map((p, i) => (
             <div key={i}>
-              <PlatformRow {...p} connected={!!connectedPlatforms[p.name]} />
+              <PlatformRow Logo={p.Logo} name={p.name} info={connectedPlatforms[p.name] ?? { connected: false }} />
               {'note' in p && p.note && (
                 <p className="text-[11px] text-muted-foreground px-4 pb-2 -mt-1">{p.note}</p>
               )}
             </div>
           ))}
+          {platformsLoading && (
+            <div className="px-4 py-3 text-[11px] text-muted-foreground">Loading…</div>
+          )}
         </Section>
 
         {/* AI Preferences */}
         <Section title={t('settings.aiPreferences')}>
           <div className="px-4 py-3.5 border-b border-border-light">
             <p className="text-[14px] font-medium text-foreground mb-2">{t('settings.brandVoice')}</p>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[12px] text-muted-foreground">{t('settings.tone')}:</span>
-              <span className="px-3 py-1 rounded-3xl bg-purple-soft text-purple text-[11px] font-semibold">Professional</span>
-              <span className="px-3 py-1 rounded-3xl bg-purple-soft text-purple text-[11px] font-semibold">Fun</span>
-            </div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[12px] text-muted-foreground">{t('settings.language')}:</span>
-              <span className="px-3 py-1 rounded-3xl bg-purple-soft text-purple text-[11px] font-semibold">Saudi + English</span>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[12px] text-muted-foreground">{t('settings.keywords')}:</span>
-              {['shawarma', 'brunch', 'Riyadh', 'family'].map(k => (
-                <span key={k} className="px-3 py-1 rounded-3xl bg-muted text-foreground text-[11px] font-medium">{k}</span>
-              ))}
-            </div>
+            {brandVoiceLoading ? (
+              <div className="space-y-2">
+                <div className="h-4 w-40 bg-muted rounded animate-pulse" />
+                <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+                <div className="h-4 w-48 bg-muted rounded animate-pulse" />
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <span className="text-[12px] text-muted-foreground">{t('settings.tone')}:</span>
+                  {(brandVoiceData?.tones ?? []).length === 0 ? (
+                    <span className="text-[11px] text-muted-foreground italic">Not set</span>
+                  ) : (
+                    (brandVoiceData!.tones).map((tone) => (
+                      <span key={tone} className="px-3 py-1 rounded-3xl bg-purple-soft text-purple text-[11px] font-semibold">{tone}</span>
+                    ))
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <span className="text-[12px] text-muted-foreground">{t('settings.language')}:</span>
+                  {(brandVoiceData?.langs ?? []).length === 0 ? (
+                    <span className="text-[11px] text-muted-foreground italic">Not set</span>
+                  ) : (
+                    <span className="px-3 py-1 rounded-3xl bg-purple-soft text-purple text-[11px] font-semibold">{brandVoiceData!.langs.join(' + ')}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[12px] text-muted-foreground">{t('settings.keywords')}:</span>
+                  {(brandVoiceData?.keywords ?? []).length === 0 ? (
+                    <span className="text-[11px] text-muted-foreground italic">Not set</span>
+                  ) : (
+                    (brandVoiceData!.keywords).map((k) => (
+                      <span key={k} className="px-3 py-1 rounded-3xl bg-muted text-foreground text-[11px] font-medium">{k}</span>
+                    ))
+                  )}
+                </div>
+              </>
+            )}
             <button onClick={() => onNavigate?.('editBrandVoice')} className="text-brand-blue text-[13px] font-semibold mt-2">{t('settings.editBrandVoice')}</button>
           </div>
           {/* Menu Section */}
@@ -381,7 +558,9 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[13px] font-medium text-foreground">📋 Restaurant Menu</p>
-                <p className="text-[11px] text-muted-foreground">4 items uploaded</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {(menuItems?.length ?? 0) === 0 ? 'No items uploaded' : `${menuItems!.length} item${menuItems!.length > 1 ? 's' : ''} uploaded`}
+                </p>
               </div>
               <button onClick={() => onNavigate?.('menuManagement')} className="text-brand-blue text-[13px] font-semibold">Manage →</button>
             </div>
@@ -400,30 +579,45 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
           ].map((item, i) => (
             <Toggle key={i} label={item.label} sub={item.sub} on={automations[i]} onChange={() => toggleAuto(i)} />
           ))}
-          {/* Auto-respond to DMs */}
+          {/* Auto-respond to DMs (global toggle via Ayrshare) */}
           <div className="px-4 py-2">
             <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">{t('settings.dmAutoRespond', '💬 DM Auto-Responses')}</p>
           </div>
-          <Toggle label={t('settings.dmAutoRespondLabel', 'Auto-respond to DMs')} sub={t('settings.dmAutoRespondDesc', 'Set up auto-responses for common DM topics')} on={automations[1]} onChange={() => toggleAuto(1)} />
-          {automations[1] && (
-            <div className="px-4 py-3 space-y-2 border-b border-border-light">
-              {[
-                { trigger: t('settings.dmTriggerHours', 'Opening hours'), response: t('settings.dmResponseHours', "We're open Sunday to Thursday, 9 AM to 11 PM. Come visit us! 🍽️") },
-                { trigger: t('settings.dmTriggerMenu', 'Menu request'), response: t('settings.dmResponseMenu', "Here's our latest menu. What can we help you with?") },
-                { trigger: t('settings.dmTriggerLocation', 'Location'), response: t('settings.dmResponseLocation', "We're located in Riyadh. Here's the Google Maps link!") },
-                { trigger: t('settings.dmTriggerReservation', 'Reservation'), response: t('settings.dmResponseReservation', "We'd love to have you! Please call us to book a table.") },
-              ].map((tpl, i) => (
-                <div key={i} className="bg-muted rounded-xl p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[12px] font-semibold text-foreground">{tpl.trigger}</span>
-                    <button className="w-9 h-5 rounded-full bg-green-accent p-0.5">
-                      <div className="w-4 h-4 rounded-full bg-card shadow translate-x-4 rtl:-translate-x-4" />
-                    </button>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">{tpl.response}</p>
-                </div>
-              ))}
-              <button className="text-brand-blue text-[12px] font-semibold mt-1">+ {t('settings.addCustomResponse', 'Add Custom Response')}</button>
+          <Toggle
+            label={t('settings.dmAutoRespondLabel', 'Auto-respond to DMs')}
+            sub={t('settings.dmAutoRespondDesc', 'Automatically reply to incoming direct messages')}
+            on={Boolean(dmAutoResponseData?.autoResponseActive)}
+            onChange={() => {
+              const next = !dmAutoResponseData?.autoResponseActive;
+              saveDmAutoResponse.mutate({
+                autoResponseActive: next,
+                autoResponseMessage: dmAutoResponseData?.autoResponseMessage,
+                autoResponseWaitSeconds: dmAutoResponseData?.autoResponseWaitSeconds,
+              });
+            }}
+          />
+          {dmAutoResponseData?.autoResponseActive && (
+            <div className="px-4 py-3 border-b border-border-light">
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Default message</label>
+              <textarea
+                defaultValue={dmAutoResponseData?.autoResponseMessage ?? ''}
+                onBlur={(e) => {
+                  const value = e.currentTarget.value;
+                  if (value !== (dmAutoResponseData?.autoResponseMessage ?? '')) {
+                    saveDmAutoResponse.mutate({
+                      autoResponseActive: true,
+                      autoResponseMessage: value,
+                      autoResponseWaitSeconds: dmAutoResponseData?.autoResponseWaitSeconds,
+                    });
+                  }
+                }}
+                className="w-full mt-2 rounded-xl bg-muted px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground border-0 outline-none resize-none"
+                rows={3}
+                placeholder="Thanks for your message, we'll be in touch shortly!"
+              />
+              {saveDmAutoResponse.isError && (
+                <p className="text-[11px] text-red-accent mt-1">Failed to save. Try again.</p>
+              )}
             </div>
           )}
         </Section>
@@ -527,7 +721,7 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
                 } catch {}
               }}
               aria-label={t('settings.logout', 'Log Out')}
-              className="w-full flex items-center gap-3 px-4 py-3.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-inset"
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-inset"
             >
               <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
                 <LogOut size={16} className="text-destructive" />
@@ -548,6 +742,7 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
             onComplete={async () => {
               setConnectingPlatform(null);
               await refetchSocial();
+              invalidateConnectedPlatforms();
             }}
             onCancel={() => setConnectingPlatform(null)}
           />
@@ -569,6 +764,7 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
                   body: JSON.stringify({ platform: toApiPlatform(disconnectPlatform) }),
                 });
                 await refetchSocial();
+                invalidateConnectedPlatforms();
               } catch (error) {
                 console.error('Failed to disconnect platform', disconnectPlatform, error);
               }

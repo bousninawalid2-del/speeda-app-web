@@ -8,65 +8,57 @@ interface ActionPlanScreenProps {
   onNavigate: (screen: string) => void;
 }
 
-const actions = [
+type Priority = 'critical' | 'high' | 'recommended';
+
+interface ActionDef {
+  key: string;
+  priority: Priority;
+  priorityColor: string;
+  borderColor: string;
+  nav: string;
+}
+
+const actions: ActionDef[] = [
   {
-    priority: 'Critical',
+    key: 'shawarmaReel',
+    priority: 'critical',
     priorityColor: 'bg-red-accent',
-    borderColor: 'border-l-red-accent',
-    title: 'Post Shawarma Reel during peak hour',
-    desc: "Your audience is most active at 8 PM tonight. I've prepared a Reel featuring your Chicken Shawarma. Publishing now could reach 4,200+ people.",
-    impact: '📈 Est. +4,200 reach · +120 engagements',
-    cta: 'Open Content Studio →',
+    borderColor: 'border-s-red-accent',
     nav: 'create',
   },
   {
-    priority: 'Critical',
+    key: 'negativeReview',
+    priority: 'critical',
     priorityColor: 'bg-red-accent',
-    borderColor: 'border-l-red-accent',
-    title: 'Respond to negative review from Sara M.',
-    desc: 'A 1-star Google review was posted 2 hours ago. Quick response can recover the customer and protect your rating.',
-    impact: '⭐ Protect your 4.6 rating · Customer recovery',
-    cta: 'Open Engagement →',
+    borderColor: 'border-s-red-accent',
     nav: 'chat',
   },
   {
-    priority: 'High',
+    key: 'boostBrunch',
+    priority: 'high',
     priorityColor: 'bg-orange-accent',
-    borderColor: 'border-l-orange-accent',
-    title: 'Boost your Weekend Brunch post',
-    desc: 'This post has 3x your average engagement. Boosting it for SAR 150 could reach 50K people.',
-    impact: '📈 Est. 50K reach · ~65 conversions',
-    cta: 'Boost Now →',
+    borderColor: 'border-s-orange-accent',
     nav: 'campaigns',
   },
   {
-    priority: 'High',
+    key: 'scheduleWeekend',
+    priority: 'high',
     priorityColor: 'bg-orange-accent',
-    borderColor: 'border-l-orange-accent',
-    title: 'Schedule 3 posts for the weekend',
-    desc: "I've generated 3 posts for Friday-Saturday. They're in your approval queue.",
-    impact: '📈 Maintain posting consistency · +15% weekly reach',
-    cta: 'Review Posts →',
+    borderColor: 'border-s-orange-accent',
     nav: 'create',
   },
   {
-    priority: 'Recommended',
+    key: 'increaseBudget',
+    priority: 'recommended',
     priorityColor: 'bg-brand-blue',
-    borderColor: 'border-l-brand-blue',
-    title: 'Increase Instagram ad budget by 20%',
-    desc: 'Your Instagram campaign has 2.8x ROAS. Increasing budget from 30 to 36 SAR/day could generate ~12 more conversions/week.',
-    impact: '💰 Est. +12 conversions/week · +840 SAR revenue',
-    cta: 'Adjust Budget →',
+    borderColor: 'border-s-brand-blue',
     nav: 'campaigns',
   },
   {
-    priority: 'Recommended',
+    key: 'replyComments',
+    priority: 'recommended',
     priorityColor: 'bg-brand-blue',
-    borderColor: 'border-l-brand-blue',
-    title: 'Reply to 4 pending comments',
-    desc: "4 Instagram comments are waiting. I've drafted AI responses for all of them.",
-    impact: '💬 Faster replies = +22% follower trust',
-    cta: 'View Comments →',
+    borderColor: 'border-s-brand-blue',
     nav: 'chat',
   },
 ];
@@ -85,14 +77,14 @@ export const ActionPlanScreen = ({ onBack, onNavigate }: ActionPlanScreenProps) 
       <div className="px-5 pt-6">
         <div className="flex items-center gap-3 mb-1">
           <button onClick={onBack}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
-          <h1 className="text-[20px] font-extrabold text-foreground">{t('actionPlan.title', "Today's Action Plan")}</h1>
+          <h1 className="text-[20px] font-extrabold text-foreground">{t('actionPlan.title')}</h1>
         </div>
-        <p className="text-[13px] text-muted-foreground ms-9 mb-4">{t('actionPlan.date', 'March 19, 2026')}</p>
+        <p className="text-[13px] text-muted-foreground ms-9 mb-4">{t('actionPlan.date')}</p>
 
         {/* AI Summary */}
         <div className="bg-card rounded-2xl p-4 border border-border-light border-s-[3px] border-s-brand-blue mb-4">
-          <span className="text-[11px] uppercase font-bold text-brand-blue tracking-[0.05em]">✦ {t('actionPlan.aiAnalysis', 'AI Analysis')}</span>
-          <p className="text-[14px] text-foreground leading-[1.55] mt-2">{t('actionPlan.summary', 'Your engagement is up 23% this week. Based on your data, here are the 6 actions I recommend for today, ranked by expected impact.')}</p>
+          <span className="text-[11px] uppercase font-bold text-brand-blue tracking-[0.05em]">✦ {t('actionPlan.aiAnalysis')}</span>
+          <p className="text-[14px] text-foreground leading-[1.55] mt-2">{t('actionPlan.summary')}</p>
         </div>
 
         {/* Action Items */}
@@ -101,26 +93,28 @@ export const ActionPlanScreen = ({ onBack, onNavigate }: ActionPlanScreenProps) 
             const isDone = doneActions.includes(i);
             return (
               <motion.div
-                key={i}
+                key={a.key}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
                 className={`bg-card rounded-2xl p-[18px] border border-border-light border-s-4 ${a.borderColor} ${isDone ? 'opacity-60' : ''}`}
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <span className={`text-[10px] font-bold uppercase tracking-[0.05em] text-primary-foreground px-2.5 py-0.5 rounded-lg ${a.priorityColor}`}>{a.priority}</span>
-                  {isDone && <span className="text-[10px] font-bold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">✅ Done</span>}
-                  {!isDone && <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-md">⏳ Pending</span>}
+                  <span className={`text-[10px] font-bold uppercase tracking-[0.05em] text-primary-foreground px-2.5 py-0.5 rounded-lg ${a.priorityColor}`}>
+                    {t(`actionPlan.priority.${a.priority}`)}
+                  </span>
+                  {isDone && <span className="text-[10px] font-bold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">{t('actionPlan.status.done')}</span>}
+                  {!isDone && <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-md">{t('actionPlan.status.pending')}</span>}
                 </div>
-                <h3 className="text-[16px] font-bold text-foreground">{a.title}</h3>
-                <p className="text-[13px] text-muted-foreground leading-[1.5] mt-1">{a.desc}</p>
-                <p className="text-[13px] font-semibold text-green-accent mt-2">{a.impact}</p>
+                <h3 className="text-[16px] font-bold text-foreground">{t(`actionPlan.items.${a.key}.title`)}</h3>
+                <p className="text-[13px] text-muted-foreground leading-[1.5] mt-1">{t(`actionPlan.items.${a.key}.desc`)}</p>
+                <p className="text-[13px] font-semibold text-green-accent mt-2">{t(`actionPlan.items.${a.key}.impact`)}</p>
                 {!isDone && (
                   <button
                     onClick={() => handleAction(i, a.nav)}
                     className="mt-3 h-10 px-5 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold btn-press"
                   >
-                    {a.cta}
+                    {t(`actionPlan.items.${a.key}.cta`)}
                   </button>
                 )}
               </motion.div>
@@ -130,7 +124,7 @@ export const ActionPlanScreen = ({ onBack, onNavigate }: ActionPlanScreenProps) 
 
         {/* Bottom Summary */}
         <div className="bg-green-soft rounded-2xl p-4 mt-4">
-          <p className="text-[14px] font-bold text-green-accent">{t('actionPlan.bottomSummary', 'Completing all 6 actions today could result in: +54K reach · +65 conversions · improved rating')}</p>
+          <p className="text-[14px] font-bold text-green-accent">{t('actionPlan.bottomSummary')}</p>
         </div>
       </div>
     </motion.div>

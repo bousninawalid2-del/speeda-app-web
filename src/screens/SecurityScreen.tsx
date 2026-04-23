@@ -32,7 +32,7 @@ export const SecurityScreen = ({ onBack }: SecurityScreenProps) => {
 
   const strength = getStrength(newPw);
 
-  const inputClass = "w-full h-[52px] rounded-2xl bg-card border border-border pl-12 pr-12 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none";
+  const inputClass = "w-full h-[52px] rounded-2xl bg-card border border-border ps-12 pe-12 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none";
 
   const { changePassword } = useAuth();
   const [isChangingPw, setIsChangingPw] = useState(false);
@@ -109,16 +109,16 @@ export const SecurityScreen = ({ onBack }: SecurityScreenProps) => {
           <h3 className="text-[16px] font-bold text-foreground mb-4">{t('settings.changePassword')}</h3>
           <div className="space-y-3">
             <div className="relative">
-              <Lock size={18} className="absolute left-4 top-[17px] text-muted-foreground" />
+              <Lock size={18} className="absolute start-4 top-[17px] text-muted-foreground" />
               <input className={inputClass} type={showCurrent ? 'text' : 'password'} placeholder={t('security.currentPassword')} value={currentPw} onChange={e => setCurrentPw(e.target.value)} />
-              <button onClick={() => setShowCurrent(!showCurrent)} className="absolute right-4 top-[16px] text-muted-foreground">
+              <button onClick={() => setShowCurrent(!showCurrent)} className="absolute end-4 top-[16px] text-muted-foreground">
                 {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
             <div className="relative">
-              <Lock size={18} className="absolute left-4 top-[17px] text-muted-foreground" />
+              <Lock size={18} className="absolute start-4 top-[17px] text-muted-foreground" />
               <input className={inputClass} type={showNew ? 'text' : 'password'} placeholder={t('security.newPassword')} value={newPw} onChange={e => setNewPw(e.target.value)} />
-              <button onClick={() => setShowNew(!showNew)} className="absolute right-4 top-[16px] text-muted-foreground">
+              <button onClick={() => setShowNew(!showNew)} className="absolute end-4 top-[16px] text-muted-foreground">
                 {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
@@ -131,9 +131,9 @@ export const SecurityScreen = ({ onBack }: SecurityScreenProps) => {
               </div>
             )}
             <div className="relative">
-              <Lock size={18} className="absolute left-4 top-[17px] text-muted-foreground" />
+              <Lock size={18} className="absolute start-4 top-[17px] text-muted-foreground" />
               <input className={inputClass} type={showConfirm ? 'text' : 'password'} placeholder={t('security.confirmNewPassword')} value={confirmPw} onChange={e => setConfirmPw(e.target.value)} />
-              <button onClick={() => setShowConfirm(!showConfirm)} className="absolute right-4 top-[16px] text-muted-foreground">
+              <button onClick={() => setShowConfirm(!showConfirm)} className="absolute end-4 top-[16px] text-muted-foreground">
                 {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>

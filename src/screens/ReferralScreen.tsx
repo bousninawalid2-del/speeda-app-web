@@ -24,7 +24,7 @@ export const ReferralScreen = ({ onBack }: ReferralScreenProps) => {
   const handleShare = () => {
     if (!data) return;
     if (typeof navigator !== 'undefined' && navigator.share) {
-      navigator.share({ title: 'Join Speeda AI', url: data.referralUrl }).catch(() => {});
+      navigator.share({ title: t('referralExtra.shareTitle'), url: data.referralUrl }).catch(() => {});
     } else {
       handleCopy();
     }
@@ -34,7 +34,7 @@ export const ReferralScreen = ({ onBack }: ReferralScreenProps) => {
     <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="bg-background min-h-screen pb-24">
       <div className="px-5 pt-6">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={onBack}><ChevronLeft size={24} className="text-foreground" /></button>
+          <button onClick={onBack}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
           <h1 className="text-[20px] font-bold text-foreground">{t('referral.title')}</h1>
         </div>
 
@@ -57,7 +57,7 @@ export const ReferralScreen = ({ onBack }: ReferralScreenProps) => {
               <div className="flex gap-2 mt-3">
                 <button onClick={handleCopy} className="flex-1 h-10 rounded-xl border border-border text-foreground text-[13px] font-semibold flex items-center justify-center gap-2 btn-press">
                   {copied ? <Check size={14} className="text-green-accent" /> : <Copy size={14} />}
-                  {copied ? 'Copied!' : t('referral.copyLink')}
+                  {copied ? t('referralExtra.copied') : t('referral.copyLink')}
                 </button>
                 <button onClick={handleShare} className="flex-1 h-10 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold flex items-center justify-center gap-2 shadow-btn btn-press">
                   <Share2 size={14} />
@@ -69,9 +69,9 @@ export const ReferralScreen = ({ onBack }: ReferralScreenProps) => {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-3 mt-4">
               {[
-                { label: 'Invited',       value: String(data.totalInvited) },
-                { label: 'Signed Up',     value: String(data.totalSignedUp) },
-                { label: 'Tokens Earned', value: `${data.totalTokens} ✦` },
+                { label: t('referralExtra.invited'),       value: String(data.totalInvited) },
+                { label: t('referralExtra.signedUp'),      value: String(data.totalSignedUp) },
+                { label: t('referralExtra.tokensEarned'),  value: `${data.totalTokens} ✦` },
               ].map((s, i) => (
                 <div key={i} className="bg-card rounded-2xl p-3 border border-border-light text-center">
                   <p className="text-[20px] font-extrabold text-foreground">{s.value}</p>
@@ -85,7 +85,7 @@ export const ReferralScreen = ({ onBack }: ReferralScreenProps) => {
             <div className="bg-card rounded-2xl border border-border-light overflow-hidden">
               {data.friends.length === 0 ? (
                 <div className="px-4 py-8 text-center">
-                  <p className="text-[14px] text-muted-foreground">No invites yet — share your link to get started!</p>
+                  <p className="text-[14px] text-muted-foreground">{t('referralExtra.empty')}</p>
                 </div>
               ) : (
                 data.friends.map((f, i) => (

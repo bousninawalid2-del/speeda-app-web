@@ -72,11 +72,11 @@ export const MediaGrid = ({ items, isMobile, mode, selectedItems, onItemClick, o
 
           {/* Used indicator */}
           {item.usedIn && item.usedIn.length > 0 && (
-            <div className="absolute top-1.5 left-1.5 w-2.5 h-2.5 rounded-full bg-brand-blue border-2 border-card" />
+            <div className="absolute top-1.5 start-1.5 w-2.5 h-2.5 rounded-full bg-brand-blue border-2 border-card" />
           )}
 
           {/* Type badge */}
-          <div className="absolute bottom-8 left-1.5 bg-foreground/70 text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-md">
+          <div className="absolute bottom-8 start-1.5 bg-foreground/70 text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-md">
             {typeIcon(item.type)} {typeLabel(item.type)}
           </div>
 
@@ -92,7 +92,7 @@ export const MediaGrid = ({ items, isMobile, mode, selectedItems, onItemClick, o
 
           {/* Selection check */}
           {selectedItems.includes(item.id) && (
-            <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full gradient-btn flex items-center justify-center">
+            <div className="absolute top-1.5 end-1.5 w-5 h-5 rounded-full gradient-btn flex items-center justify-center">
               <span className="text-primary-foreground text-[10px] font-bold">✓</span>
             </div>
           )}

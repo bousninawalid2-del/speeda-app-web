@@ -59,9 +59,9 @@ export const QuickAdScreen = ({ onBack }: { onBack: () => void }) => {
   };
 
   const handleLaunch = async () => {
-    if (selected.length === 0) { toast.error('Select at least one platform'); return; }
+    if (selected.length === 0) { toast.error(t('quickAd.toasts.selectPlatform')); return; }
     const budgetNum = parseInt(budget.replace(',', ''));
-    if (!budgetNum || budgetNum < 50) { toast.error('Minimum budget is SAR 50'); return; }
+    if (!budgetNum || budgetNum < 50) { toast.error(t('quickAd.toasts.minBudget')); return; }
 
     const days      = DURATION_DAYS[duration] ?? 7;
     const startDate = new Date().toISOString();
@@ -82,7 +82,7 @@ export const QuickAdScreen = ({ onBack }: { onBack: () => void }) => {
       });
       setSuccess(true);
     } catch {
-      toast.error('Failed to launch campaign — please try again');
+      toast.error(t('quickAd.toasts.launchFailed'));
     }
   };
 
@@ -92,9 +92,9 @@ export const QuickAdScreen = ({ onBack }: { onBack: () => void }) => {
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', damping: 15 }} className="w-20 h-20 rounded-full bg-green-accent flex items-center justify-center">
           <Check size={40} className="text-primary-foreground" strokeWidth={3} />
         </motion.div>
-        <h2 className="text-[24px] font-extrabold text-foreground mt-6">Ad Launched!</h2>
-        <p className="text-[14px] text-muted-foreground mt-2 text-center">Your campaign is now live across {selected.length} platform{selected.length > 1 ? 's' : ''}</p>
-        <button onClick={onBack} className="w-full h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press mt-8">Back to Campaigns</button>
+        <h2 className="text-[24px] font-extrabold text-foreground mt-6">{t('quickAd.adLaunched')}</h2>
+        <p className="text-[14px] text-muted-foreground mt-2 text-center">{t('quickAd.adLaunchedDesc', { count: selected.length })}</p>
+        <button onClick={onBack} className="w-full h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press mt-8">{t('quickAd.backToCampaigns')}</button>
       </motion.div>
     );
   }
@@ -103,9 +103,9 @@ export const QuickAdScreen = ({ onBack }: { onBack: () => void }) => {
     <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="bg-background min-h-screen pb-8">
       <div className="px-5 pt-6">
         <div className="flex items-center gap-3 mb-2">
-          <button onClick={() => step > 1 ? setStep(s => s - 1) : onBack()}><ChevronLeft size={24} className="text-foreground" /></button>
-          <h1 className="text-[18px] font-bold text-foreground flex-1">Launch Quick Ad</h1>
-          <span className="text-[13px] text-muted-foreground">Step {step} of 3</span>
+          <button onClick={() => step > 1 ? setStep(s => s - 1) : onBack()}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
+          <h1 className="text-[18px] font-bold text-foreground flex-1">{t('quickAd.header')}</h1>
+          <span className="text-[13px] text-muted-foreground">{t('quickAd.stepOf', { current: step, total: 3 })}</span>
         </div>
 
         {/* Progress */}
@@ -119,8 +119,8 @@ export const QuickAdScreen = ({ onBack }: { onBack: () => void }) => {
           {/* ── Step 1: Platform Selection ─────────────────────────────────── */}
           {step === 1 && (
             <motion.div key="s1" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}>
-              <h2 className="text-[18px] font-bold text-foreground">Where to advertise?</h2>
-              <p className="text-[13px] text-muted-foreground mt-1">Select from your connected platforms</p>
+              <h2 className="text-[18px] font-bold text-foreground">{t('quickAd.step1Title')}</h2>
+              <p className="text-[13px] text-muted-foreground mt-1">{t('quickAd.step1Subtitle')}</p>
 
               {accountsLoading ? (
                 <div className="flex items-center justify-center py-12">
@@ -128,8 +128,8 @@ export const QuickAdScreen = ({ onBack }: { onBack: () => void }) => {
                 </div>
               ) : connectedPlatforms.length === 0 ? (
                 <div className="mt-5 bg-card rounded-2xl p-6 border border-border-light text-center">
-                  <p className="text-[14px] font-semibold text-foreground">No connected platforms</p>
-                  <p className="text-[12px] text-muted-foreground mt-1">Connect your social accounts first</p>
+                  <p className="text-[14px] font-semibold text-foreground">{t('quickAd.noConnected')}</p>
+                  <p className="text-[12px] text-muted-foreground mt-1">{t('quickAd.connectFirst')}</p>
                 </div>
               ) : (
                 <>
@@ -148,16 +148,16 @@ export const QuickAdScreen = ({ onBack }: { onBack: () => void }) => {
                   </div>
 
                   <div className="bg-purple-soft rounded-2xl p-3 mt-4">
-                    <p className="text-[13px] text-purple font-semibold">✦ Tip: Multi-platform campaigns reach broader audiences</p>
+                    <p className="text-[13px] text-purple font-semibold">{t('quickAd.tipMulti')}</p>
                   </div>
                 </>
               )}
 
               <button
-                onClick={() => { if (selected.length === 0) { toast.error('Select at least one platform'); return; } setStep(2); }}
+                onClick={() => { if (selected.length === 0) { toast.error(t('quickAd.toasts.selectPlatform')); return; } setStep(2); }}
                 className="w-full h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press mt-5"
               >
-                Next →
+                {t('quickAd.next')}
               </button>
             </motion.div>
           )}
@@ -165,55 +165,55 @@ export const QuickAdScreen = ({ onBack }: { onBack: () => void }) => {
           {/* ── Step 2: Budget & Targeting ─────────────────────────────────── */}
           {step === 2 && (
             <motion.div key="s2" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}>
-              <h2 className="text-[18px] font-bold text-foreground">Budget & Targeting</h2>
+              <h2 className="text-[18px] font-bold text-foreground">{t('quickAd.step2Title')}</h2>
 
-              <h3 className="text-[14px] font-bold text-foreground mt-5 mb-2">Budget</h3>
+              <h3 className="text-[14px] font-bold text-foreground mt-5 mb-2">{t('quickAd.budget')}</h3>
               <div className="flex flex-wrap gap-2">
                 {['250', '500', '1,000', '2,500'].map(b => (
                   <button key={b} onClick={() => setBudget(b)} className={`rounded-3xl px-5 py-2 text-[13px] font-semibold ${budget === b ? 'bg-brand-blue text-primary-foreground' : 'bg-card border border-border text-muted-foreground'}`}>SAR {b}</button>
                 ))}
               </div>
 
-              <h3 className="text-[14px] font-bold text-foreground mt-5 mb-2">Duration</h3>
+              <h3 className="text-[14px] font-bold text-foreground mt-5 mb-2">{t('quickAd.duration')}</h3>
               <div className="flex flex-wrap gap-2">
-                {['3 days', '1 week', '2 weeks'].map(d => (
-                  <button key={d} onClick={() => setDuration(d)} className={`rounded-3xl px-5 py-2 text-[13px] font-semibold ${duration === d ? 'bg-brand-blue text-primary-foreground' : 'bg-card border border-border text-muted-foreground'}`}>{d}</button>
+                {[{ id: '3 days', slug: 'days3' }, { id: '1 week', slug: 'week1' }, { id: '2 weeks', slug: 'weeks2' }].map(d => (
+                  <button key={d.id} onClick={() => setDuration(d.id)} className={`rounded-3xl px-5 py-2 text-[13px] font-semibold ${duration === d.id ? 'bg-brand-blue text-primary-foreground' : 'bg-card border border-border text-muted-foreground'}`}>{t(`quickAd.durations.${d.slug}`)}</button>
                 ))}
               </div>
 
-              <h3 className="text-[14px] font-bold text-foreground mt-5 mb-2">Targeting</h3>
+              <h3 className="text-[14px] font-bold text-foreground mt-5 mb-2">{t('quickAd.targeting')}</h3>
               <div className="grid grid-cols-2 gap-3">
                 <button onClick={() => setTargetingMode('ai')} className={`relative rounded-2xl p-4 text-start transition-all overflow-hidden ${targetingMode === 'ai' ? 'border-2 border-brand-blue bg-purple-soft' : 'border border-border-light bg-card'}`}>
                   <span className="text-[18px] block mb-1">✦</span>
-                  <p className="text-[13px] font-bold text-foreground">AI Targeting</p>
-                  <p className="text-[11px] text-muted-foreground mt-1">AI optimizes your audience automatically</p>
+                  <p className="text-[13px] font-bold text-foreground">{t('quickAd.aiTargeting')}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">{t('quickAd.aiTargetingDesc')}</p>
                 </button>
                 <button onClick={() => setTargetingMode('manual')} className={`rounded-2xl p-4 text-start transition-all ${targetingMode === 'manual' ? 'border-2 border-brand-blue bg-purple-soft' : 'border border-border-light bg-card'}`}>
                   <span className="text-[18px] block mb-1">🎯</span>
-                  <p className="text-[13px] font-bold text-foreground">Manual Targeting</p>
-                  <p className="text-[11px] text-muted-foreground mt-1">Set location, age range, and interests</p>
+                  <p className="text-[13px] font-bold text-foreground">{t('quickAd.manualTargeting')}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">{t('quickAd.manualTargetingDesc')}</p>
                 </button>
               </div>
 
               {targetingMode === 'manual' && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-3 space-y-3 overflow-hidden">
                   <div>
-                    <label className="text-[12px] font-bold text-foreground block mb-1">Location</label>
-                    <input value={manualLocation} onChange={e => setManualLocation(e.target.value)} placeholder="e.g. Riyadh, Jeddah" className="w-full h-10 px-4 rounded-xl border border-border bg-background text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-blue/30" />
+                    <label className="text-[12px] font-bold text-foreground block mb-1">{t('quickAd.location')}</label>
+                    <input value={manualLocation} onChange={e => setManualLocation(e.target.value)} placeholder={t('quickAd.locationPlaceholder')} className="w-full h-10 px-4 rounded-xl border border-border bg-background text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-blue/30" />
                   </div>
                   <div>
-                    <label className="text-[12px] font-bold text-foreground block mb-1">Age Range: {manualAgeMin} — {manualAgeMax}</label>
+                    <label className="text-[12px] font-bold text-foreground block mb-1">{t('quickAd.ageRange', { min: manualAgeMin, max: manualAgeMax })}</label>
                     <div className="flex items-center gap-3">
                       <input type="range" min={13} max={65} value={manualAgeMin} onChange={e => setManualAgeMin(Number(e.target.value))} className="flex-1 accent-brand-blue" />
                       <input type="range" min={13} max={65} value={manualAgeMax} onChange={e => setManualAgeMax(Number(e.target.value))} className="flex-1 accent-brand-blue" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-[12px] font-bold text-foreground block mb-1">Interests</label>
+                    <label className="text-[12px] font-bold text-foreground block mb-1">{t('quickAd.interests')}</label>
                     <div className="flex flex-wrap gap-2">
-                      {['Food', 'Restaurants', 'Lifestyle', 'Shopping', 'Travel', 'Fitness'].map(interest => (
-                        <button key={interest} onClick={() => setManualInterests(prev => prev.includes(interest) ? prev.filter(i => i !== interest) : [...prev, interest])}
-                          className={`rounded-3xl px-3 py-1.5 text-[11px] font-semibold ${manualInterests.includes(interest) ? 'bg-brand-blue text-primary-foreground' : 'bg-card border border-border text-muted-foreground'}`}>{interest}</button>
+                      {[{ id: 'Food', slug: 'food' }, { id: 'Restaurants', slug: 'restaurants' }, { id: 'Lifestyle', slug: 'lifestyle' }, { id: 'Shopping', slug: 'shopping' }, { id: 'Travel', slug: 'travel' }, { id: 'Fitness', slug: 'fitness' }].map(interest => (
+                        <button key={interest.id} onClick={() => setManualInterests(prev => prev.includes(interest.id) ? prev.filter(i => i !== interest.id) : [...prev, interest.id])}
+                          className={`rounded-3xl px-3 py-1.5 text-[11px] font-semibold ${manualInterests.includes(interest.id) ? 'bg-brand-blue text-primary-foreground' : 'bg-card border border-border text-muted-foreground'}`}>{t(`quickAd.interestOptions.${interest.slug}`)}</button>
                       ))}
                     </div>
                   </div>
@@ -222,17 +222,17 @@ export const QuickAdScreen = ({ onBack }: { onBack: () => void }) => {
 
               {/* Cost summary */}
               <div className="bg-card rounded-2xl p-4 mt-4 border border-border-light space-y-2">
-                <div className="flex justify-between text-[13px]"><span className="text-muted-foreground">Ad spend</span><span className="text-foreground">SAR {budget}</span></div>
-                <div className="flex justify-between text-[13px]"><span className="text-muted-foreground">Speeda fee (15%)</span><span className="text-foreground">SAR {Math.round(parseInt(budget.replace(',', '')) * 0.15)}</span></div>
+                <div className="flex justify-between text-[13px]"><span className="text-muted-foreground">{t('quickAd.adSpend')}</span><span className="text-foreground">SAR {budget}</span></div>
+                <div className="flex justify-between text-[13px]"><span className="text-muted-foreground">{t('quickAd.speedaFee')}</span><span className="text-foreground">SAR {Math.round(parseInt(budget.replace(',', '')) * 0.15)}</span></div>
                 <div className="border-t border-border-light pt-2 flex justify-between">
-                  <span className="text-[14px] font-bold text-foreground">Total</span>
+                  <span className="text-[14px] font-bold text-foreground">{t('quickAd.total')}</span>
                   <span className="text-[16px] font-extrabold text-brand-blue">SAR {Math.round(parseInt(budget.replace(',', '')) * 1.15)}</span>
                 </div>
               </div>
 
               <div className="flex gap-3 mt-5">
-                <button onClick={() => setStep(1)} className="flex-1 h-[56px] rounded-2xl border border-border text-foreground font-bold text-[15px] btn-press">← Back</button>
-                <button onClick={() => setStep(3)} className="flex-1 h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press">Next →</button>
+                <button onClick={() => setStep(1)} className="flex-1 h-[56px] rounded-2xl border border-border text-foreground font-bold text-[15px] btn-press">{t('quickAd.back')}</button>
+                <button onClick={() => setStep(3)} className="flex-1 h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press">{t('quickAd.next')}</button>
               </div>
             </motion.div>
           )}
@@ -240,13 +240,13 @@ export const QuickAdScreen = ({ onBack }: { onBack: () => void }) => {
           {/* ── Step 3: Creative & Launch ──────────────────────────────────── */}
           {step === 3 && (
             <motion.div key="s3" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}>
-              <h2 className="text-[18px] font-bold text-foreground">Ad Creative</h2>
+              <h2 className="text-[18px] font-bold text-foreground">{t('quickAd.step3Title')}</h2>
 
               <button className="w-full mt-4 p-5 rounded-2xl border-2 border-dashed border-border flex items-center gap-3 card-tap">
                 <Sparkles size={24} className="text-brand-teal" />
-                <div className="text-left">
-                  <p className="text-[14px] font-bold text-foreground">Generate New with AI</p>
-                  <p className="text-[12px] text-muted-foreground">AI creates optimized ad creative</p>
+                <div className="text-start">
+                  <p className="text-[14px] font-bold text-foreground">{t('quickAd.generateNew')}</p>
+                  <p className="text-[12px] text-muted-foreground">{t('quickAd.generateNewDesc')}</p>
                 </div>
               </button>
 
@@ -256,14 +256,14 @@ export const QuickAdScreen = ({ onBack }: { onBack: () => void }) => {
                 </div>
               ) : (postsData?.posts ?? []).filter(p => p.status === 'Published').length > 0 ? (
                 <>
-                  <p className="text-[13px] text-muted-foreground mt-4 mb-2">Or use an existing post:</p>
+                  <p className="text-[13px] text-muted-foreground mt-4 mb-2">{t('quickAd.useExisting')}</p>
                   {postsData!.posts.filter(p => p.status === 'Published').slice(0, 5).map(p => (
                     <button key={p.id} onClick={() => setCreative(p.ayrshareId ?? p.id)}
                       className={`w-full flex items-center gap-3 p-4 rounded-2xl border-2 mt-2 transition-all ${creative === (p.ayrshareId ?? p.id) ? 'border-brand-blue bg-purple-soft' : 'border-border-light bg-card'}`}>
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${creative === (p.ayrshareId ?? p.id) ? 'border-brand-blue' : 'border-border'}`}>
                         {creative === (p.ayrshareId ?? p.id) && <div className="w-3 h-3 rounded-full bg-brand-blue" />}
                       </div>
-                      <div className="text-left flex-1">
+                      <div className="text-start flex-1">
                         <p className="text-[13px] font-bold text-foreground capitalize">🖼️ {p.caption.slice(0, 50)}{p.caption.length > 50 ? '…' : ''}</p>
                         <p className="text-[11px] text-muted-foreground">{p.platform} · {p.status}</p>
                       </div>
@@ -273,13 +273,13 @@ export const QuickAdScreen = ({ onBack }: { onBack: () => void }) => {
               ) : null}
 
               <div className="flex gap-3 mt-6">
-                <button onClick={() => setStep(2)} className="h-[56px] px-6 rounded-2xl border border-border text-foreground font-bold text-[14px] btn-press">← Back</button>
+                <button onClick={() => setStep(2)} className="h-[56px] px-6 rounded-2xl border border-border text-foreground font-bold text-[14px] btn-press">{t('quickAd.back')}</button>
                 <button
                   onClick={handleLaunch}
                   disabled={isPending}
                   className="flex-1 h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[14px] shadow-btn btn-press disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {isPending ? <><Loader2 size={18} className="animate-spin" /> Launching…</> : `Launch Ad — SAR ${Math.round(parseInt(budget.replace(',', '')) * 1.15)}`}
+                  {isPending ? <><Loader2 size={18} className="animate-spin" /> {t('quickAd.launching')}</> : t('quickAd.launchAd', { amount: Math.round(parseInt(budget.replace(',', '')) * 1.15) })}
                 </button>
               </div>
             </motion.div>

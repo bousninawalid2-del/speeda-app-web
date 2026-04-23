@@ -31,8 +31,8 @@ export const NotificationsScreen = ({ onBack, onNavigate }: NotificationsScreenP
         ) : !groups || groups.every(g => g.items.length === 0) ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <span className="text-4xl">🔔</span>
-            <p className="text-[15px] font-semibold text-foreground mt-3">No notifications yet</p>
-            <p className="text-[13px] text-muted-foreground mt-1">We'll notify you about campaigns, posts, and more.</p>
+            <p className="text-[15px] font-semibold text-foreground mt-3">{t('notificationsEmpty.title')}</p>
+            <p className="text-[13px] text-muted-foreground mt-1">{t('notificationsEmpty.desc')}</p>
           </div>
         ) : (
           groups.map((group, gi) => (
@@ -46,7 +46,7 @@ export const NotificationsScreen = ({ onBack, onNavigate }: NotificationsScreenP
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.04 }}
                     onClick={() => n.nav && onNavigate?.(n.nav)}
-                    className="w-full bg-card rounded-2xl p-4 border border-border-light flex gap-3 items-start text-left"
+                    className="w-full bg-card rounded-2xl p-4 border border-border-light flex gap-3 items-start text-start"
                   >
                     <div className={`w-10 h-10 rounded-2xl ${n.bg} flex items-center justify-center text-lg flex-shrink-0`}>{n.icon}</div>
                     <div className="flex-1 min-w-0">

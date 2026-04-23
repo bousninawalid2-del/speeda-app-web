@@ -451,7 +451,7 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
                 <span className="text-[14px] font-medium text-foreground">
                   {schedDate ? `📅 ${schedDate} · ${schedTime || 'Pick time'}` : '📅 Pick date & time'}
                 </span>
-                <button onClick={() => setScheduleMode('now')} className="text-[12px] text-muted-foreground font-medium ml-auto">Publish now</button>
+                <button onClick={() => setScheduleMode('now')} className="text-[12px] text-muted-foreground font-medium ms-auto">Publish now</button>
               </div>
               <div className="flex gap-2">
                 <input type="date" value={schedDate} onChange={e => setSchedDate(e.target.value)}
@@ -505,7 +505,7 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
         <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
           {templates.map((tpl, i) => (
             <button key={i} onClick={() => selectTemplate(i)}
-              className={`min-w-[150px] bg-card rounded-2xl p-4 text-left flex-shrink-0 transition-all card-tap ${
+              className={`min-w-[150px] bg-card rounded-2xl p-4 text-start flex-shrink-0 transition-all card-tap ${
                 selectedTemplate === i ? 'border-2 border-brand-blue shadow-md' : 'border border-border-light'
               }`}>
               <span className="text-2xl">{tpl.icon}</span>
@@ -521,7 +521,7 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
         <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
           {menuTemplates.map((tpl, i) => (
             <button key={`menu-${i}`} onClick={() => { setDesc(tpl.prompt); const matchedType = contentTypes.find(ct => ct === tpl.type); if (matchedType) setType(matchedType); }}
-              className="min-w-[150px] bg-card rounded-2xl p-4 text-left flex-shrink-0 transition-all card-tap border border-border-light hover:border-brand-blue">
+              className="min-w-[150px] bg-card rounded-2xl p-4 text-start flex-shrink-0 transition-all card-tap border border-border-light hover:border-brand-blue">
               <span className="text-2xl">{tpl.icon}</span>
               <h4 className="text-[13px] font-bold text-foreground mt-2">{tpl.title}</h4>
               <p className="text-[11px] text-brand-blue font-semibold mt-1">{tpl.desc}</p>
@@ -1008,7 +1008,7 @@ const StrategyMode = ({
         <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
           {templates.map((tpl, i) => (
             <button key={i} onClick={() => selectTemplate(i)}
-              className={`min-w-[150px] bg-card rounded-2xl p-4 text-left flex-shrink-0 transition-all card-tap ${
+              className={`min-w-[150px] bg-card rounded-2xl p-4 text-start flex-shrink-0 transition-all card-tap ${
                 selectedTemplate === i ? 'border-2 border-brand-blue shadow-md' : 'border border-border-light'
               }`}>
               <span className="text-2xl">{tpl.icon}</span>
@@ -1107,7 +1107,7 @@ const StrategyMode = ({
                                 <span className="text-[13px] font-semibold text-foreground">{getPlatformDetails(item.platform).name} — {item.type}</span>
                                 <p className="text-[12px] text-muted-foreground mt-0.5">AI-generated content ready for review</p>
                               </div>
-                              <ChevronRight size={14} className="text-muted-foreground" />
+                              <ChevronRight size={14} className="text-muted-foreground rtl:rotate-180" />
                             </div>
                           ))}
                         </motion.div>

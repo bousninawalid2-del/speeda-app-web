@@ -334,7 +334,7 @@ export const CaptionTemplateEngine = ({ open, onClose, onUseCaption }: CaptionTe
             <div className="flex gap-2 mt-2">
               <button onClick={() => setStep(2)} className="text-[12px] text-brand-blue font-medium">← Back</button>
               <button onClick={() => canProceedStep3() && setStep(4)} disabled={!canProceedStep3()}
-                className="ml-auto px-5 py-2 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold disabled:opacity-50">Next →</button>
+                className="ms-auto px-5 py-2 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold disabled:opacity-50">Next →</button>
             </div>
           </div>
         )}
@@ -375,7 +375,7 @@ export const CaptionTemplateEngine = ({ open, onClose, onUseCaption }: CaptionTe
                     <div className="flex gap-2 mt-3">
                       <button onClick={() => { navigator.clipboard.writeText(filled); }} className="text-[11px] text-muted-foreground font-medium">📋 {t('common.copy')}</button>
                       <button onClick={() => { onUseCaption(filled); onClose(); resetAll(); }}
-                        className="ml-auto px-4 py-1.5 rounded-lg gradient-btn text-primary-foreground text-[12px] font-bold">{t('captionEngine.useThis')}</button>
+                        className="ms-auto px-4 py-1.5 rounded-lg gradient-btn text-primary-foreground text-[12px] font-bold">{t('captionEngine.useThis')}</button>
                     </div>
                   </div>
                 );

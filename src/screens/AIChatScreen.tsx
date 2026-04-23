@@ -2,22 +2,13 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, Send, Plus, Clock, Paperclip, X, Camera, Image, Film, FileText, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { InstagramLogo, GoogleLogo, WhatsAppLogo } from '@/components/PlatformLogos';
+import { InstagramLogo, GoogleLogo, WhatsAppLogo, FacebookLogo } from '@/components/PlatformLogos';
 import smashBurgerImg from '@/assets/demo-smash-burger.jpg';
 import { useFreeTier, AIMessageLimitBanner, AIMessageLimitReached, UpgradePrompt } from '@/components/FreeTier';
 import { getSmartReplies } from '@/components/SmartReplyEngine';
 import { toast } from 'sonner';
 
 // ─── Engagement Data ──────────────────────────────────────────────────────────
-
-const fallbackEngagementMessages = [
-  { name: 'Ahmed K.', emoji: '👍', Logo: InstagramLogo, platform: 'Instagram', type: 'Comment', filter: 'Comments', time: '5m ago', msg: 'This looks amazing! What time do you close?', ai: "Thank you Ahmed! We're open until 12 AM tonight. See you soon!" },
-  { name: 'Sara M.', emoji: '🌟', Logo: GoogleLogo, platform: 'Google', type: 'Review', filter: 'Reviews', time: '15m ago', msg: 'Food was cold when delivered. Very disappointed with the service.', ai: "We sincerely apologize for this experience, Sara. We'd like to make it right. Please DM us your order number and we'll send a replacement.", isNegative: true },
-  { name: 'Mohammed A.', emoji: '😊', Logo: InstagramLogo, platform: 'Instagram', type: 'DM', filter: 'DMs', time: '30m ago', msg: 'Do you have any vegan options on the menu?', ai: 'Yes Mohammed! We have 5 vegan dishes including our popular Falafel Bowl and Quinoa Salad. Would you like to see the full menu?' },
-  { name: 'Noura H.', emoji: '👍', Logo: InstagramLogo, platform: 'Instagram', type: 'Comment', filter: 'Comments', time: '3h ago', msg: 'How much is the family meal deal?', ai: 'Hi Noura! Our Family Meal Deal is 149 SAR and serves 4-5 people. It includes 4 mains, 4 sides, and drinks. Order now on our app!' },
-  { name: 'Fatima R.', emoji: '👍', Logo: WhatsAppLogo, platform: 'WhatsApp', type: 'Message', filter: 'DMs', time: '1h ago', msg: 'I want to place a catering order for 50 people next Friday', ai: "Hi Fatima! We'd love to help with your catering order. Our catering menu starts at 35 SAR per person. I'll have our catering team reach out shortly!" },
-  { name: 'Khalid S.', emoji: '⭐', Logo: GoogleLogo, platform: 'Google', type: 'Review', filter: 'Reviews', time: '2h ago', msg: 'Best shawarma in Riyadh! 5 stars!', ai: "Thank you so much Khalid! We're thrilled you loved it. See you again soon! 🙏" },
-];
 
 const engagementFilters = ['All', 'Comments', 'DMs', 'Reviews'];
 
@@ -36,7 +27,7 @@ const CHAR_LIMITS_CHAT: Record<string, number> = { Instagram: 2200, TikTok: 150,
 
 // ─── Engagement Sub-tab ───────────────────────────────────────────────────────
 
-const EngagementSubTab = ({ engFilter, setEngFilter, filteredEngagement, onNavigate, t, i18n }: any) => {
+const EngagementSubTab = ({ engFilter, setEngFilter, filteredEngagement, onNavigate, t, i18n, loading, error, messagingDisabled, onRetry, onReply }: any) => {
   const [openComposer, setOpenComposer] = useState<number | null>(null);
   const [sentReplies, setSentReplies] = useState<Record<number, string>>({});
   const [composerValues, setComposerValues] = useState<Record<number, string>>({});
@@ -49,17 +40,23 @@ const EngagementSubTab = ({ engFilter, setEngFilter, filteredEngagement, onNavig
     setTimeout(() => setShimmer(prev => ({ ...prev, [idx]: false })), 500);
   };
 
-  const handleSendReply = (idx: number) => {
+  const handleSendReply = async (idx: number, item: any) => {
     const text = composerValues[idx];
     if (!text?.trim()) return;
     setSendingIdx(idx);
-    setTimeout(() => {
-      setSentReplies(prev => ({ ...prev, [idx]: text }));
-      setOpenComposer(null);
-      setComposerValues(prev => ({ ...prev, [idx]: '' }));
+    try {
+      const ok = onReply ? await onReply(item, text) : true;
+      if (ok) {
+        setSentReplies(prev => ({ ...prev, [idx]: text }));
+        setOpenComposer(null);
+        setComposerValues(prev => ({ ...prev, [idx]: '' }));
+        toast.success(t('engagement.replySent', 'Reply sent ✓'));
+      } else {
+        toast.error(t('engagement.replyFailed', 'Could not send reply'));
+      }
+    } finally {
       setSendingIdx(null);
-      toast.success(t('engagement.replySent', 'Reply sent ✓'));
-    }, 2000);
+    }
   };
 
   return (
@@ -72,6 +69,41 @@ const EngagementSubTab = ({ engFilter, setEngFilter, filteredEngagement, onNavig
             }`}>{f}</button>
         ))}
       </div>
+      {loading && filteredEngagement.length === 0 && (
+        <div className="space-y-4">
+          {[0, 1, 2].map(j => (
+            <div key={j} className="bg-card rounded-[20px] p-5 shadow-card border border-border-light">
+              <div className="flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-muted animate-pulse" /><div className="h-4 w-28 bg-muted rounded animate-pulse" /><div className="h-3 w-14 bg-muted rounded animate-pulse" /></div>
+              <div className="h-16 bg-muted/60 rounded-2xl animate-pulse mt-3" />
+              <div className="h-10 bg-muted rounded-xl animate-pulse mt-3" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="bg-card rounded-[20px] p-6 shadow-card border border-border-light text-center">
+          <p className="text-[14px] text-foreground mb-1 font-semibold">{t('engagement.errorTitle', 'Could not load engagement')}</p>
+          <p className="text-[12px] text-muted-foreground mb-4">{error}</p>
+          <button onClick={onRetry} className="h-9 px-4 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold btn-press">
+            {t('common.retry', 'Retry')}
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && engFilter === 'DMs' && messagingDisabled && (
+        <div className="bg-card rounded-[20px] p-6 shadow-card border border-border-light text-center">
+          <p className="text-[14px] font-semibold text-foreground mb-1">{t('engagement.dmsDisabledTitle', 'Messaging is not enabled')}</p>
+          <p className="text-[12px] text-muted-foreground">{t('engagement.dmsDisabledBody', 'Enable Messaging for this profile in your Ayrshare dashboard to see DMs here.')}</p>
+        </div>
+      )}
+
+      {!loading && !error && filteredEngagement.length === 0 && !(engFilter === 'DMs' && messagingDisabled) && (
+        <div className="bg-card rounded-[20px] p-6 shadow-card border border-border-light text-center">
+          <p className="text-[14px] text-muted-foreground">{t('engagement.empty', 'No engagement yet')}</p>
+        </div>
+      )}
+
       <div className="space-y-4">
         {filteredEngagement.map((m: any, i: number) => {
           const isReview = m.type === 'Review';
@@ -129,7 +161,7 @@ const EngagementSubTab = ({ engFilter, setEngFilter, filteredEngagement, onNavig
                         ) : (
                           suggestions.map((s: string, si: number) => (
                             <button key={si} onClick={() => setComposerValues(prev => ({ ...prev, [i]: s }))}
-                              className="text-[11px] px-3 py-1.5 rounded-full bg-brand-blue/10 text-brand-blue font-medium hover:bg-brand-blue/20 transition-colors text-left leading-snug">
+                              className="text-[11px] px-3 py-1.5 rounded-full bg-brand-blue/10 text-brand-blue font-medium hover:bg-brand-blue/20 transition-colors text-start leading-snug">
                               ✦ {s.length > 50 ? s.slice(0, 50) + '…' : s}
                             </button>
                           ))
@@ -152,7 +184,7 @@ const EngagementSubTab = ({ engFilter, setEngFilter, filteredEngagement, onNavig
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => setOpenComposer(null)} className="h-9 px-4 rounded-xl border border-border text-muted-foreground text-[12px] font-medium btn-press">{t('common.cancel')}</button>
-                      <button onClick={() => handleSendReply(i)} disabled={!(composerValues[i] || '').trim() || sendingIdx === i}
+                      <button onClick={() => handleSendReply(i, m)} disabled={!(composerValues[i] || '').trim() || sendingIdx === i}
                         className="flex-1 h-9 rounded-xl gradient-btn text-primary-foreground text-[12px] font-bold btn-press disabled:opacity-50 flex items-center justify-center gap-1.5">
                         {sendingIdx === i ? <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" /> : <>{t('common.send')} ✦</>}
                       </button>
@@ -220,7 +252,12 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
   const [engFilter, setEngFilter] = useState(initialEngagementFilter || 'All');
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [limitReached, setLimitReached] = useState(false);
-  const [engagementFeed, setEngagementFeed] = useState(fallbackEngagementMessages);
+  const [engagementFeed, setEngagementFeed] = useState<any[]>([]);
+  const [engagementLoading, setEngagementLoading] = useState(false);
+  const [engagementError, setEngagementError] = useState<string | null>(null);
+  const [messagingDisabled, setMessagingDisabled] = useState(false);
+  const [engagementReloadKey, setEngagementReloadKey] = useState(0);
+  const engagementPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [pendingUpload, setPendingUpload] = useState<{
     mediaId: string;
     mediaUrl: string;
@@ -282,65 +319,102 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
   }, []);
 
   useEffect(() => {
-    if (subTab !== 'engagement') return;
+    if (subTab !== 'engagement') {
+      if (engagementPollRef.current) { clearInterval(engagementPollRef.current); engagementPollRef.current = null; }
+      return;
+    }
 
     let alive = true;
-    const loadEngagement = async () => {
+    const platformToLogo: Record<string, typeof InstagramLogo> = {
+      Instagram: InstagramLogo,
+      Google: GoogleLogo,
+      WhatsApp: WhatsAppLogo,
+      Facebook: FacebookLogo,
+    };
+
+    const loadEngagement = async (isInitial: boolean) => {
+      if (isInitial) { setEngagementLoading(true); setEngagementError(null); }
       try {
         const token = typeof window !== 'undefined' ? localStorage.getItem('speeda_access_token') : null;
-        const res = await fetch(`/api/chat/engagement-feed?filter=${encodeURIComponent(engFilter)}`, {
+        const res = await fetch(`/api/engagement/feed?filter=${encodeURIComponent(engFilter)}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
           credentials: 'same-origin',
+          cache: 'no-store',
         });
-        if (!res.ok) throw new Error('Engagement feed unavailable');
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data?.error ?? `Engagement feed unavailable (${res.status})`);
+        }
+        const items: any[] = Array.isArray(data.items) ? data.items : [];
 
-        const data = await res.json();
-        if (!Array.isArray(data.engagementMessages)) throw new Error('Invalid payload');
-
-        const platformToLogo: Record<string, typeof InstagramLogo> = {
-          Instagram: InstagramLogo,
-          Google: GoogleLogo,
-          WhatsApp: WhatsAppLogo,
-        };
-        const deriveFilterFromType = (type: string): string => {
-          const normalizedType = type.toLowerCase();
-          if (normalizedType === 'review') return 'Reviews';
-          if (normalizedType === 'dm' || normalizedType === 'message') return 'DMs';
-          return 'Comments';
-        };
-        const asRecord = (value: unknown): Record<string, unknown> =>
-          value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
-
-        const nextFeed = data.engagementMessages.map((entryUnknown: unknown, index: number) => {
-          const entry = asRecord(entryUnknown);
-          const platform = String(entry.platform ?? 'Instagram');
-          const type = String(entry.type ?? 'Comment');
-          return {
-            id: String(entry.id ?? `eng_${index}`),
-            name: String(entry.name ?? 'Customer'),
-            emoji: String(entry.emoji ?? '👍'),
-            Logo: platformToLogo[platform] ?? InstagramLogo,
-            platform,
-            type,
-            filter: String(entry.filter ?? deriveFilterFromType(type)),
-            time: String(entry.time ?? 'Just now'),
-            msg: String(entry.msg ?? ''),
-            ai: String(entry.ai ?? entry.reply ?? ''),
-            isNegative: Boolean(entry.isNegative),
-          };
-        });
+        const nextFeed = items.map((entry, index) => ({
+          id: String(entry.id ?? `eng_${index}`),
+          rawId: String(entry.rawId ?? entry.id ?? ''),
+          name: String(entry.name ?? 'Customer'),
+          emoji: String(entry.emoji ?? '👍'),
+          Logo: platformToLogo[entry.platform] ?? InstagramLogo,
+          platform: String(entry.platform ?? 'Instagram'),
+          sourcePlatform: String(entry.sourcePlatform ?? '').toLowerCase(),
+          type: String(entry.type ?? 'Comment'),
+          filter: String(entry.filter ?? 'Comments'),
+          time: String(entry.time ?? 'Just now'),
+          msg: String(entry.msg ?? ''),
+          ai: String(entry.ai ?? ''),
+          isNegative: Boolean(entry.isNegative),
+          profileImage: entry.profileImage ? String(entry.profileImage) : undefined,
+        }));
 
         if (!alive) return;
         setEngagementFeed(nextFeed);
-      } catch {
+        setMessagingDisabled(Boolean(data.messagingDisabled));
+        setEngagementError(null);
+      } catch (err) {
         if (!alive) return;
-        setEngagementFeed(fallbackEngagementMessages);
+        const message = err instanceof Error ? err.message : 'Engagement feed unavailable';
+        if (isInitial) setEngagementError(message);
+      } finally {
+        if (alive && isInitial) setEngagementLoading(false);
       }
     };
 
-    loadEngagement();
-    return () => { alive = false; };
-  }, [subTab, engFilter]);
+    loadEngagement(true);
+    if (engagementPollRef.current) clearInterval(engagementPollRef.current);
+    engagementPollRef.current = setInterval(() => loadEngagement(false), 60_000);
+
+    return () => {
+      alive = false;
+      if (engagementPollRef.current) { clearInterval(engagementPollRef.current); engagementPollRef.current = null; }
+    };
+  }, [subTab, engFilter, engagementReloadKey]);
+
+  const handleEngagementReply = useCallback(async (item: any, text: string): Promise<boolean> => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('speeda_access_token') : null;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    try {
+      if (item.type === 'Comment') {
+        const platform = (item.sourcePlatform || item.platform || '').toLowerCase();
+        const platforms = [platform.includes('facebook') ? 'facebook' : 'instagram'];
+        const res = await fetch('/api/engagement/reply-comment', {
+          method: 'POST', headers, credentials: 'same-origin',
+          body: JSON.stringify({ commentId: item.rawId, platforms, comment: text }),
+        });
+        if (!res.ok) return false;
+      } else if (item.type === 'Review') {
+        const platform = (item.sourcePlatform || '').includes('facebook') ? 'facebook' : 'gmb';
+        const res = await fetch('/api/engagement/reply-review', {
+          method: 'POST', headers, credentials: 'same-origin',
+          body: JSON.stringify({ reviewId: item.rawId, reply: text, platform }),
+        });
+        if (!res.ok) return false;
+      } else {
+        // DMs — not supported as reply yet
+        return true;
+      }
+      setEngagementReloadKey(k => k + 1);
+      return true;
+    } catch { return false; }
+  }, []);
 
   // ── File upload handler ──────────────────────────────────────────────────
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -534,7 +608,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
               }`}
             >
               {tab === 'chat' ? t('chat.chatTab', 'Chat') : t('chat.engagementTab', 'Engagement')}
-              {tab === 'engagement' && <span className="ms-1.5 w-4 h-4 inline-flex items-center justify-center rounded-full bg-red-accent text-primary-foreground text-[9px] font-bold">6</span>}
+              {tab === 'engagement' && engagementFeed.length > 0 && <span className="ms-1.5 w-4 h-4 inline-flex items-center justify-center rounded-full bg-red-accent text-primary-foreground text-[9px] font-bold">{engagementFeed.length > 99 ? '99+' : engagementFeed.length}</span>}
             </button>
           ))}
         </div>
@@ -557,8 +631,8 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
                 )}
                 <div className={`max-w-[85%] rounded-[20px] p-4 ${
                   msg.role === 'user'
-                    ? 'gradient-hero rounded-br-[6px] shadow-sm'
-                    : 'bg-card border border-border-light rounded-bl-[6px] shadow-[0_2px_8px_rgba(0,0,0,0.04)]'
+                    ? 'gradient-hero rounded-be-[6px] shadow-sm'
+                    : 'bg-card border border-border-light rounded-bs-[6px] shadow-[0_2px_8px_rgba(0,0,0,0.04)]'
                 }`}>
                   {msg.mediaUrl && msg.type === 'image' && (
                     <img src={msg.mediaUrl} alt="" className="w-full rounded-xl mb-3 max-h-[300px] object-cover" />
@@ -586,7 +660,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
                         <button
                           key={opt.id}
                           onClick={() => handleOptionClick(opt)}
-                          className="w-full text-left px-4 py-2.5 rounded-xl border border-border-light bg-background hover:bg-muted transition-colors text-[13px] font-medium text-foreground"
+                          className="w-full text-start px-4 py-2.5 rounded-xl border border-border-light bg-background hover:bg-muted transition-colors text-[13px] font-medium text-foreground"
                         >
                           {opt.title}
                         </button>
@@ -650,7 +724,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
             {attachMenuOpen && (
               <>
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setAttachMenuOpen(false)} className="fixed inset-0 bg-foreground/20 z-40" />
-                <motion.div initial={{ y: 300 }} animate={{ y: 0 }} exit={{ y: 300 }} className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl p-5 shadow-xl max-w-[430px] mx-auto">
+                <motion.div initial={{ y: 300 }} animate={{ y: 0 }} exit={{ y: 300 }} className="fixed bottom-0 start-0 end-0 z-50 bg-card rounded-t-3xl p-5 shadow-xl max-w-[430px] mx-auto">
                   <div className="w-10 h-1 rounded-full bg-border mx-auto mb-4" />
                   <div className="space-y-1">
                     {[
@@ -686,18 +760,41 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
             </div>
           )}
 
-          {/* Quick prompt chips */}
+          {/* Disabled quick prompt chips (kept for reference, now unclickable) */}
           {showChips && (
             <div className="flex-shrink-0 px-5 pt-2 bg-background z-30">
               <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
                 {quickPrompts.map((p, j) => (
-                  <button key={j} onClick={() => handleSend(p)} className="px-3.5 py-1.5 rounded-3xl bg-card text-brand-blue text-[12px] font-semibold border border-brand-blue/20 btn-press hover:bg-muted transition-colors whitespace-nowrap flex-shrink-0">
+                  <button
+                    key={j}
+                    disabled
+                    aria-disabled="true"
+                    className="px-3.5 py-1.5 rounded-3xl bg-card text-brand-blue/50 text-[12px] font-semibold border border-brand-blue/10 whitespace-nowrap flex-shrink-0 cursor-not-allowed opacity-60"
+                  >
                     {p}
                   </button>
                 ))}
               </div>
             </div>
           )}
+
+          {/* WhatsApp CTA — replaces active chat interactions */}
+          <div className="flex-shrink-0 px-5 pt-3 pb-1 flex justify-center bg-background z-30">
+            <a
+              href="https://wa.me/966510349799"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-3xl bg-card text-brand-blue text-[13px] font-semibold border border-brand-blue/20 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:bg-muted transition-colors btn-press"
+            >
+              <svg viewBox="0 0 32 32" width="18" height="18" aria-hidden="true" className="flex-shrink-0">
+                <path
+                  fill="#25D366"
+                  d="M16.003 3.2c-7.08 0-12.8 5.72-12.8 12.8 0 2.26.6 4.46 1.73 6.4L3.2 28.8l6.58-1.72a12.74 12.74 0 0 0 6.22 1.6h.01c7.07 0 12.8-5.72 12.8-12.8 0-3.42-1.33-6.63-3.75-9.05a12.73 12.73 0 0 0-9.06-3.63Zm0 23.3a10.5 10.5 0 0 1-5.35-1.46l-.38-.23-3.9 1.02 1.04-3.8-.25-.4a10.5 10.5 0 1 1 19.5-5.63c0 5.8-4.72 10.5-10.66 10.5Zm5.78-7.86c-.32-.16-1.88-.93-2.17-1.03-.29-.11-.5-.16-.72.16-.21.31-.82 1.02-1 1.23-.18.21-.37.23-.69.08-.32-.16-1.34-.5-2.56-1.58-.95-.84-1.59-1.88-1.77-2.2-.19-.32-.02-.48.14-.64.14-.14.32-.37.48-.56.16-.18.21-.31.31-.52.11-.21.05-.4-.03-.56-.08-.16-.72-1.74-.99-2.38-.26-.62-.53-.53-.72-.54l-.62-.01c-.21 0-.55.08-.84.4-.29.31-1.1 1.08-1.1 2.63s1.13 3.05 1.29 3.26c.16.21 2.22 3.4 5.39 4.77.75.32 1.34.52 1.79.66.75.24 1.44.21 1.98.13.6-.09 1.88-.77 2.14-1.52.26-.74.26-1.37.19-1.5-.08-.14-.29-.22-.61-.38Z"
+                />
+              </svg>
+              <span>{t('chat.whatsappCta', 'Chat with us on WhatsApp')}</span>
+            </a>
+          </div>
 
           {/* AI Message Limit Banner */}
           <AIMessageLimitBanner />
@@ -707,11 +804,11 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
             <AIMessageLimitReached onUpgrade={() => { setLimitReached(false); setShowUpgrade(true); }} />
           )}
 
-          {/* Fixed Input Bar */}
+          {/* Fixed Input Bar — disabled */}
           <div className="flex-shrink-0 px-5 py-3 pb-[76px] bg-background z-30">
-            <div className="bg-card rounded-[20px] border border-border-light flex items-center px-3 h-[52px] gap-2">
-              <button className="flex-shrink-0 p-1">
-                <Mic size={20} className="text-brand-blue" />
+            <div className="bg-card rounded-[20px] border border-border-light flex items-center px-3 h-[52px] gap-2 opacity-60">
+              <button disabled aria-disabled="true" className="flex-shrink-0 p-1 cursor-not-allowed">
+                <Mic size={20} className="text-muted-foreground" />
               </button>
               <input
                 ref={fileInputRef}
@@ -719,27 +816,25 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
                 accept="image/*,audio/*,.pdf"
                 className="hidden"
                 onChange={handleFileSelect}
+                disabled
               />
-              <button onClick={() => setAttachMenuOpen(true)} className="flex-shrink-0 p-1">
-                <Paperclip size={18} className="text-brand-blue" />
+              <button disabled aria-disabled="true" className="flex-shrink-0 p-1 cursor-not-allowed">
+                <Paperclip size={18} className="text-muted-foreground" />
               </button>
               <input
                 value={inputVal}
-                onChange={e => setInputVal(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
+                readOnly
+                disabled
                 placeholder="Ask Speeda..."
-                className="flex-1 bg-transparent border-none outline-none text-[14px] text-foreground placeholder:text-muted-foreground/50"
+                className="flex-1 bg-transparent border-none outline-none text-[14px] text-foreground placeholder:text-muted-foreground/50 cursor-not-allowed"
               />
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={() => handleSend()}
-                disabled={(!inputVal.trim() && !pendingUpload) || isTyping}
-                className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
-                  (inputVal.trim() || pendingUpload) && !isTyping ? 'gradient-hero shadow-sm' : 'bg-muted'
-                }`}
+              <button
+                disabled
+                aria-disabled="true"
+                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-muted cursor-not-allowed"
               >
-                <Send size={16} className={(inputVal.trim() || pendingUpload) && !isTyping ? 'text-primary-foreground' : 'text-muted-foreground'} />
-              </motion.button>
+                <Send size={16} className="text-muted-foreground" />
+              </button>
             </div>
           </div>
         </>
@@ -752,6 +847,11 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
           onNavigate={onNavigate}
           t={t}
           i18n={i18n}
+          loading={engagementLoading}
+          error={engagementError}
+          messagingDisabled={messagingDisabled}
+          onRetry={() => setEngagementReloadKey(k => k + 1)}
+          onReply={handleEngagementReply}
         />
       )}
 

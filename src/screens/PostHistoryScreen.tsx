@@ -74,11 +74,6 @@ const statusColors: Record<string, string> = {
 };
 
 type SortKey = 'date' | 'reach' | 'engagement';
-const sortOptions: { key: SortKey; label: string }[] = [
-  { key: 'date',        label: 'Newest First' },
-  { key: 'reach',       label: 'Top Reach' },
-  { key: 'engagement',  label: 'Most Engagement' },
-];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -103,10 +98,15 @@ export const PostHistoryScreen = ({ onBack, onNavigate }: PostHistoryScreenProps
 
   const displayPosts: DisplayPost[] = (data?.posts ?? []).map(apiPostToDisplay);
   const platforms = ['All', ...Array.from(new Set(displayPosts.map(p => p.platform)))];
+  const sortOptions: { key: SortKey; label: string }[] = [
+    { key: 'date',        label: t('postHistoryExtra.sortNewest') },
+    { key: 'reach',       label: t('postHistoryExtra.sortReach') },
+    { key: 'engagement',  label: t('postHistoryExtra.sortEngagement') },
+  ];
   const statusFilters = [
-    { key: 'All' as const,       label: 'All Status' },
-    { key: 'published' as const, label: '✓ Published' },
-    { key: 'failed' as const,    label: '✕ Failed' },
+    { key: 'All' as const,       label: t('postHistoryExtra.allStatus') },
+    { key: 'published' as const, label: t('postHistoryExtra.published') },
+    { key: 'failed' as const,    label: t('postHistoryExtra.failed') },
   ];
 
   const filtered = displayPosts
@@ -127,7 +127,7 @@ export const PostHistoryScreen = ({ onBack, onNavigate }: PostHistoryScreenProps
 
   const handleRetry = async (post: DisplayPost) => {
     setRetryingIds(prev => [...prev, post.id]);
-    toast.loading('Retrying post...', { id: `retry-${post.id}` });
+    toast.loading(t('postHistoryExtra.toasts.retryLoading'), { id: `retry-${post.id}` });
     try {
       await createPost({
         platform:    post._raw.platform,
@@ -138,9 +138,9 @@ export const PostHistoryScreen = ({ onBack, onNavigate }: PostHistoryScreenProps
         status:      'Scheduled',
       });
       setRetriedIds(prev => [...prev, post.id]);
-      toast.success('Post scheduled for retry ✓', { id: `retry-${post.id}` });
+      toast.success(t('postHistoryExtra.toasts.retryScheduled'), { id: `retry-${post.id}` });
     } catch {
-      toast.error('Retry failed — try again or edit the post', { id: `retry-${post.id}` });
+      toast.error(t('postHistoryExtra.toasts.retryFailed'), { id: `retry-${post.id}` });
     } finally {
       setRetryingIds(prev => prev.filter(id => id !== post.id));
     }
@@ -156,29 +156,29 @@ export const PostHistoryScreen = ({ onBack, onNavigate }: PostHistoryScreenProps
     <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="bg-background min-h-screen pb-24">
       <div className="px-5 pt-6">
         <div className="flex items-center gap-3 mb-4">
-          <button onClick={onBack}><ChevronLeft size={24} className="text-foreground" /></button>
+          <button onClick={onBack}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
           <h1 className="text-[20px] font-extrabold text-foreground">{t('postHistory.title', 'Post History')}</h1>
-          <span className="text-[13px] text-muted-foreground ml-auto">{data?.pagination.total ?? 0} posts</span>
+          <span className="text-[13px] text-muted-foreground ms-auto">{t('postHistoryExtra.postsLabel', { count: data?.pagination.total ?? 0 })}</span>
         </div>
 
         {/* Search + Sort */}
         <div className="flex gap-2 mb-3">
           <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Search size={16} className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('postHistory.search', 'Search posts...')}
-              className="w-full h-10 rounded-xl bg-card border border-border-light pl-9 pr-4 text-[13px] text-foreground placeholder:text-muted-foreground outline-none" />
+              className="w-full h-10 rounded-xl bg-card border border-border-light ps-9 pe-4 text-[13px] text-foreground placeholder:text-muted-foreground outline-none" />
           </div>
           <div className="relative">
             <button onClick={() => setShowSortMenu(!showSortMenu)} className="h-10 px-3 rounded-xl bg-card border border-border-light flex items-center gap-1.5 text-[12px] font-semibold text-foreground">
-              <ArrowUpDown size={14} /> Sort
+              <ArrowUpDown size={14} /> {t('postHistoryExtra.sort')}
             </button>
             <AnimatePresence>
               {showSortMenu && (
                 <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-                  className="absolute top-12 right-0 z-40 bg-card rounded-xl border border-border shadow-xl p-1 min-w-[160px]">
+                  className="absolute top-12 end-0 z-40 bg-card rounded-xl border border-border shadow-xl p-1 min-w-[160px]">
                   {sortOptions.map(opt => (
                     <button key={opt.key} onClick={() => { setSortBy(opt.key); setShowSortMenu(false); }}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-[12px] font-medium transition-colors ${
+                      className={`w-full text-start px-3 py-2 rounded-lg text-[12px] font-medium transition-colors ${
                         sortBy === opt.key ? 'bg-brand-blue/10 text-brand-blue' : 'text-foreground hover:bg-muted'
                       }`}>{opt.label}</button>
                   ))}
@@ -213,11 +213,11 @@ export const PostHistoryScreen = ({ onBack, onNavigate }: PostHistoryScreenProps
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-red-accent/10 rounded-2xl p-4 mb-4 border border-red-accent/20">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[14px] font-bold text-red-accent">{failedCount} failed post{failedCount > 1 ? 's' : ''}</p>
-                <p className="text-[12px] text-muted-foreground mt-0.5">Retry all or fix individually</p>
+                <p className="text-[14px] font-bold text-red-accent">{t('postHistoryExtra.failedCount', { count: failedCount })}</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">{t('postHistoryExtra.retryAllHint')}</p>
               </div>
               <button onClick={handleRetryAll} className="h-9 px-4 rounded-xl bg-red-accent text-primary-foreground text-[12px] font-bold flex items-center gap-1.5 btn-press">
-                <RefreshCw size={14} /> Retry All
+                <RefreshCw size={14} /> {t('postHistoryExtra.retryAll')}
               </button>
             </div>
           </motion.div>
@@ -245,8 +245,8 @@ export const PostHistoryScreen = ({ onBack, onNavigate }: PostHistoryScreenProps
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="text-[15px] font-semibold text-foreground mb-1">No posts found</p>
-            <p className="text-[13px] text-muted-foreground">Try changing your filters or create your first post.</p>
+            <p className="text-[15px] font-semibold text-foreground mb-1">{t('postHistoryExtra.empty')}</p>
+            <p className="text-[13px] text-muted-foreground">{t('postHistoryExtra.emptyDesc')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -262,7 +262,7 @@ export const PostHistoryScreen = ({ onBack, onNavigate }: PostHistoryScreenProps
                     <post.Logo size={18} />
                     <span className="text-[14px] font-bold text-foreground flex-1 truncate">{post.title}</span>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${statusColors[effectiveStatus] || 'bg-muted text-muted-foreground'}`}>
-                      {effectiveStatus === 'published' ? '✓ Published' : effectiveStatus === 'failed' ? '✕ Failed' : effectiveStatus}
+                      {effectiveStatus === 'published' ? t('postHistoryExtra.published') : effectiveStatus === 'failed' ? t('postHistoryExtra.failed') : effectiveStatus}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground">
@@ -305,11 +305,11 @@ export const PostHistoryScreen = ({ onBack, onNavigate }: PostHistoryScreenProps
                       <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
                         <RefreshCw size={16} className="text-brand-blue" />
                       </motion.div>
-                      <span className="text-[13px] text-brand-blue font-semibold">Retrying post...</span>
+                      <span className="text-[13px] text-brand-blue font-semibold">{t('postHistoryExtra.retrying')}</span>
                     </div>
                   )}
                   {wasRetried && effectiveStatus === 'published' && (
-                    <p className="text-[11px] text-green-accent font-semibold mt-2">✓ Successfully retried</p>
+                    <p className="text-[11px] text-green-accent font-semibold mt-2">{t('postHistoryExtra.retrySuccess')}</p>
                   )}
                 </motion.div>
               );

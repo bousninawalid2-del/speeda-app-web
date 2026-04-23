@@ -76,7 +76,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
 
   const selectedCountry = allCountries[selectedCountryIndex] ?? allCountries[0];
 
-  const inputClass = "w-full h-[56px] rounded-2xl bg-card border border-border pl-12 pr-4 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors";
+  const inputClass = "w-full h-[56px] rounded-2xl bg-card border border-border ps-12 pe-4 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors";
 
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
@@ -87,19 +87,19 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
     const nameValue = name.trim();
 
     if (!emailValue) {
-      setFormError('Please enter your email address.');
+      setFormError(t('validation.emailRequired'));
       return;
     }
     if (!/\S+@\S+\.\S+/.test(emailValue)) {
-      setFormError('Please enter a valid email address.');
+      setFormError(t('validation.emailInvalid'));
       return;
     }
     if (mode !== 'forgot' && !passwordValue) {
-      setFormError('Please enter your password.');
+      setFormError(t('validation.passwordRequired'));
       return;
     }
     if (mode === 'signup' && !nameValue) {
-      setFormError('Please enter your full name.');
+      setFormError(t('validation.fullNameRequired'));
       return;
     }
 
@@ -122,22 +122,22 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
         onForgotPassword?.();
       }
     } catch (err: unknown) {
-      setFormError(err instanceof Error ? err.message : 'Something went wrong');
+      setFormError(err instanceof Error ? err.message : t('auth.somethingWentWrong'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleQuickLogin = async () => {
-    if (!email.trim()) { setFormError('Please enter your email address.'); return; }
-    if (!/\S+@\S+\.\S+/.test(email.trim())) { setFormError('Please enter a valid email address.'); return; }
+    if (!email.trim()) { setFormError(t('validation.emailRequired')); return; }
+    if (!/\S+@\S+\.\S+/.test(email.trim())) { setFormError(t('validation.emailInvalid')); return; }
     setFormError(null);
     setIsSubmitting(true);
     try {
       if (onQuickLogin) await onQuickLogin(email.trim());
       setQuickLoginSent(true);
     } catch (err: unknown) {
-      setFormError(err instanceof Error ? err.message : 'Could not send magic link');
+      setFormError(err instanceof Error ? err.message : t('auth.magicLinkError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -151,7 +151,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
     >
       {mode === 'forgot' && (
         <button type="button" onClick={() => { setMode('signin'); setFormError(null); }} className="flex items-center gap-1 text-brand-blue text-[14px] font-medium mb-4">
-          <ChevronLeft size={18} /> {t('auth.backToSignIn')}
+          <ChevronLeft size={18} className="rtl:rotate-180" /> {t('auth.backToSignIn')}
         </button>
       )}
 
@@ -169,19 +169,19 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
       <div className="mt-8 space-y-3">
         {mode === 'signup' && (
           <div className="relative">
-            <User size={18} className="absolute left-4 top-[19px] text-muted-foreground" />
+            <User size={18} className="absolute start-4 top-[19px] text-muted-foreground" />
             <input className={inputClass} placeholder={t('auth.fullName')} value={name} onChange={(e) => { setName(e.target.value); setFormError(null); }} />
           </div>
         )}
         <div className="relative">
-          <Mail size={18} className="absolute left-4 top-[19px] text-muted-foreground" />
+          <Mail size={18} className="absolute start-4 top-[19px] text-muted-foreground" />
           <input className={inputClass} placeholder={t('auth.email')} type="email" value={email} onChange={(e) => { setEmail(e.target.value); setFormError(null); setQuickLoginSent(false); }} />
         </div>
         {mode === 'signup' && (
           <div className="flex gap-2">
             <div className="relative h-[56px] rounded-2xl bg-card border border-border px-3 flex items-center gap-1.5 flex-shrink-0 min-w-[110px]">
               <select
-                className="appearance-none bg-transparent text-[13px] font-medium text-foreground pr-5 focus:outline-none w-full h-full cursor-pointer"
+                className="appearance-none bg-transparent text-[13px] font-medium text-foreground pe-5 focus:outline-none w-full h-full cursor-pointer"
                 value={String(selectedCountryIndex)}
                 onChange={(e) => { setSelectedCountryIndex(Number(e.target.value)); setFormError(null); }}
               >
@@ -191,27 +191,27 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
                   </option>
                 ))}
               </select>
-              <ChevronDown size={14} className="text-muted-foreground absolute right-3 pointer-events-none" />
+              <ChevronDown size={14} className="text-muted-foreground absolute end-3 pointer-events-none" />
             </div>
             <div className="relative flex-1">
-              <Phone size={18} className="absolute left-4 top-[19px] text-muted-foreground" />
-              <input className="w-full h-[56px] rounded-2xl bg-card border border-border pl-12 pr-4 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" placeholder={t('auth.phoneNumber')} type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); setFormError(null); }} />
+              <Phone size={18} className="absolute start-4 top-[19px] text-muted-foreground" />
+              <input className="w-full h-[56px] rounded-2xl bg-card border border-border ps-12 pe-4 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" placeholder={t('auth.phoneNumber')} type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); setFormError(null); }} />
               <p className="text-[11px] text-muted-foreground mt-1.5">{t('auth.phoneWhatsappHint')}</p>
             </div>
           </div>
         )}
         {mode !== 'forgot' && (
           <div className="relative">
-            <Lock size={18} className="absolute left-4 top-[19px] text-muted-foreground" />
+            <Lock size={18} className="absolute start-4 top-[19px] text-muted-foreground" />
             <input className={inputClass} placeholder={t('auth.password')} type={showPass ? 'text' : 'password'} value={password} onChange={(e) => { setPassword(e.target.value); setFormError(null); }} />
-            <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-[18px] text-muted-foreground">
+            <button type="button" onClick={() => setShowPass(!showPass)} className="absolute end-4 top-[18px] text-muted-foreground">
               {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
         )}
 
         {mode === 'signin' && (
-          <button type="button" onClick={() => setMode('forgot')} className="block ml-auto text-brand-blue text-[13px] font-medium">
+          <button type="button" onClick={() => setMode('forgot')} className="block ms-auto text-brand-blue text-[13px] font-medium">
             {t('auth.forgotPassword')}
           </button>
         )}
@@ -229,7 +229,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
           {isSubmitting ? (
             <span className="flex items-center justify-center gap-2">
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              {t('auth.loading') ?? 'Loading…'}
+              {t('auth.loading')}
             </span>
           ) : (
             mode === 'signup' ? t('auth.createAccount') : mode === 'signin' ? t('auth.signIn') : t('auth.sendResetLink')
@@ -247,7 +247,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
             {/* Quick Login — magic link */}
             {quickLoginSent ? (
               <div className="w-full h-[56px] rounded-2xl bg-green-soft border border-green-200 flex items-center justify-center text-[14px] font-semibold text-green-accent">
-                ✓ Magic link sent! Check your inbox.
+                {t('auth.magicLinkSent')}
               </div>
             ) : (
                 <button
@@ -257,7 +257,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
                 className="w-full h-[56px] rounded-2xl bg-card border border-border text-foreground font-semibold text-[14px] card-tap flex items-center justify-center gap-2"
               >
                 <Mail size={18} className="text-primary" />
-                Quick Login (Email Link)
+                {t('auth.quickLogin')}
               </button>
             )}
             {mode === 'signup' && (
@@ -283,7 +283,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
         {showTerms && (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowTerms(false)} className="fixed inset-0 bg-foreground/30 z-40" />
-            <motion.div initial={{ y: 300 }} animate={{ y: 0 }} exit={{ y: 300 }} className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl shadow-xl max-w-[430px] mx-auto max-h-[70vh] flex flex-col">
+            <motion.div initial={{ y: 300 }} animate={{ y: 0 }} exit={{ y: 300 }} className="fixed bottom-0 start-0 end-0 z-50 bg-card rounded-t-3xl shadow-xl max-w-[430px] mx-auto max-h-[70vh] flex flex-col">
               <div className="p-5 pb-3 flex items-center justify-between border-b border-border-light">
                 <h3 className="text-[16px] font-bold text-foreground">{t('auth.termsOfService')}</h3>
                 <button type="button" onClick={() => setShowTerms(false)}><X size={20} className="text-muted-foreground" /></button>
@@ -301,7 +301,7 @@ export const AuthScreen = ({ onComplete, onForgotPassword, onLogin, onRegister, 
         {showPrivacy && (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPrivacy(false)} className="fixed inset-0 bg-foreground/30 z-40" />
-            <motion.div initial={{ y: 300 }} animate={{ y: 0 }} exit={{ y: 300 }} className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl shadow-xl max-w-[430px] mx-auto max-h-[70vh] flex flex-col">
+            <motion.div initial={{ y: 300 }} animate={{ y: 0 }} exit={{ y: 300 }} className="fixed bottom-0 start-0 end-0 z-50 bg-card rounded-t-3xl shadow-xl max-w-[430px] mx-auto max-h-[70vh] flex flex-col">
               <div className="p-5 pb-3 flex items-center justify-between border-b border-border-light">
                 <h3 className="text-[16px] font-bold text-foreground">{t('auth.privacyPolicy')}</h3>
                 <button type="button" onClick={() => setShowPrivacy(false)}><X size={20} className="text-muted-foreground" /></button>

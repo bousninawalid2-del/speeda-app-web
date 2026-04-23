@@ -461,7 +461,7 @@ export const CompetitorWatchScreen = ({ onBack, onNavigate }: CompetitorWatchScr
                   ))}
                 </div>
                 <div className="relative">
-                  <div className="absolute left-[15px] top-0 bottom-0 w-[2px] bg-border" />
+                  <div className="absolute start-[15px] top-0 bottom-0 w-[2px] bg-border" />
                   <div className="space-y-3">
                     {filteredTimeline.map((event, i) => {
                       const cfg = activityTypeConfig[event.type] || activityTypeConfig.content;
@@ -537,7 +537,7 @@ export const CompetitorWatchScreen = ({ onBack, onNavigate }: CompetitorWatchScr
             <input type="email" value={notifyEmail} onChange={e => setNotifyEmail(e.target.value)} placeholder={t('competitor.yourEmail')}
               className="h-10 px-4 rounded-[14px] border border-border bg-background text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-blue/30 flex-1 w-full" />
             <button className="h-10 px-5 rounded-[14px] gradient-btn text-primary-foreground text-[13px] font-bold btn-press whitespace-nowrap shadow-btn">
-              <Bell size={14} className="inline mr-1.5" />{t('competitor.notifyMe')}
+              <Bell size={14} className="inline me-1.5" />{t('competitor.notifyMe')}
             </button>
           </div>
         </div>

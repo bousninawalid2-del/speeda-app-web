@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Plus, MoreVertical, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { InstagramLogo, TikTokLogo, SnapchatLogo, FacebookLogo, XLogo, YouTubeLogo, LinkedInLogo, GoogleLogo, PinterestLogo, ThreadsLogo } from '../components/PlatformLogos';
 import { PlatformConnectFlow, DisconnectDialog, PlatformManageMenu } from '../components/PlatformConnectFlow';
 import { CalendarTab } from '../components/CalendarTab';
@@ -67,6 +68,7 @@ const AccountSkeleton = () => (
 export const SocialMediaScreen = ({
   onBack,
 }: SocialMediaScreenProps) => {
+  const { t } = useTranslation();
   const { data: externalAccounts, isLoading } = useSocialAccounts();
   const invalidate = useInvalidateSocialAccounts();
 
@@ -99,7 +101,7 @@ export const SocialMediaScreen = ({
       window.open(url, '_blank', 'noopener,noreferrer');
       setTimeout(() => invalidate(), 3000);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to connect');
+      toast.error(err instanceof Error ? err.message : t('socialMedia.toasts.failedConnect'));
     } finally {
       setConnectLoading(false);
     }
@@ -112,7 +114,7 @@ export const SocialMediaScreen = ({
       await socialApi.disconnect(disconnectPlatform);
       invalidate();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to disconnect');
+      toast.error(err instanceof Error ? err.message : t('socialMedia.toasts.failedDisconnect'));
     } finally {
       setDisconnecting(false);
       setDisconnectPlatform(null);
@@ -123,25 +125,25 @@ export const SocialMediaScreen = ({
     <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="bg-background min-h-screen pb-24">
       <div className="px-5 pt-6">
         <div className="flex items-center gap-3 mb-2">
-          <button onClick={onBack}><ChevronLeft size={24} className="text-foreground" /></button>
-          <h1 className="text-[20px] font-bold text-foreground flex-1">Social Media</h1>
+          <button onClick={onBack}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
+          <h1 className="text-[20px] font-bold text-foreground flex-1">{t('socialMedia.title')}</h1>
           <button
             onClick={handleConnect}
             disabled={connectLoading}
             className="h-8 px-3 rounded-xl bg-brand-blue text-primary-foreground text-[12px] font-bold flex items-center gap-1 disabled:opacity-60"
           >
             {connectLoading ? <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Plus size={14} />}
-            Connect
+            {t('socialMedia.connect')}
           </button>
         </div>
-        <p className="text-[13px] text-muted-foreground mb-4">{connectedCount} of {accounts.length} connected</p>
+        <p className="text-[13px] text-muted-foreground mb-4">{t('socialMedia.connectedOf', { connected: connectedCount, total: accounts.length })}</p>
 
         {/* Stats Banner */}
         <div className="gradient-hero rounded-2xl p-4 grid grid-cols-3 gap-2 text-center">
           {[
-            { v: isLoading ? '—' : formatFollowers(totalFollowers), l: 'Total Followers' },
-            { v: `${connectedCount}/${accounts.length}`,             l: 'Platforms' },
-            { v: '—',                                                l: 'Scheduled' },
+            { v: isLoading ? '—' : formatFollowers(totalFollowers), l: t('socialMedia.stats.totalFollowers') },
+            { v: `${connectedCount}/${accounts.length}`,             l: t('socialMedia.stats.platforms') },
+            { v: '—',                                                l: t('socialMedia.stats.scheduled') },
           ].map((s, i) => (
             <div key={i}>
               <p className="text-[20px] font-extrabold text-primary-foreground">{s.v}</p>
@@ -152,8 +154,8 @@ export const SocialMediaScreen = ({
 
         {/* Tabs */}
         <div className="mt-4 bg-card rounded-2xl p-1 border border-border flex">
-          {['Accounts', 'Calendar'].map(t => (
-            <button key={t} onClick={() => setTab(t)} className={`flex-1 h-9 rounded-xl text-[12px] font-semibold ${tab === t ? 'bg-brand-blue text-primary-foreground' : 'text-muted-foreground'}`}>{t}</button>
+          {[{ k: 'Accounts', l: t('socialMedia.tabs.accounts') }, { k: 'Calendar', l: t('socialMedia.tabs.calendar') }].map(tabItem => (
+            <button key={tabItem.k} onClick={() => setTab(tabItem.k)} className={`flex-1 h-9 rounded-xl text-[12px] font-semibold ${tab === tabItem.k ? 'bg-brand-blue text-primary-foreground' : 'text-muted-foreground'}`}>{tabItem.l}</button>
           ))}
         </div>
 
@@ -166,27 +168,27 @@ export const SocialMediaScreen = ({
                   <div className="relative">
                     <a.Logo size={24} />
                     {a.connected && healthIndicator(a.health) && (
-                      <span className="absolute -top-1 -right-1 text-[8px]">{healthIndicator(a.health)}</span>
+                      <span className="absolute -top-1 -end-1 text-[8px]">{healthIndicator(a.health)}</span>
                     )}
                   </div>
                   <div className="flex-1">
                     <p className="text-[14px] font-bold text-foreground">{a.name}</p>
                     <p className="text-[12px] text-muted-foreground">{a.followers}</p>
-                    {a.note && <p className="text-[10px] text-muted-foreground">{a.note}</p>}
+                    {a.note && <p className="text-[10px] text-muted-foreground">{a.platform === 'snapchat' ? t('socialMedia.snapchatNote') : a.note}</p>}
                     {a.health === 'error' && a.connected && (
                       <div className="flex items-center gap-1 mt-1">
-                        <span className="text-[10px] text-red-accent font-semibold">⚠️ Connection issue</span>
-                        <button onClick={handleConnect} className="text-[10px] text-brand-blue font-semibold">Reconnect</button>
+                        <span className="text-[10px] text-red-accent font-semibold">{t('socialMedia.connectionIssue')}</span>
+                        <button onClick={handleConnect} className="text-[10px] text-brand-blue font-semibold">{t('socialMedia.reconnect')}</button>
                       </div>
                     )}
                   </div>
                   {a.connected ? (
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-semibold text-green-accent">✓ Connected</span>
+                      <span className="text-[11px] font-semibold text-green-accent">{t('socialMedia.connectedBadge')}</span>
                       <button onClick={() => setManagePlatform(a.name)}><MoreVertical size={14} className="text-muted-foreground" /></button>
                     </div>
                   ) : (
-                    <button onClick={handleConnect} className="text-[11px] font-semibold text-brand-blue">Connect</button>
+                    <button onClick={handleConnect} className="text-[11px] font-semibold text-brand-blue">{t('socialMedia.connect')}</button>
                   )}
                 </div>
               ))

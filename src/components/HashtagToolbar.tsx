@@ -55,7 +55,7 @@ export const HashtagToolbar = ({ hashtags, onUpdate }: HashtagToolbarProps) => {
           }`}>
             {tag}
             {bannedResults.includes(tag) && <span className="text-[10px]">⚠️</span>}
-            <button onClick={() => removeHashtag(tag)} className="ml-0.5 text-[10px] opacity-60 hover:opacity-100">✕</button>
+            <button onClick={() => removeHashtag(tag)} className="ms-0.5 text-[10px] opacity-60 hover:opacity-100">✕</button>
           </span>
         ))}
       </div>
@@ -68,7 +68,7 @@ export const HashtagToolbar = ({ hashtags, onUpdate }: HashtagToolbarProps) => {
         <button onClick={handleCheckBanned} className="text-brand-blue font-semibold hover:underline">
           {checking ? '...' : `🚫 ${t('hashtags.checkBanned', 'Check Banned')}`}
         </button>
-        <span className="text-muted-foreground ml-auto">{hashtags.length}/30</span>
+        <span className="text-muted-foreground ms-auto">{hashtags.length}/30</span>
       </div>
 
       {/* Suggestions */}

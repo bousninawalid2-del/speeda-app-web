@@ -90,7 +90,7 @@ export const PlatformConnectFlow = ({ platformName, platformLogo, onComplete, on
             
             <div className="relative mb-4">
               <div className="w-10 h-10 flex items-center justify-center">{platformLogo}</div>
-              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-green-accent flex items-center justify-center">
+              <div className="absolute -bottom-1 -end-1 w-5 h-5 rounded-full bg-green-accent flex items-center justify-center">
                 <Check size={10} className="text-primary-foreground" strokeWidth={3} />
               </div>
             </div>
@@ -102,7 +102,7 @@ export const PlatformConnectFlow = ({ platformName, platformLogo, onComplete, on
             <div className="bg-card rounded-2xl border border-border-light p-4 w-full max-w-[300px] mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 flex items-center justify-center">{platformLogo}</div>
-                <div className="text-left">
+                <div className="text-start">
                   <p className="text-[14px] font-bold text-foreground">@maleks_kitchen</p>
                   <p className="text-[12px] text-muted-foreground">12.4K followers</p>
                   <p className="text-[11px] text-muted-foreground">Last post: 2 days ago</p>
@@ -206,10 +206,10 @@ export const PlatformManageMenu = ({ platformName, onDisconnect, onClose }: Plat
     >
       <div className="w-10 h-1 rounded-full bg-border mx-auto mb-4" />
       <h3 className="text-[16px] font-bold text-foreground mb-3">{platformName}</h3>
-      <button className="w-full text-left px-4 py-3.5 rounded-xl text-[14px] text-foreground hover:bg-muted transition-colors">
+      <button className="w-full text-start px-4 py-3.5 rounded-xl text-[14px] text-foreground hover:bg-muted transition-colors">
         View Account
       </button>
-      <button onClick={onDisconnect} className="w-full text-left px-4 py-3.5 rounded-xl text-[14px] text-destructive hover:bg-destructive/5 transition-colors">
+      <button onClick={onDisconnect} className="w-full text-start px-4 py-3.5 rounded-xl text-[14px] text-destructive hover:bg-destructive/5 transition-colors">
         Disconnect
       </button>
     </motion.div>

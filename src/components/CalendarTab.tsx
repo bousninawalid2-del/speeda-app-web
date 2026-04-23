@@ -41,7 +41,7 @@ const PlatformDots = ({ platformIds, size = 4 }: { platformIds: string[]; size?:
       {platformIds.slice(0, maxShow).map((pid, j) => (
         <div key={j} className="rounded-full" style={{ width: size, height: size, backgroundColor: platformDotColors[pid] || '#999' }} />
       ))}
-      {overflow > 0 && <span className="text-[8px] text-muted-foreground font-bold ml-0.5">+{overflow}</span>}
+      {overflow > 0 && <span className="text-[8px] text-muted-foreground font-bold ms-0.5">+{overflow}</span>}
     </div>
   );
 };
@@ -167,7 +167,7 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
         className="flex gap-0"
       >
         {/* Time label on left */}
-        <div className="w-[60px] shrink-0 pt-3 text-right pr-3">
+        <div className="w-[60px] shrink-0 pt-3 text-end pe-3">
           <span className="text-[12px] font-bold text-brand-blue">{post.time}</span>
         </div>
 
@@ -180,13 +180,13 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
         <motion.button
           onClick={() => setSelectedPost(post)}
           whileTap={{ scale: 0.98 }}
-          className="flex-1 bg-card rounded-2xl p-3.5 border border-border-light ml-2 mb-2 text-left transition-all hover:shadow-md"
+          className="flex-1 bg-card rounded-2xl p-3.5 border border-border-light ms-2 mb-2 text-start transition-all hover:shadow-md"
         >
           <div className="flex items-center gap-2 flex-wrap">
             {Logo && <Logo size={24} />}
             <span className="text-[14px] font-bold text-foreground">{post.title}</span>
             <span className="text-[10px] bg-muted px-2 py-0.5 rounded-md text-muted-foreground font-medium">{post.type}</span>
-            <div className="ml-auto">{statusBadge(post.status)}</div>
+            <div className="ms-auto">{statusBadge(post.status)}</div>
           </div>
           {post.caption && (
             <p className="text-[12px] text-muted-foreground mt-1.5 truncate">{post.caption}</p>
@@ -205,13 +205,13 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
         transition={{ delay: index * 0.05 }}
         className="flex gap-0"
       >
-        <div className="w-[60px] shrink-0 pt-3 text-right pr-3">
+        <div className="w-[60px] shrink-0 pt-3 text-end pe-3">
           <span className="text-[12px] font-bold text-brand-blue">{suggestion.time}</span>
         </div>
         <div className="flex flex-col items-center shrink-0 relative" style={{ width: 16 }}>
           <div className="w-2 h-2 rounded-full border-2 border-dashed border-brand-blue/40 mt-4 z-10 shrink-0" />
         </div>
-        <div className="flex-1 border-2 border-dashed border-brand-blue/20 rounded-2xl p-3.5 ml-2 mb-2">
+        <div className="flex-1 border-2 border-dashed border-brand-blue/20 rounded-2xl p-3.5 ms-2 mb-2">
           <span className="text-[13px] font-semibold text-brand-blue">✦ {suggestion.time} — Best time for a {suggestion.platform.charAt(0).toUpperCase() + suggestion.platform.slice(1)} Story</span>
           <p className="text-[11px] text-muted-foreground mt-1">{suggestion.reason}</p>
           <button onClick={() => onCreatePost?.(String(selectedDay), suggestion.time)} className="mt-2 text-[12px] font-bold text-brand-blue btn-press">
@@ -287,11 +287,11 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button onClick={() => navigateWeek(-1)} className="w-8 h-8 rounded-xl border border-border flex items-center justify-center btn-press hover:bg-muted transition-colors">
-            <ChevronLeft size={16} className="text-muted-foreground" />
+            <ChevronLeft size={16} className="text-muted-foreground rtl:rotate-180" />
           </button>
           <h2 className={`font-bold text-foreground ${isMobile ? 'text-[14px]' : 'text-[16px]'}`}>{weekLabel}</h2>
           <button onClick={() => navigateWeek(1)} className="w-8 h-8 rounded-xl border border-border flex items-center justify-center btn-press hover:bg-muted transition-colors">
-            <ChevronRight size={16} className="text-muted-foreground" />
+            <ChevronRight size={16} className="text-muted-foreground rtl:rotate-180" />
           </button>
         </div>
         <div className="flex gap-1">
@@ -366,11 +366,11 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => navigateMonth(-1)} className="w-8 h-8 rounded-xl border border-border flex items-center justify-center btn-press hover:bg-muted transition-colors">
-              <ChevronLeft size={16} className="text-muted-foreground" />
+              <ChevronLeft size={16} className="text-muted-foreground rtl:rotate-180" />
             </button>
             <h2 className="text-[18px] font-bold text-foreground">{MONTH_NAMES[month]} {year}</h2>
             <button onClick={() => navigateMonth(1)} className="w-8 h-8 rounded-xl border border-border flex items-center justify-center btn-press hover:bg-muted transition-colors">
-              <ChevronRight size={16} className="text-muted-foreground" />
+              <ChevronRight size={16} className="text-muted-foreground rtl:rotate-180" />
             </button>
           </div>
           <div className="flex gap-1">
@@ -424,7 +424,7 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
                   setWeekStart(new Date(year, month, day - dow));
                   setView('week');
                 }}
-                className={`text-left p-1.5 md:p-2 min-h-[72px] md:min-h-[100px] transition-all ${
+                className={`text-start p-1.5 md:p-2 min-h-[72px] md:min-h-[100px] transition-all ${
                   isToday ? 'ring-2 ring-brand-blue ring-inset' : ''
                 } ${selected ? 'bg-purple-soft' : isEmpty ? 'bg-[#fff8f0]' : weekend ? 'bg-muted/20' : 'bg-card'
                 } ${past ? 'opacity-60' : ''}`}

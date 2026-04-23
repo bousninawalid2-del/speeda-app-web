@@ -28,17 +28,17 @@ function socialAccountToDisplay(acc: SocialAccount): PlatformDisplay {
     Logo:           LOGOS[acc.platform.toLowerCase()] ?? InstagramLogo,
     name:           name === 'Googlebusiness' ? 'Google Business' : name,
     status:         acc.status ?? (acc.connected ? 'healthy' : 'error'),
-    lastSync:       acc.lastSync ?? 'Recently',
+    lastSync:       acc.lastSync ?? '',
     tokenExpiry:    '—',
     postsThisMonth: acc.postsThisMonth ?? 0,
     errors:         acc.errors ?? 0,
   };
 }
 
-const statusConfig: Record<string, { color: string; icon: typeof CheckCircle; label: string }> = {
-  healthy: { color: 'text-green-accent', icon: CheckCircle, label: 'Healthy' },
-  warning: { color: 'text-orange-accent', icon: AlertTriangle, label: 'Warning' },
-  error: { color: 'text-red-accent', icon: XCircle, label: 'Error' },
+const statusConfig: Record<string, { color: string; icon: typeof CheckCircle; slug: 'healthy' | 'warning' | 'error' }> = {
+  healthy: { color: 'text-green-accent', icon: CheckCircle, slug: 'healthy' },
+  warning: { color: 'text-orange-accent', icon: AlertTriangle, slug: 'warning' },
+  error: { color: 'text-red-accent', icon: XCircle, slug: 'error' },
 };
 
 interface AccountHealthScreenProps {
@@ -60,7 +60,7 @@ export const AccountHealthScreen = ({
 
   const recentErrors = platforms
     .filter(p => p.errors > 0)
-    .map(p => ({ platform: p.name, error: `${p.errors} posting error(s) this month`, time: p.lastSync, severity: p.status === 'error' ? 'critical' as const : 'warning' as const }));
+    .map(p => ({ platform: p.name, error: t('accountHealthExtra.postingErrors', { count: p.errors }), time: p.lastSync || t('accountHealthExtra.recently'), severity: p.status === 'error' ? 'critical' as const : 'warning' as const }));
 
   const healthyCount = platforms.filter(p => p.status === 'healthy').length;
   const warningCount = platforms.filter(p => p.status === 'warning').length;
@@ -70,9 +70,9 @@ export const AccountHealthScreen = ({
     <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="bg-background min-h-screen pb-24">
       <div className="px-5 pt-6">
         <div className="flex items-center gap-3 mb-4">
-          <button onClick={onBack}><ChevronLeft size={24} className="text-foreground" /></button>
+          <button onClick={onBack}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
           <h1 className="text-[20px] font-extrabold text-foreground">{t('accountHealth.title', 'Account Health')}</h1>
-          <button onClick={() => invalidate()} className="ml-auto p-2 rounded-xl bg-card border border-border-light">
+          <button onClick={() => invalidate()} className="ms-auto p-2 rounded-xl bg-card border border-border-light">
             {isLoading
               ? <Loader2 size={16} className="text-brand-blue animate-spin" />
               : <RefreshCw size={16} className="text-muted-foreground" />}
@@ -104,8 +104,8 @@ export const AccountHealthScreen = ({
           </div>
         ) : platforms.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="text-[15px] font-semibold text-foreground mb-1">No connected platforms</p>
-            <button onClick={() => onNavigate?.('social')} className="text-brand-blue text-[13px] font-semibold mt-2">Connect your first account →</button>
+            <p className="text-[15px] font-semibold text-foreground mb-1">{t('accountHealthExtra.noConnected')}</p>
+            <button onClick={() => onNavigate?.('social')} className="text-brand-blue text-[13px] font-semibold mt-2">{t('accountHealthExtra.connectFirst')}</button>
           </div>
         ) : (
           <>
@@ -124,7 +124,7 @@ export const AccountHealthScreen = ({
                         <span className="text-[14px] font-bold text-foreground">{p.name}</span>
                         <div className="flex items-center gap-1 mt-0.5">
                           <Icon size={12} className={cfg.color} />
-                          <span className={`text-[11px] font-semibold ${cfg.color}`}>{cfg.label}</span>
+                          <span className={`text-[11px] font-semibold ${cfg.color}`}>{t(`accountHealthExtra.statuses.${cfg.slug}`)}</span>
                         </div>
                       </div>
                       {p.status === 'error' && (
@@ -140,7 +140,7 @@ export const AccountHealthScreen = ({
                       </div>
                       <div>
                         <span className="text-[9px] uppercase text-muted-foreground font-semibold">{t('accountHealth.tokenExpiry', 'Token Expiry')}</span>
-                        <p className={`text-[12px] font-medium ${p.tokenExpiry === 'Expired' ? 'text-red-accent' : 'text-foreground'}`}>{p.tokenExpiry}</p>
+                        <p className={`text-[12px] font-medium ${p.tokenExpiry === 'Expired' ? 'text-red-accent' : 'text-foreground'}`}>{p.tokenExpiry === 'Expired' ? t('accountHealthExtra.expired') : p.tokenExpiry}</p>
                       </div>
                       <div>
                         <span className="text-[9px] uppercase text-muted-foreground font-semibold">{t('accountHealth.posts', 'Posts/Month')}</span>
@@ -165,8 +165,8 @@ export const AccountHealthScreen = ({
                         <span className="text-[12px] font-semibold text-foreground">{err.platform}</span>
                         <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
                           err.severity === 'critical' ? 'bg-red-accent text-primary-foreground' : 'bg-orange-accent/20 text-orange-accent'
-                        }`}>{err.severity}</span>
-                        <span className="text-[10px] text-muted-foreground ml-auto">{err.time}</span>
+                        }`}>{t(`accountHealthExtra.severities.${err.severity}`)}</span>
+                        <span className="text-[10px] text-muted-foreground ms-auto">{err.time}</span>
                       </div>
                       <p className="text-[12px] text-muted-foreground mt-1">{err.error}</p>
                     </div>

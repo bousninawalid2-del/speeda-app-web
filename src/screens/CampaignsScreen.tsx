@@ -98,7 +98,7 @@ const CampaignSkeleton = () => (
         <div className="p-4 space-y-3">
           <div className="flex items-center gap-2">
             <div className="h-4 w-32 bg-muted rounded-lg" />
-            <div className="h-4 w-12 bg-muted rounded-md ml-auto" />
+            <div className="h-4 w-12 bg-muted rounded-md ms-auto" />
           </div>
           <div className="grid grid-cols-4 gap-2">
             {[1, 2, 3, 4].map(j => (
@@ -196,7 +196,7 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
             <div className="flex-1">
               <h1 className="text-[20px] font-extrabold text-foreground">{c.name}</h1>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${statusStyle.bg} ${statusStyle.text}`}>{c.status}</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${statusStyle.bg} ${statusStyle.text}`}>{t(`campaigns.statuses.${c.status}`)}</span>
                 <span className="text-[11px] text-muted-foreground">📅 {c.date}</span>
               </div>
             </div>
@@ -224,19 +224,19 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
 
           {/* Performance Chart */}
           <div className="bg-card rounded-2xl p-4 border border-border-light mb-4">
-            <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-wide mb-2">Performance</p>
+            <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-wide mb-2">{t('campaigns.performance')}</p>
             <div className="flex items-center gap-4 mb-2">
-              <div className="flex items-center gap-1.5"><div className="w-3 h-1 rounded-full bg-brand-blue" /><span className="text-[10px] text-muted-foreground">Impressions</span></div>
-              <div className="flex items-center gap-1.5"><div className="w-3 h-1 rounded-full bg-brand-teal" /><span className="text-[10px] text-muted-foreground">Clicks</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-3 h-1 rounded-full bg-brand-blue" /><span className="text-[10px] text-muted-foreground">{t('campaigns.impressionsLegend')}</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-3 h-1 rounded-full bg-brand-teal" /><span className="text-[10px] text-muted-foreground">{t('campaigns.clicksLegend')}</span></div>
             </div>
             <DualLineChart data1={c.dailyImpr} data2={c.dailyClicks} color1="hsl(233, 100%, 42%)" color2="hsl(193, 100%, 48%)" />
           </div>
 
           {/* Campaign Details */}
           <div className="bg-card rounded-2xl p-4 border border-border-light mb-4 space-y-3">
-            <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-wide">Campaign Details</p>
+            <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-wide">{t('campaigns.campaignDetails')}</p>
             <div className="flex items-center justify-between">
-              <span className="text-[12px] text-muted-foreground">Platforms</span>
+              <span className="text-[12px] text-muted-foreground">{t('campaigns.platforms')}</span>
               <div className="flex gap-1">{logos.map((Logo, j) => <Logo key={j} size={16} />)}</div>
             </div>
             <div className="flex items-center justify-between">
@@ -244,35 +244,35 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
               <span className="text-[12px] font-bold text-foreground">SAR {c.budget}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[12px] text-muted-foreground">Duration</span>
+              <span className="text-[12px] text-muted-foreground">{t('campaigns.duration')}</span>
               <span className="text-[12px] text-foreground">{c.date}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[12px] text-muted-foreground">Targeting</span>
-              <span className="text-[12px] font-bold text-foreground">{c.targeting === 'AI' ? '✦ AI Targeting' : '🎯 Manual'}</span>
+              <span className="text-[12px] text-muted-foreground">{t('campaigns.targeting')}</span>
+              <span className="text-[12px] font-bold text-foreground">{c.targeting === 'AI' ? t('campaigns.aiTargeting') : t('campaigns.manualTargeting')}</span>
             </div>
             {c.location && (
               <div className="flex items-center justify-between">
-                <span className="text-[12px] text-muted-foreground">Location</span>
+                <span className="text-[12px] text-muted-foreground">{t('campaigns.location')}</span>
                 <span className="text-[12px] text-foreground">{c.location}</span>
               </div>
             )}
             {c.ageRange && (
               <div className="flex items-center justify-between">
-                <span className="text-[12px] text-muted-foreground">Age Range</span>
+                <span className="text-[12px] text-muted-foreground">{t('campaigns.ageRange')}</span>
                 <span className="text-[12px] text-foreground">{c.ageRange}</span>
               </div>
             )}
             {c.interests && (
               <div className="flex items-center justify-between">
-                <span className="text-[12px] text-muted-foreground">Interests</span>
+                <span className="text-[12px] text-muted-foreground">{t('campaigns.interests')}</span>
                 <div className="flex gap-1 flex-wrap justify-end">
                   {c.interests.map(int => <span key={int} className="text-[10px] bg-purple-soft text-purple px-2 py-0.5 rounded-md font-medium">{int}</span>)}
                 </div>
               </div>
             )}
             <div className="flex items-center justify-between pt-2 border-t border-border-light">
-              <span className="text-[12px] text-muted-foreground">Speeda fee (15%)</span>
+              <span className="text-[12px] text-muted-foreground">{t('campaigns.speedaFee')}</span>
               <span className="text-[12px] font-bold text-foreground">SAR {speedaFee}</span>
             </div>
           </div>
@@ -285,33 +285,33 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
                 const newStatus = c.status === 'Active' ? 'Paused' : 'Active';
                 try {
                   await updateCampaign({ id: c.id, status: newStatus });
-                  toast.success(newStatus === 'Paused' ? 'Campaign paused' : 'Campaign resumed');
+                  toast.success(newStatus === 'Paused' ? t('campaigns.campaignPaused') : t('campaigns.campaignResumed'));
                   setSelectedCampaign({ ...c, status: newStatus });
-                } catch { toast.error('Failed to update'); }
+                } catch { toast.error(t('campaigns.failedToUpdate')); }
               }}
               className={`h-11 rounded-xl text-[12px] font-bold btn-press flex items-center justify-center gap-1.5 disabled:opacity-50 ${
                 c.status === 'Paused' ? 'bg-green-accent/10 text-green-accent border border-green-accent/20' : 'bg-muted text-muted-foreground'
               }`}
             >
-              {c.status === 'Paused' ? <><Play size={14} /> Resume</> : <><Pause size={14} /> Pause</>}
+              {c.status === 'Paused' ? <><Play size={14} /> {t('common.resume')}</> : <><Pause size={14} /> {t('common.pause')}</>}
             </button>
             <button
               onClick={() => { setNewBudget(''); setShowCampaignBudgetModal(true); }}
               className="h-11 rounded-xl bg-brand-blue/10 text-brand-blue text-[12px] font-bold btn-press flex items-center justify-center gap-1.5 border border-brand-blue/20"
             >
-              <DollarSign size={14} /> Increase Budget
+              <DollarSign size={14} /> {t('campaigns.increaseBudget')}
             </button>
             <button
               onClick={() => setShowStopConfirm(true)}
               className="h-11 rounded-xl bg-destructive/10 text-destructive text-[12px] font-bold btn-press flex items-center justify-center gap-1.5 border border-destructive/20"
             >
-              <StopCircle size={14} /> Stop
+              <StopCircle size={14} /> {t('campaigns.stop')}
             </button>
             <button
-              onClick={() => toast.success('Report PDF downloading...')}
+              onClick={() => toast.success(t('campaigns.reportDownloading'))}
               className="h-11 rounded-xl bg-purple-soft text-purple text-[12px] font-bold btn-press flex items-center justify-center gap-1.5"
             >
-              <FileText size={14} /> Export Report
+              <FileText size={14} /> {t('campaigns.exportReport')}
             </button>
           </div>
         </div>
@@ -322,10 +322,10 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-foreground/40 flex items-center justify-center px-6" onClick={() => setShowCampaignBudgetModal(false)}>
               <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} onClick={e => e.stopPropagation()} className="bg-card rounded-2xl p-6 w-full max-w-[360px]">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-[16px] font-bold text-foreground">Increase Budget</h3>
+                  <h3 className="text-[16px] font-bold text-foreground">{t('campaigns.increaseBudget')}</h3>
                   <button onClick={() => setShowCampaignBudgetModal(false)}><X size={18} className="text-muted-foreground" /></button>
                 </div>
-                <input type="number" value={newBudget} onChange={e => setNewBudget(e.target.value)} placeholder="Amount to add (SAR)" className="w-full h-11 px-4 rounded-xl border border-border bg-background text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-blue/30" />
+                <input type="number" value={newBudget} onChange={e => setNewBudget(e.target.value)} placeholder={t('campaigns.amountToAdd')} className="w-full h-11 px-4 rounded-xl border border-border bg-background text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-blue/30" />
                 <div className="flex gap-2 mt-4">
                   {[100, 500, 1000].map(v => (
                     <button key={v} onClick={() => setNewBudget(String(v))} className={`flex-1 h-9 rounded-lg text-[12px] font-bold transition-all ${newBudget === String(v) ? 'gradient-hero text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>+{v} SAR</button>
@@ -333,14 +333,14 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
                 </div>
                 <button onClick={async () => {
                   const amount = parseInt(newBudget);
-                  if (!amount || amount < 10) { toast.error('Minimum SAR 10'); return; }
+                  if (!amount || amount < 10) { toast.error(t('campaigns.minBudgetSar10')); return; }
                   try {
                     await updateCampaign({ id: c.id, budget: c.budgetNum + amount });
-                    toast.success(`Budget increased by SAR ${amount}`);
+                    toast.success(t('campaigns.budgetIncreasedSar', { amount }));
                     setShowCampaignBudgetModal(false);
                     setSelectedCampaign({ ...c, budgetNum: c.budgetNum + amount, budget: (c.budgetNum + amount).toLocaleString() });
-                  } catch { toast.error('Failed'); }
-                }} disabled={isUpdating} className="w-full h-11 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold btn-press mt-4 disabled:opacity-50">Confirm</button>
+                  } catch { toast.error(t('campaigns.failed')); }
+                }} disabled={isUpdating} className="w-full h-11 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold btn-press mt-4 disabled:opacity-50">{t('campaigns.confirmBtn')}</button>
               </motion.div>
             </motion.div>
           )}
@@ -352,17 +352,17 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-foreground/40 flex items-center justify-center px-6" onClick={() => setShowStopConfirm(false)}>
               <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} onClick={e => e.stopPropagation()} className="bg-card rounded-2xl p-6 w-full max-w-[360px] text-center">
                 <h3 className="text-[18px] font-bold text-foreground mb-2">{t('common.areYouSure')}</h3>
-                <p className="text-[13px] text-muted-foreground mb-4">This will permanently stop the campaign. Remaining budget will be returned.</p>
+                <p className="text-[13px] text-muted-foreground mb-4">{t('campaigns.stopPermanent')}</p>
                 <div className="flex gap-2">
                   <button onClick={() => setShowStopConfirm(false)} className="flex-1 h-11 rounded-xl border border-border text-foreground text-[13px] font-bold btn-press">{t('common.cancel')}</button>
                   <button onClick={async () => {
                     try {
                       await updateCampaign({ id: c.id, status: 'Completed' });
-                      toast.success('Campaign stopped');
+                      toast.success(t('campaigns.campaignStopped'));
                       setShowStopConfirm(false);
                       setSelectedCampaign(null);
-                    } catch { toast.error('Failed'); }
-                  }} disabled={isUpdating} className="flex-1 h-11 rounded-xl bg-destructive text-primary-foreground text-[13px] font-bold btn-press disabled:opacity-50">Stop Campaign</button>
+                    } catch { toast.error(t('campaigns.failed')); }
+                  }} disabled={isUpdating} className="flex-1 h-11 rounded-xl bg-destructive text-primary-foreground text-[13px] font-bold btn-press disabled:opacity-50">{t('campaigns.stopCampaign')}</button>
                 </div>
               </motion.div>
             </motion.div>
@@ -376,7 +376,7 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
   if (selectedAd) {
     const ad = selectedAd;
     const sc = statusConfig[ad.status];
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
 
     return (
       <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="bg-background min-h-screen pb-24">
@@ -387,7 +387,7 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
               <h1 className="text-[20px] font-extrabold text-foreground">{ad.name}</h1>
               <div className="flex items-center gap-2 mt-0.5">
                 <ad.Logo size={14} />
-                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${sc.bg} ${ad.status === 'Active' || ad.status === 'Completed' || ad.status === 'Paused' ? 'text-primary-foreground' : sc.color}`}>{ad.status}</span>
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${sc.bg} ${ad.status === 'Active' || ad.status === 'Completed' || ad.status === 'Paused' ? 'text-primary-foreground' : sc.color}`}>{t(`campaigns.statuses.${ad.status}`)}</span>
               </div>
             </div>
           </div>
@@ -428,7 +428,7 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
               <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-wide mb-2">{t('campaigns.dayClickTrend')}</p>
               <MiniChart data={ad.dailyData} color="hsl(233, 100%, 42%)" />
               <div className="flex justify-between mt-1">
-                {days.slice(0, ad.dailyData.length).map(d => <span key={d} className="text-[8px] text-muted-foreground">{d}</span>)}
+                {days.slice(0, ad.dailyData.length).map(d => <span key={d} className="text-[8px] text-muted-foreground">{t(`campaigns.daysShort.${d}`)}</span>)}
               </div>
             </div>
           )}
@@ -440,9 +440,9 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
                 const newStatus = ad.paused ? 'Active' : 'Paused';
                 try {
                   await updateCampaign({ id: ad.id, status: newStatus });
-                  toast.success(ad.paused ? 'Campaign resumed' : 'Campaign paused');
+                  toast.success(ad.paused ? t('campaigns.campaignResumed') : t('campaigns.campaignPaused'));
                   setSelectedAd({ ...ad, paused: !ad.paused, status: newStatus as AdStatus });
-                } catch { toast.error('Failed'); }
+                } catch { toast.error(t('campaigns.failed')); }
               }}
               disabled={isUpdating}
               className={`h-11 rounded-xl text-[12px] font-bold btn-press flex items-center justify-center gap-1.5 disabled:opacity-50 ${
@@ -461,9 +461,9 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
               onClick={async () => {
                 try {
                   await updateCampaign({ id: ad.id, status: 'Completed' });
-                  toast.success('Campaign stopped');
+                  toast.success(t('campaigns.campaignStopped'));
                   setSelectedAd(null);
-                } catch { toast.error('Failed'); }
+                } catch { toast.error(t('campaigns.failed')); }
               }}
               disabled={isUpdating}
               className="h-11 rounded-xl bg-destructive/10 text-destructive text-[12px] font-bold btn-press flex items-center justify-center gap-1.5 border border-destructive/20 disabled:opacity-50"
@@ -497,7 +497,7 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
                     toast.success(t('campaigns.budgetIncreased', { amount }));
                     setShowBudgetModal(false);
                     setNewBudget('');
-                  } catch { toast.error('Failed'); }
+                  } catch { toast.error(t('campaigns.failed')); }
                 }} disabled={isUpdating} className="w-full h-11 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold btn-press mt-4 disabled:opacity-50">
                   {t('campaigns.increaseBudget')}
                 </button>
@@ -519,7 +519,7 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
             <p className="text-[14px] text-muted-foreground">{t('campaigns.activeCampaigns', { count: stats?.activeCount ?? 0 })}</p>
           </div>
           <button onClick={handleNewCampaign} className="h-[42px] px-4 rounded-xl bg-brand-blue text-primary-foreground text-[13px] font-bold flex items-center gap-1.5 btn-press">
-            <Plus size={18} /> New Campaign
+            <Plus size={18} /> {t('campaigns.newCampaign')}
           </button>
         </div>
 
@@ -586,7 +586,7 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-[16px] font-bold text-foreground">{c.name}</span>
                           {c.isAI && <span className="text-[10px] font-bold text-purple bg-purple-soft px-2 py-0.5 rounded-md">✦ AI</span>}
-                          <span className={`text-[10px] font-bold text-primary-foreground px-2 py-0.5 rounded-md ${c.color}`}>{c.status}</span>
+                          <span className={`text-[10px] font-bold text-primary-foreground px-2 py-0.5 rounded-md ${c.color}`}>{t(`campaigns.statuses.${c.status}`)}</span>
                         </div>
                         <div className="flex gap-1 mt-2">{logos.map((Logo, j) => <Logo key={j} size={16} />)}</div>
                         <div className="grid grid-cols-4 gap-2 mt-3">
@@ -594,11 +594,11 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
                             { label: t('common.budget'), val: c.budget },
                             { label: t('campaigns.spent'), val: c.spent },
                             { label: t('campaigns.totalReach'), val: c.reach },
-                            { label: 'ROI', val: c.roi },
+                            { label: t('campaigns.roi'), val: c.roi },
                           ].map((m, j) => (
                             <div key={j}>
                               <span className="text-[9px] uppercase text-muted-foreground font-semibold tracking-wider">{m.label}</span>
-                              <p className={`text-[14px] font-bold ${m.label === 'ROI' && m.val !== '—' ? 'text-green-accent' : 'text-foreground'}`}>{m.val}</p>
+                              <p className={`text-[14px] font-bold ${m.label === t('campaigns.roi') && m.val !== '—' ? 'text-green-accent' : 'text-foreground'}`}>{m.val}</p>
                             </div>
                           ))}
                         </div>
@@ -615,7 +615,7 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
         {tab === 'ads' && (
           <div className="mt-4">
             <div className="gradient-hero rounded-3xl p-6 relative overflow-hidden shadow-hero">
-              <div className="absolute w-32 h-32 rounded-full bg-primary-foreground/5 -top-8 -right-8" />
+              <div className="absolute w-32 h-32 rounded-full bg-primary-foreground/5 -top-8 -end-8" />
               <span className="text-[12px] text-primary-foreground/70 font-medium">{t('campaigns.adBalance')}</span>
               <p className="text-[32px] font-extrabold text-primary-foreground tracking-[-0.02em] mt-1">
                 {stats ? `SAR ${stats.totalBudget.toLocaleString()}` : '—'}
@@ -629,8 +629,8 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
             ) : ads.length === 0 ? (
               <div className="mt-3 bg-card rounded-2xl p-8 border border-border-light text-center">
                 <span className="text-3xl">📊</span>
-                <p className="text-[14px] font-semibold text-foreground mt-2">No active ads</p>
-                <p className="text-[12px] text-muted-foreground mt-1">Launch a quick ad to get started</p>
+                <p className="text-[14px] font-semibold text-foreground mt-2">{t('campaigns.noActiveAds')}</p>
+                <p className="text-[12px] text-muted-foreground mt-1">{t('campaigns.launchQuickAdHint')}</p>
               </div>
             ) : (
               <div className="mt-3 space-y-3">
@@ -644,12 +644,12 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
                           <span className="text-[14px] font-bold text-foreground">{ad.name}</span>
                           {ad.trend === 'up' && !ad.paused && <TrendingUp size={14} className="text-green-accent" />}
                           {ad.trend === 'down' && !ad.paused && <TrendingDown size={14} className="text-destructive" />}
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ml-auto ${
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ms-auto ${
                             ad.status === 'Active' ? 'bg-green-accent text-primary-foreground' :
                             ad.status === 'Learning' || ad.status === 'Submitted' ? 'bg-orange/10 text-orange' :
                             ad.status === 'Paused' ? 'bg-muted text-muted-foreground' :
                             'bg-muted text-muted-foreground'
-                          }`}>{ad.status}</span>
+                          }`}>{t(`campaigns.statuses.${ad.status}`)}</span>
                         </div>
                         <div className="grid grid-cols-4 gap-2 mt-3">
                           {[
@@ -670,8 +670,8 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
                           const newStatus = ad.paused ? 'Active' : 'Paused';
                           try {
                             await updateCampaign({ id: ad.id, status: newStatus });
-                            toast.success(ad.paused ? 'Resumed' : 'Paused');
-                          } catch { toast.error('Failed'); }
+                            toast.success(ad.paused ? t('campaigns.resumed') : t('campaigns.paused'));
+                          } catch { toast.error(t('campaigns.failed')); }
                         }} className={`flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-semibold btn-press ${ad.paused ? 'bg-green-accent/10 text-green-accent' : 'bg-muted text-muted-foreground'}`}>
                           {ad.paused ? <><Play size={12} /> {t('common.resume')}</> : <><Pause size={12} /> {t('common.pause')}</>}
                         </button>
@@ -691,7 +691,7 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
           </div>
         )}
       </div>
-      <UpgradePrompt feature="Campaign Creation" benefit="launch campaigns and ads" open={showUpgrade} onClose={() => setShowUpgrade(false)} />
+      <UpgradePrompt feature={t('campaigns.featureName')} benefit={t('campaigns.featureBenefit')} open={showUpgrade} onClose={() => setShowUpgrade(false)} />
     </motion.div>
   );
 };

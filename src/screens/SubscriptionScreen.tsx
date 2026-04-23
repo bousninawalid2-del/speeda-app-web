@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Check, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { usePlans, type Plan } from '@/hooks/usePlans';
 import { useCreateSubscription } from '@/hooks/useSubscription';
 
@@ -16,6 +17,7 @@ export const SubscriptionScreen = ({
   onBack,
   currentPlanName,
 }: SubscriptionScreenProps) => {
+  const { t } = useTranslation();
   const { data: plans, isLoading } = usePlans();
   const { mutateAsync: createSubscription } = useCreateSubscription();
 
@@ -37,7 +39,7 @@ export const SubscriptionScreen = ({
       });
       window.open(checkoutUrl, '_blank');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to start checkout');
+      toast.error(err instanceof Error ? err.message : t('subscription.toasts.checkoutFailed'));
     } finally {
       setPurchasing(false);
     }
@@ -54,7 +56,7 @@ export const SubscriptionScreen = ({
   if (!plans?.length) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <p className="text-[15px] text-muted-foreground">Unable to load plans.</p>
+        <p className="text-[15px] text-muted-foreground">{t('subscription.loadFailed')}</p>
       </div>
     );
   }
@@ -64,17 +66,17 @@ export const SubscriptionScreen = ({
       <div className="px-5 pt-6">
         <div className="flex items-center gap-3 mb-5">
           <button onClick={onBack}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
-          <h1 className="text-[20px] font-bold text-foreground">Choose Your Plan</h1>
+          <h1 className="text-[20px] font-bold text-foreground">{t('subscription.title')}</h1>
         </div>
 
         {/* Annual toggle */}
         <div className="flex items-center justify-center gap-3 mb-5">
-          <span className={`text-[13px] font-semibold ${!annual ? 'text-foreground' : 'text-muted-foreground'}`}>Monthly</span>
+          <span className={`text-[13px] font-semibold ${!annual ? 'text-foreground' : 'text-muted-foreground'}`}>{t('subscription.monthly')}</span>
           <button onClick={() => setAnnual(!annual)} className={`w-12 h-7 rounded-full p-0.5 transition-colors ${annual ? 'bg-green-accent' : 'bg-border'}`}>
             <div className={`w-6 h-6 rounded-full bg-card shadow transition-transform ${annual ? 'translate-x-5 rtl:-translate-x-5' : ''}`} />
           </button>
-          <span className={`text-[13px] font-semibold ${annual ? 'text-foreground' : 'text-muted-foreground'}`}>Annual</span>
-          {annual && <span className="text-[10px] font-bold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">Save 20%</span>}
+          <span className={`text-[13px] font-semibold ${annual ? 'text-foreground' : 'text-muted-foreground'}`}>{t('subscription.annual')}</span>
+          {annual && <span className="text-[10px] font-bold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">{t('subscription.save20')}</span>}
         </div>
 
         <div className="space-y-3">
@@ -85,7 +87,7 @@ export const SubscriptionScreen = ({
                 key={plan.id}
                 onClick={() => setSelected(plan.id)}
                 disabled={purchasing}
-                className={`w-full p-5 rounded-2xl border-2 text-left transition-all ${
+                className={`w-full p-5 rounded-2xl border-2 text-start transition-all ${
                   selected === plan.id
                     ? plan.popular ? 'border-brand-blue bg-purple-soft shadow-card' : 'border-brand-blue bg-purple-soft'
                     : 'border-border-light bg-card'
@@ -95,16 +97,16 @@ export const SubscriptionScreen = ({
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="text-[16px] font-bold text-foreground">{plan.name}</h3>
-                      {plan.popular && <span className="text-[10px] font-bold text-primary-foreground gradient-btn px-2 py-0.5 rounded-md">Most Popular</span>}
-                      {isCurrent && <span className="text-[10px] font-bold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">Current</span>}
+                      {plan.popular && <span className="text-[10px] font-bold text-primary-foreground gradient-btn px-2 py-0.5 rounded-md">{t('subscription.mostPopular')}</span>}
+                      {isCurrent && <span className="text-[10px] font-bold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">{t('subscription.current')}</span>}
                     </div>
                     <p className="text-[12px] text-muted-foreground mt-1">
-                      {plan.tokenCount.toLocaleString()} tokens/mo
+                      {t('subscription.tokensPerMonth', { count: plan.tokenCount })}
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-end">
                     <p className="text-[20px] font-extrabold text-foreground">{fmt(getPrice(plan))}</p>
-                    <p className="text-[10px] text-muted-foreground">﷼/{annual ? 'mo (billed yearly)' : 'month'}</p>
+                    <p className="text-[10px] text-muted-foreground">﷼/{annual ? t('subscription.perMonthBilledYearly') : t('subscription.perMonth')}</p>
                   </div>
                 </div>
 
@@ -125,7 +127,7 @@ export const SubscriptionScreen = ({
                       ))}
                     </div>
                     {plan.features.length > 6 && (
-                      <p className="text-[11px] text-brand-blue font-semibold mt-2">+{plan.features.length - 6} more features</p>
+                      <p className="text-[11px] text-brand-blue font-semibold mt-2">{t('subscription.moreFeatures', { count: plan.features.length - 6 })}</p>
                     )}
                   </motion.div>
                 )}
@@ -136,7 +138,7 @@ export const SubscriptionScreen = ({
 
         {selectedPlan?.watermark && (
           <p className="text-[11px] text-muted-foreground text-center mt-3">
-            ⓘ Starter includes &quot;Powered by Speeda AI ✦&quot; watermark on published posts
+            {t('subscription.watermarkNote')}
           </p>
         )}
 
@@ -147,12 +149,16 @@ export const SubscriptionScreen = ({
         >
           {purchasing && <Loader2 size={16} className="animate-spin" />}
           {selectedPlan?.name === currentPlanName
-            ? `${selectedPlan?.name ?? ''} — Current Plan`
-            : `Upgrade to ${selectedPlan?.name ?? ''} — ${selectedPlan ? fmt(getPrice(selectedPlan)) : ''} ﷼/${annual ? 'mo' : 'month'}`}
+            ? t('subscription.currentPlan', { name: selectedPlan?.name ?? '' })
+            : t('subscription.upgradeTo', {
+                name: selectedPlan?.name ?? '',
+                price: selectedPlan ? fmt(getPrice(selectedPlan)) : '',
+                period: annual ? 'mo' : t('subscription.perMonth'),
+              })}
         </button>
 
         <p className="text-[11px] text-muted-foreground text-center mt-3">
-          You&apos;ll be redirected to our secure payment page powered by MamoPay
+          {t('subscription.redirectNote')}
         </p>
       </div>
     </motion.div>
