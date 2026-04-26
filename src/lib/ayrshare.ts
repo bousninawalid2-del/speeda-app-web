@@ -125,6 +125,8 @@ export async function generateLinkingUrl(profileKey: string): Promise<string | n
     body.append('domain', domain);
     if (profileKey) body.append('profileKey', profileKey);
     if (privateKey) body.append('privateKey', privateKey);
+    body.append('twitterApiKey', process.env.X_TWITTER_API_KEY!);
+body.append('twitterApiSecret', process.env.X_TWITTER_API_SECRET!);
 
     const res = await fetch(`${BASE}/profiles/generateJWT`, {
       method: 'POST',
