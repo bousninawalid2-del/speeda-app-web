@@ -14,12 +14,17 @@
 
 const BASE = 'https://api.ayrshare.com/api';
 
-function apiHeaders(profileKey?: string | null): HeadersInit {
-  const h: HeadersInit = {
+
+function apiHeaders(profileKey?: string | null, includeTwitter = false): HeadersInit {
+  const h: Record<string, string> = {
     Authorization: `Bearer ${process.env.AYRSHARE_API_KEY}`,
     'Content-Type': 'application/json',
   };
-  if (profileKey) (h as Record<string, string>)['Profile-Key'] = profileKey;
+  if (profileKey) h['Profile-Key'] = profileKey;
+  if (includeTwitter && process.env.X_TWITTER_API_KEY && process.env.X_TWITTER_API_SECRET) {
+    h['X-Twitter-OAuth1-Api-Key']    = process.env.X_TWITTER_API_KEY;
+    h['X-Twitter-OAuth1-Api-Secret'] = process.env.X_TWITTER_API_SECRET;
+  }
   return h;
 }
 
@@ -203,7 +208,7 @@ export async function publishPost(input: AyrsharePostInput): Promise<AyrsharePos
 
     const res = await fetch(`${BASE}/post`, {
       method: 'POST',
-      headers: apiHeaders(input.profileKey),
+      headers: apiHeaders(input.profileKey, input.platforms.includes('twitter')),
       body: JSON.stringify(body),
     });
 
