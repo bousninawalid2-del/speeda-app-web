@@ -239,7 +239,7 @@ const MediaUpload = ({ files, add, remove, onOpenLibrary }: { files: UploadedMed
 );
 
 // ═══════════════════════════════════════
-//  QUICK POST MODE
+//   MODE
 // ═══════════════════════════════════════
 interface QuickPostModeProps {
   scheduledDate?: string;
@@ -1244,7 +1244,7 @@ export const CreateScreen = ({ posts, postsLoading, onPublish, onUploadMedia, co
         <div className="mt-5 bg-card rounded-2xl p-1 flex border border-border-light">
           {([
             { key: 'calendar' as const, label: '📅 Calendar' },
-            { key: 'quick' as const, label: 'Quick Post' },
+            { key: 'quick' as const, label: '' },
             { key: 'strategy' as const, label: 'Strategy' },
             { key: 'media' as const, label: '📁 Media' },
           ]).map(m => (
@@ -1287,7 +1287,7 @@ export const CreateScreen = ({ posts, postsLoading, onPublish, onUploadMedia, co
             {mode === 'media' && (
               <MediaLibrary mode="tab" onSelect={(items) => {
                 setMode('quick');
-                toast.success(`${items.length} media selected — opening Quick Post`);
+                toast.success(`${items.length} media selected — opening `);
               }} />
             )}
           </motion.div>

@@ -1,155 +1,103 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Calendar, Send, Sparkles, Image as ImageIcon, Clock } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Sparkles, Send, Image as ImageIcon, Video, Paperclip, Clock } from 'lucide-react';
 
-export default function CreateStudioPage() {
-  const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'calendar' | 'quick' | 'strategy' | 'media'>('calendar');
-  const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
+export default function QuickPostTab() {
+  const [content, setContent] = useState('');
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['x', 'instagram']);
+
+  const togglePlatform = (platform: string) => {
+    setSelectedPlatforms((prev) =>
+      prev.includes(platform) ? prev.filter((p) => p !== platform) : [...prev, platform]
+    );
+  };
 
   return (
-    <div className="w-full min-h-screen bg-background p-6 text-right dir-rtl font-sans" dir="rtl">
-      {/* En-tête de la page */}
-      <div className="mb-8 text-right">
-        <h1 className="text-3xl font-bold text-foreground">استوديو المحتوى</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          أنشئ محتوى مدعوم بالذكاء الاصطناعي لأي منصة بسرعة وفعالية
-        </p>
+    <div className="w-full space-y-6 text-right font-sans" dir="rtl">
+      {/* اختيار المنصات */}
+      <div className="bg-card p-6 rounded-2xl border border-border shadow-sm space-y-3">
+        <label className="text-sm font-bold text-foreground block">
+          اختر منصات التواصل الاجتماعي
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { id: 'x', name: 'منصة X (تويتر)' },
+            { id: 'instagram', name: 'إنستغرام' },
+            { id: 'snapchat', name: 'سناب شات' },
+            { id: 'tiktok', name: 'تيك توك' },
+            { id: 'linkedin', name: 'لينكد إن' },
+          ].map((platform) => {
+            const isSelected = selectedPlatforms.includes(platform.id);
+            return (
+              <button
+                key={platform.id}
+                onClick={() => togglePlatform(platform.id)}
+                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+                  isSelected
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                {platform.name}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Barre de navigation / Tabs */}
-      <div className="flex items-center justify-between bg-card border border-border rounded-2xl p-1.5 mb-6 shadow-sm">
-        <div className="flex items-center gap-2 w-full">
-          <button
-            onClick={() => setActiveTab('calendar')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
-              activeTab === 'calendar'
-                ? 'bg-primary text-primary-foreground shadow-md'
-                : 'text-muted-foreground hover:bg-muted/50'
-            }`}
-          >
-            <Calendar className="w-4 h-4" />
-            <span>التقويم</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('quick')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
-              activeTab === 'quick'
-                ? 'bg-primary text-primary-foreground shadow-md'
-                : 'text-muted-foreground hover:bg-muted/50'
-            }`}
-          >
-            <Send className="w-4 h-4" />
-            <span>منشور سريع</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('strategy')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
-              activeTab === 'strategy'
-                ? 'bg-primary text-primary-foreground shadow-md'
-                : 'text-muted-foreground hover:bg-muted/50'
-            }`}
-          >
+      {/* كتابة المنشور */}
+      <div className="bg-card p-6 rounded-2xl border border-border shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-bold text-foreground">نص المنشور</label>
+          <button className="flex items-center gap-1.5 text-xs font-bold text-primary hover:underline">
             <Sparkles className="w-4 h-4" />
-            <span>الاستراتيجية</span>
+            <span>تحسين النص بالذكاء الاصطناعي</span>
           </button>
+        </div>
 
-          <button
-            onClick={() => setActiveTab('media')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
-              activeTab === 'media'
-                ? 'bg-primary text-primary-foreground shadow-md'
-                : 'text-muted-foreground hover:bg-muted/50'
-            }`}
-          >
-            <ImageIcon className="w-4 h-4" />
-            <span>الوسائط</span>
-          </button>
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="اكتب تفاصيل منشورك هنا أو دع الذكاء الاصطناعي يساعدك..."
+          rows={5}
+          className="w-full p-4 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none text-right"
+          dir="rtl"
+        />
+
+        {/* وسائل الإيضاح والوسائط */}
+        <div className="flex items-center justify-between pt-2 border-t border-border">
+          <div className="flex items-center gap-2">
+            <button className="p-2.5 rounded-xl border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all flex items-center gap-2 text-xs font-medium">
+              <ImageIcon className="w-4 h-4 text-primary" />
+              <span>صورة</span>
+            </button>
+            <button className="p-2.5 rounded-xl border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all flex items-center gap-2 text-xs font-medium">
+              <Video className="w-4 h-4 text-primary" />
+              <span>فيديو</span>
+            </button>
+            <button className="p-2.5 rounded-xl border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all flex items-center gap-2 text-xs font-medium">
+              <Paperclip className="w-4 h-4" />
+              <span>مرفق</span>
+            </button>
+          </div>
+
+          <span className="text-xs text-muted-foreground">{content.length} / 280 حرف</span>
         </div>
       </div>
 
-      {/* Contenu principal / Vue التقويم */}
-      {activeTab === 'calendar' && (
-        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-6">
-          {/* Controls de vue et dates */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-lg font-bold text-foreground">17 — 23 مارس 2026</span>
-            </div>
+      {/* أزرار الإرسال والجدولة */}
+      <div className="flex items-center gap-3">
+        <button className="flex-1 py-4 bg-primary text-primary-foreground rounded-2xl font-bold hover:opacity-90 transition-all text-center shadow-md flex items-center justify-center gap-2">
+          <Send className="w-5 h-5" />
+          <span>نشر الآن</span>
+        </button>
 
-            <div className="flex items-center bg-muted rounded-xl p-1 gap-1">
-              <button
-                onClick={() => setViewMode('week')}
-                className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  viewMode === 'week' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
-                }`}
-              >
-                أسبوع
-              </button>
-              <button
-                onClick={() => setViewMode('month')}
-                className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  viewMode === 'month' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
-                }`}
-              >
-                شهر
-              </button>
-            </div>
-          </div>
-
-          {/* Grille des jours de la semaine */}
-          <div className="grid grid-cols-7 gap-2">
-            {[
-              { day: 'الإثنين', date: '17', active: true },
-              { day: 'الثلاثاء', date: '18', active: false },
-              { day: 'الأربعاء', date: '19', active: false },
-              { day: 'الخميس', date: '20', active: false },
-              { day: 'الجمعة', date: '21', active: false },
-              { day: 'السبت', date: '22', active: false },
-              { day: 'الأحد', date: '23', active: false },
-            ].map((item, index) => (
-              <div
-                key={index}
-                className={`p-3 rounded-xl border text-center transition-all ${
-                  item.active
-                    ? 'bg-primary text-primary-foreground border-primary font-bold shadow-sm'
-                    : 'bg-background border-border text-foreground hover:border-primary/50'
-                }`}
-              >
-                <div className="text-xs opacity-80">{item.day}</div>
-                <div className="text-lg mt-1">{item.date}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Section الجدول اليومي */}
-          <div className="mt-8 border-t border-border pt-6">
-            <h3 className="text-lg font-bold text-foreground mb-4">جدول اليوم</h3>
-
-            <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-3">
-              <div className="flex items-center gap-2 text-primary text-sm font-semibold">
-                <Clock className="w-4 h-4" />
-                <span>3:00 مساءً — الوقت المثالي لنشر قصة سناب شات</span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                تفاعل المتابعين يصل لأعلى ذروة في هذا الوقت بناءً على تحليلات الذكاء الاصطناعي.
-              </p>
-              <button className="text-xs font-semibold text-primary hover:underline">
-                + إنشاء محتوى الان
-              </button>
-            </div>
-          </div>
-
-          {/* Bouton d'action principal */}
-          <button className="w-full py-4 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 transition-all text-center">
-            + جدولة منشور جديد
-          </button>
-        </div>
-      )}
+        <button className="py-4 px-6 border border-border bg-card text-foreground rounded-2xl font-bold hover:bg-muted transition-all flex items-center justify-center gap-2">
+          <Clock className="w-5 h-5 text-muted-foreground" />
+          <span>جدولة بوقت لاحق</span>
+        </button>
+      </div>
     </div>
   );
 }
