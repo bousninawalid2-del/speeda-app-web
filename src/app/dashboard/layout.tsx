@@ -54,7 +54,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex" dir={isRTL ? 'rtl' : 'ltr'}>
       <DesktopSidebar
         active={activeNav}
         onNavigate={handleNavigate}
