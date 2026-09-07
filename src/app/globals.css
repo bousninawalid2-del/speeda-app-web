@@ -162,9 +162,63 @@
   [dir="rtl"] .mr-auto { margin-right: unset; margin-left: auto; }
   [dir="rtl"] .text-left { text-align: right; }
   [dir="rtl"] .text-right { text-align: left; }
+
+  /* RTL mirroring for every physical left, right, margin, padding, position,
+     border and corner-radius utility class actually used across the app.
+     Generated from the codebase (see PR description) instead of hand-picked
+     one-offs, so it covers the app rather than a handful of components. If a
+     new directional margin, padding, inset, border or radius class is
+     introduced later, add its mirror rule here too. */
+  [dir="rtl"] .-left-4 { left: auto; right: -1rem; }
+  [dir="rtl"] .-right-0\.5 { right: auto; left: -0.125rem; }
+  [dir="rtl"] .-right-1 { right: auto; left: -0.25rem; }
+  [dir="rtl"] .-right-10 { right: auto; left: -2.5rem; }
+  [dir="rtl"] .-right-4 { right: auto; left: -1rem; }
+  [dir="rtl"] .-right-8 { right: auto; left: -2rem; }
+  [dir="rtl"] .border-l { border-left-width: 0; border-right-width: 1px; }
+  [dir="rtl"] .border-l-2 { border-left-width: 0; border-right-width: 2px; }
   [dir="rtl"] .border-l-4 { border-left-width: 0; border-right-width: 4px; }
-  [dir="rtl"] .pl-4 { padding-left: 0; padding-right: 1rem; }
+  [dir="rtl"] .border-r { border-right-width: 0; border-left-width: 1px; }
+  [dir="rtl"] .left-0 { left: auto; right: 0px; }
+  [dir="rtl"] .left-1\.5 { left: auto; right: 0.375rem; }
+  /* The half and quarter-width left offset classes are intentionally not
+     mirrored here: every use in this codebase pairs them with a matching
+     negative-half translate for centering (direction-symmetric, nothing to
+     flip), and this build's CSS parser cannot handle a fraction character
+     in a class selector at all, even attribute-escaped — see PR notes. */
+  [dir="rtl"] .left-2 { left: auto; right: 0.5rem; }
+  [dir="rtl"] .left-3 { left: auto; right: 0.75rem; }
+  [dir="rtl"] .left-4 { left: auto; right: 1rem; }
+  [dir="rtl"] .left-\[15px\] { left: auto; right: 15px; }
+  [dir="rtl"] .ml-0\.5 { margin-left: 0; margin-right: 0.125rem; }
+  [dir="rtl"] .ml-1 { margin-left: 0; margin-right: 0.25rem; }
+  [dir="rtl"] .ml-1\.5 { margin-left: 0; margin-right: 0.375rem; }
   [dir="rtl"] .ml-2 { margin-left: 0; margin-right: 0.5rem; }
+  [dir="rtl"] .ml-9 { margin-left: 0; margin-right: 2.25rem; }
+  [dir="rtl"] .mr-1 { margin-right: 0; margin-left: 0.25rem; }
+  [dir="rtl"] .mr-1\.5 { margin-right: 0; margin-left: 0.375rem; }
+  [dir="rtl"] .mr-2 { margin-right: 0; margin-left: 0.5rem; }
+  [dir="rtl"] .pl-10 { padding-left: 0; padding-right: 2.5rem; }
+  [dir="rtl"] .pl-12 { padding-left: 0; padding-right: 3rem; }
+  [dir="rtl"] .pl-4 { padding-left: 0; padding-right: 1rem; }
+  [dir="rtl"] .pl-9 { padding-left: 0; padding-right: 2.25rem; }
+  [dir="rtl"] .pr-16 { padding-right: 0; padding-left: 4rem; }
+  [dir="rtl"] .pr-3 { padding-right: 0; padding-left: 0.75rem; }
+  [dir="rtl"] .pr-4 { padding-right: 0; padding-left: 1rem; }
+  [dir="rtl"] .pr-5 { padding-right: 0; padding-left: 1.25rem; }
+  [dir="rtl"] .pr-6 { padding-right: 0; padding-left: 1.5rem; }
+  [dir="rtl"] .right-0 { right: auto; left: 0px; }
+  [dir="rtl"] .right-1 { right: auto; left: 0.25rem; }
+  [dir="rtl"] .right-1\.5 { right: auto; left: 0.375rem; }
+  /* right-1/4 (WebAppProductPage decorative background glow) left unmirrored
+     for the same reason as left-1/4 above. */
+  [dir="rtl"] .right-3 { right: auto; left: 0.75rem; }
+  [dir="rtl"] .right-4 { right: auto; left: 1rem; }
+  [dir="rtl"] .right-5 { right: auto; left: 1.25rem; }
+  [dir="rtl"] .rounded-bl-\[6px\] { border-bottom-left-radius: 0; border-bottom-right-radius: 6px; }
+  [dir="rtl"] .rounded-bl-md { border-bottom-left-radius: 0; border-bottom-right-radius: calc(var(--radius) - 2px); }
+  [dir="rtl"] .rounded-br-\[6px\] { border-bottom-right-radius: 0; border-bottom-left-radius: 6px; }
+  [dir="rtl"] .rounded-tl-sm { border-top-left-radius: 0; border-top-right-radius: calc(var(--radius) - 4px); }
 
   /* Desktop hover state for cards */
   @media (min-width: 768px) {
