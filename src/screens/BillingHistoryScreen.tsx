@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, Download, Loader2 } from 'lucide-react';
 import { BillingPayment } from '@/hooks/useBilling';
 
@@ -19,14 +20,15 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-function statusBadge(status: BillingPayment['status']) {
-  if (status === 'succeeded') return <span className="text-[11px] font-semibold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">✅ Paid</span>;
-  if (status === 'failed')    return <span className="text-[11px] font-semibold text-red-accent bg-red-soft px-2 py-0.5 rounded-md">❌ Failed</span>;
-  if (status === 'refunded')  return <span className="text-[11px] font-semibold text-muted-foreground bg-border px-2 py-0.5 rounded-md">↩ Refunded</span>;
-  return <span className="text-[11px] font-semibold text-orange-accent bg-orange-soft px-2 py-0.5 rounded-md">⏳ Pending</span>;
+function statusBadge(status: BillingPayment['status'], t: (key: string) => string) {
+  if (status === 'succeeded') return <span className="text-[11px] font-semibold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">{t('billing.statusPaid')}</span>;
+  if (status === 'failed')    return <span className="text-[11px] font-semibold text-red-accent bg-red-soft px-2 py-0.5 rounded-md">{t('billing.statusFailed')}</span>;
+  if (status === 'refunded')  return <span className="text-[11px] font-semibold text-muted-foreground bg-border px-2 py-0.5 rounded-md">{t('billing.statusRefunded')}</span>;
+  return <span className="text-[11px] font-semibold text-orange-accent bg-orange-soft px-2 py-0.5 rounded-md">{t('billing.statusPending')}</span>;
 }
 
 export const BillingHistoryScreen = ({ onBack, payments: livePayments, isLoading }: BillingHistoryScreenProps) => {
+  const { t } = useTranslation();
   const payments = livePayments ?? FALLBACK_PAYMENTS;
 
   return (
@@ -34,7 +36,7 @@ export const BillingHistoryScreen = ({ onBack, payments: livePayments, isLoading
       <div className="px-5 pt-6">
         <div className="flex items-center gap-3 mb-6">
           <button onClick={onBack}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
-          <h1 className="text-[20px] font-bold text-foreground">Billing History</h1>
+          <h1 className="text-[20px] font-bold text-foreground">{t('billing.title')}</h1>
         </div>
 
         {isLoading ? (
@@ -43,8 +45,8 @@ export const BillingHistoryScreen = ({ onBack, payments: livePayments, isLoading
           </div>
         ) : payments.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-[15px] font-semibold text-foreground mb-1">No payments yet</p>
-            <p className="text-[13px] text-muted-foreground">Your billing history will appear here.</p>
+            <p className="text-[15px] font-semibold text-foreground mb-1">{t('billing.noPayments')}</p>
+            <p className="text-[13px] text-muted-foreground">{t('billing.noPaymentsDesc')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -57,12 +59,12 @@ export const BillingHistoryScreen = ({ onBack, payments: livePayments, isLoading
                   </div>
                   <div className="text-end">
                     <p className="text-[16px] font-bold text-foreground">{tx.currency} {tx.amount.toLocaleString()}</p>
-                    {statusBadge(tx.status)}
+                    {statusBadge(tx.status, t)}
                   </div>
                 </div>
                 {tx.status === 'succeeded' && (
                   <button className="flex items-center gap-1 text-brand-blue text-[12px] font-semibold mt-2">
-                    <Download size={12} /> Download Invoice
+                    <Download size={12} /> {t('billing.downloadInvoice')}
                   </button>
                 )}
               </div>
