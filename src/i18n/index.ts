@@ -8,7 +8,12 @@ const savedLang = (typeof window !== 'undefined' && localStorage.getItem('speeda
 
 type AppLang = 'en' | 'ar' | 'fr';
 
-const runtimeDictionaries: Record<Exclude<AppLang, 'en'>, Record<string, string>> = {
+// Hand-curated fallback entries (kept for phrases that predate the structured
+// en/ar/fr dictionaries, e.g. seed/demo data strings). These are merged with —
+// and overridden by — the auto-generated dictionary built from src/i18n/en.ts +
+// src/i18n/ar.ts + src/i18n/fr.ts below, so the two translation systems can
+// never drift out of sync again.
+const legacyRuntimeDictionaries: Record<Exclude<AppLang, 'en'>, Record<string, string>> = {
   ar: {
     // Navigation
     Home: 'الرئيسية',
@@ -614,6 +619,47 @@ const runtimeDictionaries: Record<Exclude<AppLang, 'en'>, Record<string, string>
     Week: 'Semaine',
     Month: 'Mois',
   },
+};
+
+// Walks the structured en/ar/fr dictionaries (src/i18n/en.ts etc.) and produces
+// a flat { "English source string": "Localized string" } map, by pairing every
+// leaf value in `en` with the value at the same path in the localized object.
+// This is what lets the runtime DOM-localizer (below) translate ANY phrase that
+// already exists in en.ts/ar.ts/fr.ts, not just the hand-picked subset in
+// legacyRuntimeDictionaries above.
+const collectTranslationPairs = (
+  enNode: unknown,
+  localizedNode: unknown,
+  out: Record<string, string>
+) => {
+  if (typeof enNode === 'string') {
+    if (typeof localizedNode === 'string' && enNode.trim() && localizedNode.trim() && enNode !== localizedNode) {
+      out[enNode] = localizedNode;
+    }
+    return;
+  }
+  if (enNode && typeof enNode === 'object') {
+    for (const key of Object.keys(enNode as Record<string, unknown>)) {
+      collectTranslationPairs(
+        (enNode as Record<string, unknown>)[key],
+        (localizedNode as Record<string, unknown> | undefined)?.[key],
+        out
+      );
+    }
+  }
+};
+
+const buildGeneratedDictionary = (localized: Record<string, unknown>): Record<string, string> => {
+  const out: Record<string, string> = {};
+  collectTranslationPairs(en, localized, out);
+  return out;
+};
+
+// The generated entries win on conflict — they come straight from the source of
+// truth (en.ts/ar.ts/fr.ts), so they're always the most current translation.
+const runtimeDictionaries: Record<Exclude<AppLang, 'en'>, Record<string, string>> = {
+  ar: { ...legacyRuntimeDictionaries.ar, ...buildGeneratedDictionary(ar) },
+  fr: { ...legacyRuntimeDictionaries.fr, ...buildGeneratedDictionary(fr) },
 };
 
 const textOriginalMap = new WeakMap<Text, string>();

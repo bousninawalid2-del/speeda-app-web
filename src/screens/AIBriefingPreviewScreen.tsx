@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
 import { useIsMobile } from '../hooks/use-mobile';
 
@@ -6,15 +7,16 @@ interface AIBriefingPreviewScreenProps {
   onBack: () => void;
 }
 
-const benefits = [
-  { icon: '📊', bg: 'hsl(var(--brand-blue) / 0.1)', title: 'Daily performance summary', desc: 'How your content and campaigns performed in the last 24 hours' },
-  { icon: '📋', bg: 'hsl(var(--brand-teal) / 0.1)', title: 'Personalized action plan', desc: 'AI-prioritized actions based on your specific business data' },
-  { icon: '⏰', bg: 'hsl(var(--purple) / 0.1)', title: 'Optimal posting times for YOUR audience', desc: 'Learned from your followers behavior, not generic data' },
-  { icon: '🎯', bg: 'hsl(var(--green) / 0.1)', title: 'Smart recommendations', desc: 'Content ideas, budget adjustments, and growth opportunities tailored to you' },
-];
-
 export const AIBriefingPreviewScreen = ({ onBack }: AIBriefingPreviewScreenProps) => {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
+
+  const benefits = [
+    { icon: '📊', bg: 'hsl(var(--brand-blue) / 0.1)', title: t('aiBriefing.benefit1Title'), desc: t('aiBriefing.benefit1Desc') },
+    { icon: '📋', bg: 'hsl(var(--brand-teal) / 0.1)', title: t('aiBriefing.benefit2Title'), desc: t('aiBriefing.benefit2Desc') },
+    { icon: '⏰', bg: 'hsl(var(--purple) / 0.1)', title: t('aiBriefing.benefit3Title'), desc: t('aiBriefing.benefit3Desc') },
+    { icon: '🎯', bg: 'hsl(var(--green) / 0.1)', title: t('aiBriefing.benefit4Title'), desc: t('aiBriefing.benefit4Desc') },
+  ];
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-background min-h-full pb-8">
@@ -24,7 +26,7 @@ export const AIBriefingPreviewScreen = ({ onBack }: AIBriefingPreviewScreenProps
           <button onClick={onBack} className="w-8 h-8 rounded-lg bg-card border border-border-light flex items-center justify-center">
             <ArrowLeft size={16} className="text-foreground" />
           </button>
-          <h1 className="text-[20px] font-bold text-foreground">✦ AI Morning Briefing</h1>
+          <h1 className="text-[20px] font-bold text-foreground">{t('aiBriefing.title')}</h1>
         </div>
       </div>
 
@@ -34,22 +36,22 @@ export const AIBriefingPreviewScreen = ({ onBack }: AIBriefingPreviewScreenProps
           <div className="absolute w-32 h-32 rounded-full bg-primary-foreground/5 -top-8 -right-8" />
           <div className="absolute w-20 h-20 rounded-full bg-primary-foreground/[0.03] bottom-2 -left-4" />
           <div className="relative z-10">
-            <span className="text-[11px] uppercase font-bold tracking-[1px] text-primary-foreground/70">✦ AI MORNING BRIEFING</span>
+            <span className="text-[11px] uppercase font-bold tracking-[1px] text-primary-foreground/70">{t('aiBriefing.badge')}</span>
             <p
               className="text-[16px] md:text-[18px] font-semibold text-primary-foreground leading-[1.5] mt-3"
               style={{ filter: 'blur(4px)', opacity: 0.7 }}
             >
-              Your engagement is up 23% this week. I've prepared 3 posts for today and your weekend campaign is ready to launch. Your Smash Burger Reel is outperforming by 3x — consider boosting it.
+              {t('aiBriefing.previewText')}
             </p>
           </div>
           {/* Preview badge */}
           <div className="absolute top-4 right-4 z-20 bg-primary-foreground text-foreground text-[10px] uppercase font-bold tracking-wider px-3 py-1 rounded-lg">
-            Preview
+            {t('aiBriefing.previewBadge')}
           </div>
         </div>
 
         {/* Benefits title */}
-        <h2 className="text-[16px] font-bold text-foreground">Your personalized AI briefing will include:</h2>
+        <h2 className="text-[16px] font-bold text-foreground">{t('aiBriefing.benefitsTitle')}</h2>
 
         {/* Benefit cards */}
         <div className={`gap-3 ${isMobile ? 'flex flex-col' : 'grid grid-cols-2'}`}>
@@ -75,7 +77,7 @@ export const AIBriefingPreviewScreen = ({ onBack }: AIBriefingPreviewScreenProps
         {/* Bottom message */}
         <div className="rounded-2xl p-5" style={{ background: 'linear-gradient(135deg, hsl(var(--brand-blue) / 0.08), hsl(var(--brand-teal) / 0.08))' }}>
           <p className="text-[14px] text-muted-foreground text-center leading-[1.6]">
-            ✦ The more you use Speeda, the more personalized your briefings become. Every post, every campaign, every interaction teaches your AI.
+            {t('aiBriefing.footerNote')}
           </p>
         </div>
 
@@ -85,7 +87,7 @@ export const AIBriefingPreviewScreen = ({ onBack }: AIBriefingPreviewScreenProps
           className="w-full py-3.5 rounded-2xl text-primary-foreground text-[15px] font-bold"
           style={{ background: 'linear-gradient(135deg, hsl(var(--brand-blue)), hsl(var(--brand-teal)))' }}
         >
-          Got it, let's keep going
+          {t('aiBriefing.cta')}
         </button>
       </div>
     </motion.div>

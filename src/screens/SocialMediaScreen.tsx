@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Plus, MoreVertical } from 'lucide-react';
 import { InstagramLogo, TikTokLogo, SnapchatLogo, FacebookLogo, XLogo, YouTubeLogo, LinkedInLogo, GoogleLogo, PinterestLogo, ThreadsLogo } from '../components/PlatformLogos';
@@ -51,6 +52,32 @@ const PLATFORM_CATALOGUE: CatalogueEntry[] = [
   { Logo: ThreadsLogo,  name: 'Threads',            platform: 'threads' },
 ];
 
+const noteKeys: Record<string, string> = {
+  'Limited features — Stories only': 'social.noteSnapchatLimited',
+};
+
+const tabLabelKeys: Record<string, string> = {
+  Accounts: 'social.tabAccounts',
+  'Post Queue': 'social.tabPostQueue',
+  Calendar: 'social.tabCalendar',
+};
+
+const statusLabelKeys: Record<string, string> = {
+  Scheduled: 'social.statusScheduled',
+  Draft: 'social.statusDraft',
+  'AI Generated': 'social.statusAiGenerated',
+  Pending: 'social.statusPending',
+};
+
+const typeLabelKeys: Record<string, string> = {
+  Reel: 'social.typeReel',
+  Video: 'social.typeVideo',
+  Post: 'social.typePost',
+  Thread: 'social.typeThread',
+  Story: 'social.typeStory',
+  Short: 'social.typeShort',
+};
+
 function formatFollowers(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K`;
@@ -100,6 +127,7 @@ export const SocialMediaScreen = ({
   onConnect,
   onDisconnect,
 }: SocialMediaScreenProps) => {
+  const { t } = useTranslation();
   const [tab, setTab] = useState('Accounts');
   const [connectingPlatform, setConnectingPlatform] = useState<{ name: string; Logo: React.ComponentType<{ size?: number }> } | null>(null);
   const [managePlatform,     setManagePlatform]     = useState<string | null>(null);
@@ -153,24 +181,24 @@ export const SocialMediaScreen = ({
       <div className="px-5 pt-6">
         <div className="flex items-center gap-3 mb-2">
           <button onClick={onBack}><ChevronLeft size={24} className="text-foreground" /></button>
-          <h1 className="text-[20px] font-bold text-foreground flex-1">Social Media</h1>
+          <h1 className="text-[20px] font-bold text-foreground flex-1">{t('social.title')}</h1>
           <button
             onClick={handleConnect}
             disabled={connectLoading}
             className="h-8 px-3 rounded-xl bg-brand-blue text-primary-foreground text-[12px] font-bold flex items-center gap-1 disabled:opacity-60"
           >
             {connectLoading ? <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Plus size={14} />}
-            Connect
+            {t('social.connect')}
           </button>
         </div>
-        <p className="text-[13px] text-muted-foreground mb-4">{connectedCount} of {accounts.length} connected</p>
+        <p className="text-[13px] text-muted-foreground mb-4">{t('social.connectedOfTotal', { connected: connectedCount, total: accounts.length })}</p>
 
         {/* Stats Banner */}
         <div className="gradient-hero rounded-2xl p-4 grid grid-cols-3 gap-2 text-center">
           {[
-            { v: isLoading ? '—' : formatFollowers(totalFollowers), l: 'Total Followers' },
-            { v: `${connectedCount}/${accounts.length}`,             l: 'Platforms' },
-            { v: '5',                                                l: 'Scheduled' },
+            { v: isLoading ? '—' : formatFollowers(totalFollowers), l: t('social.statTotalFollowers') },
+            { v: `${connectedCount}/${accounts.length}`,             l: t('social.statPlatforms') },
+            { v: '5',                                                l: t('social.statScheduled') },
           ].map((s, i) => (
             <div key={i}>
               <p className="text-[20px] font-extrabold text-primary-foreground">{s.v}</p>
@@ -181,8 +209,8 @@ export const SocialMediaScreen = ({
 
         {/* Tabs */}
         <div className="mt-4 bg-card rounded-2xl p-1 border border-border flex">
-          {['Accounts', 'Post Queue', 'Calendar'].map(t => (
-            <button key={t} onClick={() => setTab(t)} className={`flex-1 h-9 rounded-xl text-[12px] font-semibold ${tab === t ? 'bg-brand-blue text-primary-foreground' : 'text-muted-foreground'}`}>{t}</button>
+          {['Accounts', 'Post Queue', 'Calendar'].map(tabName => (
+            <button key={tabName} onClick={() => setTab(tabName)} className={`flex-1 h-9 rounded-xl text-[12px] font-semibold ${tab === tabName ? 'bg-brand-blue text-primary-foreground' : 'text-muted-foreground'}`}>{t(tabLabelKeys[tabName] ?? tabName, tabName)}</button>
           ))}
         </div>
 
@@ -201,21 +229,21 @@ export const SocialMediaScreen = ({
                   <div className="flex-1">
                     <p className="text-[14px] font-bold text-foreground">{a.name}</p>
                     <p className="text-[12px] text-muted-foreground">{a.followers}</p>
-                    {a.note && <p className="text-[10px] text-muted-foreground">{a.note}</p>}
+                    {a.note && <p className="text-[10px] text-muted-foreground">{t(noteKeys[a.note] ?? a.note, a.note)}</p>}
                     {a.health === 'error' && a.connected && (
                       <div className="flex items-center gap-1 mt-1">
-                        <span className="text-[10px] text-red-accent font-semibold">⚠️ Connection issue</span>
-                        <button onClick={handleConnect} className="text-[10px] text-brand-blue font-semibold">Reconnect</button>
+                        <span className="text-[10px] text-red-accent font-semibold">{t('social.connectionIssue')}</span>
+                        <button onClick={handleConnect} className="text-[10px] text-brand-blue font-semibold">{t('social.reconnect')}</button>
                       </div>
                     )}
                   </div>
                   {a.connected ? (
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-semibold text-green-accent">✓ Connected</span>
+                      <span className="text-[11px] font-semibold text-green-accent">{t('social.connected')}</span>
                       <button onClick={() => setManagePlatform(a.name)}><MoreVertical size={14} className="text-muted-foreground" /></button>
                     </div>
                   ) : (
-                    <button onClick={handleConnect} className="text-[11px] font-semibold text-brand-blue">Connect</button>
+                    <button onClick={handleConnect} className="text-[11px] font-semibold text-brand-blue">{t('social.connect')}</button>
                   )}
                 </div>
               ))
@@ -230,12 +258,12 @@ export const SocialMediaScreen = ({
                 <q.Logo size={20} />
                 <div className="flex-1">
                   <p className="text-[13px] font-bold text-foreground">{q.title}</p>
-                  <p className="text-[11px] text-muted-foreground">{q.type} · {q.time}</p>
+                  <p className="text-[11px] text-muted-foreground">{t(typeLabelKeys[q.type] ?? q.type, q.type)} · {q.time}</p>
                 </div>
-                <span className={`text-[11px] font-semibold ${q.color}`}>{q.status}</span>
+                <span className={`text-[11px] font-semibold ${q.color}`}>{t(statusLabelKeys[q.status] ?? q.status, q.status)}</span>
               </div>
             ))}
-            <button className="w-full bg-card rounded-2xl p-4 border-2 border-dashed border-border text-brand-blue text-[13px] font-bold text-center">+ Schedule New Post</button>
+            <button className="w-full bg-card rounded-2xl p-4 border-2 border-dashed border-border text-brand-blue text-[13px] font-bold text-center">{t('social.scheduleNewPost')}</button>
           </div>
         )}
 

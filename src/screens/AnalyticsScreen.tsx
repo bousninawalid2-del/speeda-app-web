@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Share, Check, FileText, X, Download, MessageCircle, Mail, Link2, Copy } from 'lucide-react';
 import { InstagramLogo, TikTokLogo, SnapchatLogo, FacebookLogo, XLogo, YouTubeLogo, LinkedInLogo, GoogleLogo, PinterestLogo, ThreadsLogo } from '../components/PlatformLogos';
@@ -113,7 +114,18 @@ interface AnalyticsScreenProps {
   onPeriodChange?: (period: string) => void;
 }
 
+// KPI labels come from mock/period data or the live API as plain English text
+// (used as lookup keys); this maps them to the translated display string.
+const kpiLabelKeys: Record<string, string> = {
+  'Total Reach': 'analytics.kpiTotalReach',
+  Engagement: 'analytics.kpiEngagement',
+  Conversions: 'analytics.kpiConversions',
+  Clicks: 'analytics.kpiClicks',
+  'Ad Spend': 'analytics.kpiAdSpend',
+};
+
 export const AnalyticsScreen = ({ onNavigate, externalData, isLoading, onPeriodChange }: AnalyticsScreenProps) => {
+  const { t } = useTranslation();
   const [period, setPeriod] = useState('30D');
   const [comingSoonFeature, setComingSoonFeature] = useState<string | null>(null);
   const [exportStep, setExportStep] = useState<'idle' | 'loading' | 'done'>('idle');
@@ -626,11 +638,11 @@ export const AnalyticsScreen = ({ onNavigate, externalData, isLoading, onPeriodC
       <div className="px-5 pt-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[28px] font-extrabold tracking-[-0.02em]">Analytics</h1>
-            <p className="text-[14px] text-muted-foreground">Performance overview</p>
+            <h1 className="text-[28px] font-extrabold tracking-[-0.02em]">{t('analytics.title')}</h1>
+            <p className="text-[14px] text-muted-foreground">{t('analytics.subtitle')}</p>
           </div>
           <button onClick={handleExportPDF} className="h-[42px] px-4 rounded-xl bg-card border border-border text-brand-blue text-[13px] font-bold flex items-center gap-1">
-            <Share size={14} /> Export
+            <Share size={14} /> {t('analytics.export')}
           </button>
         </div>
 
@@ -658,7 +670,7 @@ export const AnalyticsScreen = ({ onNavigate, externalData, isLoading, onPeriodC
                   )}
                 </div>
                 <p className="text-[22px] font-extrabold text-foreground mt-2 tracking-[-0.02em]">{kpi.value}</p>
-                <span className="text-[11px] text-muted-foreground">{kpi.label}</span>
+                <span className="text-[11px] text-muted-foreground">{t(kpiLabelKeys[kpi.label] ?? kpi.label, kpi.label)}</span>
                 <div className="flex items-end gap-0.5 mt-2 h-[36px]">
                   {[40, 65, 50, 80, 90, 70, 85].map((h, j) => (
                     <motion.div key={j} initial={{ height: 0 }} animate={{ height: `${h}%` }} transition={{ delay: 0.3 + j * 0.06, duration: 0.5 }} className="flex-1 rounded-sm gradient-btn opacity-70" />
@@ -671,7 +683,7 @@ export const AnalyticsScreen = ({ onNavigate, externalData, isLoading, onPeriodC
 
         {/* Weekly Chart */}
         <div className="mt-5">
-          <h2 className="text-[18px] font-bold text-foreground">Weekly Engagement</h2>
+          <h2 className="text-[18px] font-bold text-foreground">{t('analytics.weeklyEngagement')}</h2>
           <div className="bg-card rounded-2xl p-5 border border-border-light mt-3">
             <div className="flex items-end gap-2" style={{ height: 160 }}>
               {data.bars.map((bar: any, i: number) => (
@@ -687,7 +699,7 @@ export const AnalyticsScreen = ({ onNavigate, externalData, isLoading, onPeriodC
 
         {/* Platform Breakdown */}
         <div className="mt-5">
-          <h2 className="text-[18px] font-bold text-foreground">Platform Breakdown</h2>
+          <h2 className="text-[18px] font-bold text-foreground">{t('analytics.platformBreakdown')}</h2>
           <div className="bg-card rounded-2xl border border-border-light mt-3 overflow-hidden">
             {platforms.map((p, i) => (
               <div key={i} className={`flex items-center gap-3 px-4 py-3 ${i > 0 ? 'border-t border-border-light' : ''}`}>
@@ -703,7 +715,7 @@ export const AnalyticsScreen = ({ onNavigate, externalData, isLoading, onPeriodC
 
         {/* Top Content */}
         <div className="mt-5">
-          <h2 className="text-[18px] font-bold text-foreground">Top Performing Content</h2>
+          <h2 className="text-[18px] font-bold text-foreground">{t('analytics.topContent')}</h2>
           <div className="mt-3 space-y-2">
             {topContent.map((c, i) => (
               <div key={i} className="bg-card rounded-2xl p-4 border border-border-light flex items-center gap-3">
@@ -721,17 +733,17 @@ export const AnalyticsScreen = ({ onNavigate, externalData, isLoading, onPeriodC
         {/* AI Insights */}
         <div className="mt-5">
           <div className="flex items-center gap-2">
-            <h2 className="text-[18px] font-bold text-foreground">AI Insights</h2>
-            <span className="text-[10px] font-bold text-primary-foreground gradient-btn px-2 py-0.5 rounded-md">✦ Powered by AI</span>
+            <h2 className="text-[18px] font-bold text-foreground">{t('analytics.aiInsights')}</h2>
+            <span className="text-[10px] font-bold text-primary-foreground gradient-btn px-2 py-0.5 rounded-md">{t('analytics.aiInsightsBadge')}</span>
           </div>
           {(() => {
             const insightsContent = (
               <div className="mt-3 space-y-2">
                 {[
-                  { border: 'border-l-purple', icon: '⏰', text: 'Post Reels between 7-9 PM for 40% more reach', cta: 'Schedule Now →', nav: 'create' },
-                  { border: 'border-l-green-accent', icon: '📈', text: 'Your TikTok is 3x above industry avg', cta: 'Create TikTok Reel →', nav: 'create' },
-                  { border: 'border-l-orange-accent', icon: '📸', text: 'Food photography posts get 2.5x more saves', cta: 'Use Photo Template →', nav: 'create' },
-                  { border: 'border-l-brand-teal', icon: '🌙', text: 'Ramadan in 3 weeks — plan content now', cta: 'Generate Ramadan Plan →', nav: 'create' },
+                  { border: 'border-l-purple', icon: '⏰', text: t('analytics.insightReelsTime'), cta: t('analytics.insightReelsCta'), nav: 'create' },
+                  { border: 'border-l-green-accent', icon: '📈', text: t('analytics.insightTiktok'), cta: t('analytics.insightTiktokCta'), nav: 'create' },
+                  { border: 'border-l-orange-accent', icon: '📸', text: t('analytics.insightFoodPhoto'), cta: t('analytics.insightFoodPhotoCta'), nav: 'create' },
+                  { border: 'border-l-brand-teal', icon: '🌙', text: t('analytics.insightRamadan'), cta: t('analytics.insightRamadanCta'), nav: 'create' },
                 ].map((ins, i) => (
                   <div key={i} className={`bg-card rounded-2xl p-4 border border-border-light border-l-4 ${ins.border}`}>
                     <p className="text-[13px] text-foreground">{ins.icon} {ins.text}</p>
@@ -741,22 +753,22 @@ export const AnalyticsScreen = ({ onNavigate, externalData, isLoading, onPeriodC
               </div>
             );
             return isFree ? (
-              <BlurredLock label="AI Insights" onUpgrade={() => onNavigate?.('subscription')}>{insightsContent}</BlurredLock>
+              <BlurredLock label={t('analytics.aiInsights')} onUpgrade={() => onNavigate?.('subscription')}>{insightsContent}</BlurredLock>
             ) : insightsContent;
           })()}
         </div>
 
         {/* Competitor Benchmark */}
         <div className="mt-5">
-          <h2 className="text-[18px] font-bold text-foreground">Competitor Benchmark</h2>
+          <h2 className="text-[18px] font-bold text-foreground">{t('analytics.competitorBenchmark')}</h2>
           <div className="bg-card rounded-2xl p-5 border border-border-light mt-3">
             {(() => {
               const benchmarkContent = (
                 <div className="space-y-3">
                   {[
-                    { label: 'Your Engagement', value: '5.1%', bar: 68, color: 'gradient-btn' },
-                    { label: 'Industry Average', value: '3.2%', bar: 42, color: 'bg-muted' },
-                    { label: 'Top Competitor', value: '6.8%', bar: 90, color: 'bg-orange-accent' },
+                    { label: t('analytics.yourEngagement'), value: '5.1%', bar: 68, color: 'gradient-btn' },
+                    { label: t('analytics.industryAverage'), value: '3.2%', bar: 42, color: 'bg-muted' },
+                    { label: t('analytics.topCompetitor'), value: '6.8%', bar: 90, color: 'bg-orange-accent' },
                   ].map((row, i) => (
                     <div key={i}>
                       <div className="flex justify-between mb-1">
@@ -771,7 +783,7 @@ export const AnalyticsScreen = ({ onNavigate, externalData, isLoading, onPeriodC
                 </div>
               );
               return isFree ? (
-                <BlurredLock label="Competitor Benchmark" onUpgrade={() => onNavigate?.('subscription')}>{benchmarkContent}</BlurredLock>
+                <BlurredLock label={t('analytics.competitorBenchmark')} onUpgrade={() => onNavigate?.('subscription')}>{benchmarkContent}</BlurredLock>
               ) : benchmarkContent;
             })()}
           </div>
@@ -781,13 +793,13 @@ export const AnalyticsScreen = ({ onNavigate, externalData, isLoading, onPeriodC
         <div className="mt-5 grid grid-cols-2 gap-3">
           <button onClick={() => onNavigate?.('postHistory')} className="bg-card rounded-2xl p-4 border border-border-light text-left">
             <span className="text-lg">📋</span>
-            <h3 className="text-[15px] font-bold text-foreground mt-2">Post History</h3>
-            <p className="text-[12px] text-muted-foreground mt-1">View all published posts</p>
+            <h3 className="text-[15px] font-bold text-foreground mt-2">{t('analytics.postHistoryTitle')}</h3>
+            <p className="text-[12px] text-muted-foreground mt-1">{t('analytics.postHistoryDesc')}</p>
           </button>
-          <button onClick={() => setComingSoonFeature('Link Tracking')} className="bg-card rounded-2xl p-4 border border-border-light text-left">
+          <button onClick={() => setComingSoonFeature(t('analytics.linkTrackingTitle'))} className="bg-card rounded-2xl p-4 border border-border-light text-left">
             <span className="text-lg">🔗</span>
-            <h3 className="text-[15px] font-bold text-foreground mt-2">Link Tracking</h3>
-            <p className="text-[12px] text-muted-foreground mt-1">Track link clicks & UTMs</p>
+            <h3 className="text-[15px] font-bold text-foreground mt-2">{t('analytics.linkTrackingTitle')}</h3>
+            <p className="text-[12px] text-muted-foreground mt-1">{t('analytics.linkTrackingDesc')}</p>
           </button>
         </div>
 
@@ -796,13 +808,13 @@ export const AnalyticsScreen = ({ onNavigate, externalData, isLoading, onPeriodC
           <div className="bg-card rounded-2xl p-5 border border-border-light">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-[15px] font-bold text-foreground">Weekly Report</h3>
-                <p className="text-[12px] text-muted-foreground mt-0.5">Sent every Monday morning</p>
+                <h3 className="text-[15px] font-bold text-foreground">{t('analytics.weeklyReportTitle')}</h3>
+                <p className="text-[12px] text-muted-foreground mt-0.5">{t('analytics.weeklyReportDesc')}</p>
               </div>
               <FileText size={20} className="text-brand-blue" />
             </div>
-            <button onClick={() => setComingSoonFeature('Weekly Report')} className="mt-3 w-full h-10 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold">
-              Set Up Weekly Report
+            <button onClick={() => setComingSoonFeature(t('analytics.weeklyReportTitle'))} className="mt-3 w-full h-10 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold">
+              {t('analytics.setUpWeeklyReport')}
             </button>
           </div>
         </div>
@@ -824,8 +836,8 @@ export const AnalyticsScreen = ({ onNavigate, externalData, isLoading, onPeriodC
                   <div className="w-12 h-12 rounded-full gradient-btn flex items-center justify-center mb-3 animate-pulse">
                     <FileText size={22} className="text-primary-foreground" />
                   </div>
-                  <p className="text-[15px] font-bold text-foreground">Generating PDF Report…</p>
-                  <p className="text-[12px] text-muted-foreground mt-1">This takes a moment</p>
+                  <p className="text-[15px] font-bold text-foreground">{t('analytics.generatingPdf')}</p>
+                  <p className="text-[12px] text-muted-foreground mt-1">{t('analytics.thisTakesAMoment')}</p>
                 </div>
               ) : (
                 <div>
@@ -834,16 +846,16 @@ export const AnalyticsScreen = ({ onNavigate, externalData, isLoading, onPeriodC
                       <div className="w-8 h-8 rounded-full bg-green-soft flex items-center justify-center">
                         <Check size={16} className="text-green-accent" />
                       </div>
-                      <p className="text-[15px] font-bold text-foreground">Report Ready</p>
+                      <p className="text-[15px] font-bold text-foreground">{t('analytics.reportReady')}</p>
                     </div>
                     <button onClick={() => setExportStep('idle')}><X size={20} className="text-muted-foreground" /></button>
                   </div>
                   <div className="space-y-2">
                     <button onClick={handleDownload} className="w-full h-12 rounded-2xl gradient-btn text-primary-foreground text-[14px] font-bold flex items-center justify-center gap-2">
-                      <Download size={16} /> Download PDF
+                      <Download size={16} /> {t('analytics.downloadPdf')}
                     </button>
                     <button onClick={handleShare} className="w-full h-12 rounded-2xl bg-muted text-foreground text-[14px] font-bold flex items-center justify-center gap-2">
-                      <Share size={16} /> Share Report
+                      <Share size={16} /> {t('analytics.shareReport')}
                     </button>
                   </div>
                 </div>
@@ -859,15 +871,15 @@ export const AnalyticsScreen = ({ onNavigate, externalData, isLoading, onPeriodC
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center">
             <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }} className="bg-card w-full max-w-sm rounded-t-3xl p-6">
               <div className="flex items-center justify-between mb-4">
-                <p className="text-[16px] font-bold text-foreground">Share Report</p>
+                <p className="text-[16px] font-bold text-foreground">{t('analytics.shareReportTitle')}</p>
                 <button onClick={() => setShareModalOpen(false)}><X size={20} className="text-muted-foreground" /></button>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { icon: <MessageCircle size={20} />, label: 'WhatsApp', action: 'whatsapp', color: 'bg-green-soft text-green-accent' },
-                  { icon: <Mail size={20} />, label: 'Email', action: 'email', color: 'bg-blue-soft text-brand-blue' },
-                  { icon: <Copy size={20} />, label: 'Copy Link', action: 'copy', color: 'bg-muted text-foreground' },
-                  { icon: <Download size={20} />, label: 'Download', action: 'download', color: 'bg-purple-soft text-purple' },
+                  { icon: <MessageCircle size={20} />, label: t('analytics.shareWhatsapp'), action: 'whatsapp', color: 'bg-green-soft text-green-accent' },
+                  { icon: <Mail size={20} />, label: t('analytics.shareEmail'), action: 'email', color: 'bg-blue-soft text-brand-blue' },
+                  { icon: <Copy size={20} />, label: t('analytics.shareCopyLink'), action: 'copy', color: 'bg-muted text-foreground' },
+                  { icon: <Download size={20} />, label: t('analytics.shareDownload'), action: 'download', color: 'bg-purple-soft text-purple' },
                 ].map((opt) => (
                   <button key={opt.action} onClick={() => handleShareOption(opt.action)} className={`flex flex-col items-center gap-2 p-4 rounded-2xl ${opt.color} font-semibold text-[13px]`}>
                     {opt.icon}

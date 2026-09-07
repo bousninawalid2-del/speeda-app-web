@@ -1235,20 +1235,18 @@ export const CreateScreen = ({ posts, postsLoading, onPublish, onUploadMedia, co
   };
 
   return (
-  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="bg-background min-h-screen pb-24 text-right" dir="rtl">
-    <div className="px-5 pt-6 text-right">
-      <h1 className="text-[28px] font-extrabold tracking-[-0.02em] text-foreground">{t('create.title')}</h1>
-      <p className="text-[14px] text-muted-foreground mt-1">{t('create.subtitle')}</p>
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="bg-background min-h-screen pb-24">
+      <div className="px-5 pt-6">
+        <h1 className="text-[28px] font-extrabold tracking-[-0.02em] text-foreground">{t('create.title')}</h1>
+        <p className="text-[14px] text-muted-foreground mt-1">{t('create.subtitle')}</p>
 
         {/* Segmented Control — 4 tabs */}
         <div className="mt-5 bg-card rounded-2xl p-1 flex border border-border-light">
           {([
-           {[
-  { key: 'calendar' as const, label: 'التقويم' },
-  { key: 'quick' as const, label: 'منشور سريع' },
-  { key: 'strategy' as const, label: 'الاستراتيجية' },
-  { key: 'media' as const, label: 'الوسائط' },
-].map((m) => (
+            { key: 'calendar' as const, label: t('create.tabCalendar') },
+            { key: 'quick' as const, label: t('create.tabQuickPost') },
+            { key: 'strategy' as const, label: t('create.tabStrategy') },
+            { key: 'media' as const, label: t('create.tabMedia') },
           ]).map(m => (
             <button key={m.key} onClick={() => setMode(m.key)}
               className={`flex-1 py-3 rounded-xl text-[12px] font-bold transition-all duration-200 ${
@@ -1289,7 +1287,7 @@ export const CreateScreen = ({ posts, postsLoading, onPublish, onUploadMedia, co
             {mode === 'media' && (
               <MediaLibrary mode="tab" onSelect={(items) => {
                 setMode('quick');
-                toast.success(`${items.length} media selected — opening `);
+                toast.success(t('create.mediaSelectedToast', { count: items.length }));
               }} />
             )}
           </motion.div>

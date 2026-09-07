@@ -1,8 +1,61 @@
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { useIsMobile } from '../hooks/use-mobile';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+
+// The factor / recommendation / quest text below is demo/fallback content
+// stored as plain English identifiers; these maps translate it for display
+// while leaving arbitrary live-API data (which won't match any key) as-is.
+const tierLabelKeys: Record<string, string> = {
+  Strong: 'mos.tierStrong',
+  Developing: 'mos.tierDeveloping',
+};
+
+const factorNameKeys: Record<string, string> = {
+  'Posting Consistency': 'mos.factors.postingConsistency',
+  'Engagement Rate': 'mos.factors.engagementRate',
+  'Response Time': 'mos.factors.responseTime',
+  'Platform Coverage': 'mos.factors.platformCoverage',
+  'Campaign Performance': 'mos.factors.campaignPerformance',
+};
+
+const factorDescKeys: Record<string, string> = {
+  'How regularly you publish content across platforms': 'mos.factors.postingConsistencyDesc',
+  'Likes, comments, shares, and saves relative to your followers': 'mos.factors.engagementRateDesc',
+  'How quickly you respond to comments, DMs, and reviews': 'mos.factors.responseTimeDesc',
+  'Number of active platforms out of your connected platforms': 'mos.factors.platformCoverageDesc',
+  'ROAS and conversion rates on your active campaigns': 'mos.factors.campaignPerformanceDesc',
+};
+
+const recTitleKeys: Record<string, string> = {
+  'Improve Response Time (+5 pts)': 'mos.rec1Title',
+  'Post More on TikTok (+3 pts)': 'mos.rec2Title',
+  'Boost Your Top Post (+4 pts)': 'mos.rec3Title',
+};
+const recDescKeys: Record<string, string> = {
+  'You have unanswered reviews. Responding within 1 hour improves your score.': 'mos.rec1Desc',
+  'Balancing across platforms improves your coverage score.': 'mos.rec2Desc',
+  'Boosting your best content pushes your campaign performance score higher.': 'mos.rec3Desc',
+};
+const recCtaKeys: Record<string, string> = {
+  'Reply to Reviews →': 'mos.rec1Cta',
+  'Create TikTok Post →': 'mos.rec2Cta',
+  'Boost Post →': 'mos.rec3Cta',
+};
+
+const questTextKeys: Record<string, string> = {
+  'Post 3 Reels this week': 'mos.quest1',
+  'Reply to all pending reviews': 'mos.quest2',
+  'Launch 1 campaign': 'mos.quest3',
+  'Share a customer review as a post': 'mos.quest4',
+  'Connect TikTok account': 'mos.quest5',
+};
+const questCtaKeys: Record<string, string> = {
+  'Do It →': 'mos.quest4Cta',
+  'Connect →': 'mos.quest5Cta',
+};
 
 export interface MosScoreFactor {
   name:   string;
@@ -133,6 +186,7 @@ const HeroRing = ({ score, size }: { score: number; size: number }) => {
 };
 
 export const MosScoreScreen = ({ onBack, onNavigate, liveData, isLoading }: MosScoreScreenProps) => {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [calcOpen, setCalcOpen] = useState(true);
   const [faqOpen, setFaqOpen] = useState(false);
@@ -173,7 +227,7 @@ export const MosScoreScreen = ({ onBack, onNavigate, liveData, isLoading }: MosS
           <button onClick={onBack} className="w-8 h-8 rounded-lg bg-card border border-border-light flex items-center justify-center">
             <ArrowLeft size={16} className="text-foreground" />
           </button>
-          <h1 className="text-[20px] font-bold text-foreground">MOS Score</h1>
+          <h1 className="text-[20px] font-bold text-foreground">{t('mos.title')}</h1>
         </div>
       </div>
 
@@ -190,16 +244,16 @@ export const MosScoreScreen = ({ onBack, onNavigate, liveData, isLoading }: MosS
               animate={{ scale: 1 }}
               transition={{ delay: 0.8, type: 'spring' }}
             >
-              {tierLabel}
+              {t(tierLabelKeys[tierLabel] ?? tierLabel, tierLabel)}
             </motion.div>
             <div className="mt-3 flex flex-col items-center gap-1">
               {streak > 0 && (
                 <span className="text-[14px] font-bold" style={{ background: 'linear-gradient(90deg, hsl(var(--brand-blue)), hsl(var(--brand-teal)))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                  🔥 {streak} day streak
+                  🔥 {t('mos.dayStreak', { count: streak })}
                 </span>
               )}
               <div className="flex items-center gap-2">
-                <span className="text-[12px] text-muted-foreground font-medium">{questsDone}/{questsTotal} weekly quests</span>
+                <span className="text-[12px] text-muted-foreground font-medium">{t('mos.weeklyQuestsFraction', { done: questsDone, total: questsTotal })}</span>
                 <div className="w-16 h-1.5 rounded-full bg-border overflow-hidden">
                   <motion.div className="h-full rounded-full" style={{ background: 'linear-gradient(90deg, hsl(var(--brand-blue)), hsl(var(--brand-teal)))' }}
                     initial={{ width: 0 }} animate={{ width: `${(questsDone / Math.max(questsTotal, 1)) * 100}%` }} transition={{ duration: 0.8, delay: 0.5 }} />
@@ -211,7 +265,7 @@ export const MosScoreScreen = ({ onBack, onNavigate, liveData, isLoading }: MosS
           {/* Scoring Factors */}
           <div className="bg-card rounded-2xl border border-border-light overflow-hidden">
             <button onClick={() => setCalcOpen(!calcOpen)} className="w-full flex items-center justify-between p-4">
-              <span className="text-[16px] font-bold text-foreground">How is your MOS Score calculated?</span>
+              <span className="text-[16px] font-bold text-foreground">{t('mos.calcQuestion')}</span>
               {calcOpen ? <ChevronUp size={18} className="text-muted-foreground" /> : <ChevronDown size={18} className="text-muted-foreground" />}
             </button>
             {calcOpen && (
@@ -219,15 +273,15 @@ export const MosScoreScreen = ({ onBack, onNavigate, liveData, isLoading }: MosS
                 {factors.map((f, i) => (
                   <div key={f.name} className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-[14px] font-semibold text-foreground">{f.name} <span className="text-muted-foreground font-normal">({f.weight}%)</span></span>
+                      <span className="text-[14px] font-semibold text-foreground">{t(factorNameKeys[f.name] ?? f.name, f.name)} <span className="text-muted-foreground font-normal">({f.weight}%)</span></span>
                       <span className="text-[13px] font-bold text-foreground">{f.pts}</span>
                     </div>
-                    <p className="text-[12px] text-muted-foreground">{f.desc}</p>
+                    <p className="text-[12px] text-muted-foreground">{t(factorDescKeys[f.desc] ?? f.desc, f.desc)}</p>
                     <AnimatedBar pct={f.pct} delay={0.2 + i * 0.1} />
                   </div>
                 ))}
                 <div className="pt-2 border-t border-border-light flex justify-between">
-                  <span className="text-[15px] font-bold text-foreground">Total</span>
+                  <span className="text-[15px] font-bold text-foreground">{t('mos.total')}</span>
                   <span className="text-[15px] font-bold" style={{ color: tierColor }}>{score}/100</span>
                 </div>
               </motion.div>
@@ -236,7 +290,7 @@ export const MosScoreScreen = ({ onBack, onNavigate, liveData, isLoading }: MosS
 
           {/* Score History */}
           <div className="bg-card rounded-2xl border border-border-light p-4">
-            <h3 className="text-[16px] font-bold text-foreground mb-3">Score History</h3>
+            <h3 className="text-[16px] font-bold text-foreground mb-3">{t('mos.scoreHistory')}</h3>
             <div className="h-[160px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={historyData}>
@@ -261,8 +315,8 @@ export const MosScoreScreen = ({ onBack, onNavigate, liveData, isLoading }: MosS
           {/* AI Recommendations */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <h3 className="text-[18px] font-bold text-foreground">✦ AI Recommendations</h3>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'hsl(var(--brand-teal) / 0.1)', color: 'hsl(var(--brand-teal))' }}>✦ Powered by AI</span>
+              <h3 className="text-[18px] font-bold text-foreground">{t('mos.aiRecommendations')}</h3>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'hsl(var(--brand-teal) / 0.1)', color: 'hsl(var(--brand-teal))' }}>{t('mos.aiRecommendationsBadge')}</span>
             </div>
             <div className="space-y-3">
               {DEMO_RECOMMENDATIONS.map((r) => (
@@ -274,10 +328,10 @@ export const MosScoreScreen = ({ onBack, onNavigate, liveData, isLoading }: MosS
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <p className="text-[15px] font-bold text-foreground">{r.title}</p>
-                  <p className="text-[13px] text-muted-foreground mt-1">{r.desc}</p>
+                  <p className="text-[15px] font-bold text-foreground">{t(recTitleKeys[r.title] ?? r.title, r.title)}</p>
+                  <p className="text-[13px] text-muted-foreground mt-1">{t(recDescKeys[r.desc] ?? r.desc, r.desc)}</p>
                   <button onClick={() => handleRecAction(r.nav)} className="mt-3 text-[13px] font-bold px-4 py-2 rounded-xl text-primary-foreground" style={{ background: 'linear-gradient(135deg, hsl(var(--brand-blue)), hsl(var(--brand-teal)))' }}>
-                    {r.cta}
+                    {t(recCtaKeys[r.cta] ?? r.cta, r.cta)}
                   </button>
                 </motion.div>
               ))}
@@ -287,27 +341,27 @@ export const MosScoreScreen = ({ onBack, onNavigate, liveData, isLoading }: MosS
           {/* Weekly Quests */}
           <div ref={questsRef}>
             <div className="flex items-center gap-2 mb-3">
-              <h3 className="text-[18px] font-bold text-foreground">Weekly Quests</h3>
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">{questsDone}/{questsTotal} completed</span>
+              <h3 className="text-[18px] font-bold text-foreground">{t('mos.weeklyQuests')}</h3>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">{t('mos.completedFraction', { done: questsDone, total: questsTotal })}</span>
             </div>
             <div className="bg-card rounded-2xl border border-border-light p-4 space-y-3">
               {DEMO_QUESTS.map((q, i) => (
                 <div key={i} className={`flex items-center justify-between ${q.done ? 'opacity-60' : ''}`}>
                   <div className="flex items-center gap-2">
                     <span>{q.done ? '✅' : '⬜'}</span>
-                    <span className={`text-[13px] ${q.done ? 'line-through text-muted-foreground' : 'text-foreground font-medium'}`}>{q.text}</span>
+                    <span className={`text-[13px] ${q.done ? 'line-through text-muted-foreground' : 'text-foreground font-medium'}`}>{t(questTextKeys[q.text] ?? q.text, q.text)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] font-bold text-primary">{q.pts}</span>
                     {!q.done && q.cta && (
-                      <button onClick={() => q.nav && onNavigate(q.nav)} className="text-[11px] font-bold text-primary">{q.cta}</button>
+                      <button onClick={() => q.nav && onNavigate(q.nav)} className="text-[11px] font-bold text-primary">{t(questCtaKeys[q.cta] ?? q.cta, q.cta)}</button>
                     )}
                   </div>
                 </div>
               ))}
               <div className="pt-3 border-t border-border-light">
                 <div className="flex justify-between text-[12px] text-muted-foreground mb-1.5">
-                  <span>{questsDone}/{questsTotal} quests</span>
+                  <span>{t('mos.questsFraction', { done: questsDone, total: questsTotal })}</span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-border overflow-hidden">
                   <motion.div className="h-full rounded-full" style={{ background: 'linear-gradient(90deg, hsl(var(--brand-blue)), hsl(var(--brand-teal)))' }}
@@ -320,13 +374,13 @@ export const MosScoreScreen = ({ onBack, onNavigate, liveData, isLoading }: MosS
           {/* FAQ */}
           <div className="bg-card rounded-2xl border border-border-light overflow-hidden">
             <button onClick={() => setFaqOpen(!faqOpen)} className="w-full flex items-center justify-between p-4">
-              <span className="text-[14px] font-bold text-foreground">What is MOS?</span>
+              <span className="text-[14px] font-bold text-foreground">{t('mos.whatIsMos')}</span>
               {faqOpen ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
             </button>
             {faqOpen && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="px-4 pb-4">
                 <p className="text-[13px] text-muted-foreground leading-relaxed">
-                  The Marketing Operating Score measures the overall health of your marketing efforts. A higher score means more consistent posting, better engagement, faster customer responses, and more effective campaigns.
+                  {t('mos.faqBody')}
                 </p>
               </motion.div>
             )}

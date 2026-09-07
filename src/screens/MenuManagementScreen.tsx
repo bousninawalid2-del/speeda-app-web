@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Plus, Pencil, Trash2, UtensilsCrossed, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -15,7 +16,17 @@ interface MenuItem {
   category: string;
 }
 
+// Category values are kept in English as internal identifiers (stored/compared
+// as plain strings); categoryLabelKeys maps each to its translation key for display.
 const categories = ['Appetizers', 'Main Courses', 'Desserts', 'Beverages', 'Combos', 'Other'];
+const categoryLabelKeys: Record<string, string> = {
+  Appetizers: 'menu.catAppetizers',
+  'Main Courses': 'menu.catMainCourses',
+  Desserts: 'menu.catDesserts',
+  Beverages: 'menu.catBeverages',
+  Combos: 'menu.catCombos',
+  Other: 'menu.catOther',
+};
 
 const demoItems: MenuItem[] = [
   { id: 1, name: 'Chicken Shawarma', description: 'Grilled chicken wrapped with garlic sauce and fresh vegetables', price: 25, category: 'Main Courses' },
@@ -25,19 +36,20 @@ const demoItems: MenuItem[] = [
 ];
 
 export const MenuManagementScreen = ({ onBack }: MenuManagementScreenProps) => {
+  const { t } = useTranslation();
   const [items, setItems] = useState<MenuItem[]>(demoItems);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [newItem, setNewItem] = useState({ name: '', description: '', price: '', category: 'Main Courses' });
 
   const handleSave = () => {
-    if (!newItem.name.trim()) { toast.error('Dish name is required'); return; }
+    if (!newItem.name.trim()) { toast.error(t('menu.nameRequired')); return; }
     if (editingItem) {
       setItems(items.map(i => i.id === editingItem.id ? { ...i, name: newItem.name, description: newItem.description, price: Number(newItem.price) || 0, category: newItem.category } : i));
-      toast.success('Item updated ✓');
+      toast.success(t('menu.itemUpdated'));
     } else {
       setItems([...items, { id: Date.now(), name: newItem.name, description: newItem.description, price: Number(newItem.price) || 0, category: newItem.category }]);
-      toast.success('Item added ✓');
+      toast.success(t('menu.itemAdded'));
     }
     setNewItem({ name: '', description: '', price: '', category: 'Main Courses' });
     setShowAddForm(false);
@@ -52,7 +64,7 @@ export const MenuManagementScreen = ({ onBack }: MenuManagementScreenProps) => {
 
   const handleDelete = (id: number) => {
     setItems(items.filter(i => i.id !== id));
-    toast.success('Item removed');
+    toast.success(t('menu.itemRemoved'));
   };
 
   const inputClass = "w-full h-[50px] rounded-2xl bg-card border border-border px-4 text-[14px] text-foreground focus:border-primary focus:outline-none";
@@ -62,7 +74,7 @@ export const MenuManagementScreen = ({ onBack }: MenuManagementScreenProps) => {
       <div className="px-5 pt-6">
         <div className="flex items-center gap-3 mb-5">
           <button onClick={onBack}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
-          <h1 className="text-[20px] font-bold text-foreground">Menu Items</h1>
+          <h1 className="text-[20px] font-bold text-foreground">{t('menu.title')}</h1>
         </div>
 
         {/* Menu items list */}
@@ -75,7 +87,7 @@ export const MenuManagementScreen = ({ onBack }: MenuManagementScreenProps) => {
                   <p className="text-[13px] text-muted-foreground mt-0.5">{item.description}</p>
                   <div className="flex items-center gap-2 mt-2">
                     <span className="text-[14px] font-semibold text-brand-blue">SAR {item.price}</span>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-purple-soft text-purple">{item.category}</span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-purple-soft text-purple">{t(categoryLabelKeys[item.category] ?? item.category, item.category)}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 ml-2">
@@ -94,7 +106,7 @@ export const MenuManagementScreen = ({ onBack }: MenuManagementScreenProps) => {
         {/* Add item button */}
         <button onClick={() => { setShowAddForm(true); setEditingItem(null); setNewItem({ name: '', description: '', price: '', category: 'Main Courses' }); }}
           className="w-full h-[52px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[14px] shadow-btn btn-press mt-5 flex items-center justify-center gap-2">
-          <Plus size={18} /> Add Item
+          <Plus size={18} /> {t('menu.addItem')}
         </button>
       </div>
 
@@ -106,30 +118,30 @@ export const MenuManagementScreen = ({ onBack }: MenuManagementScreenProps) => {
             <motion.div initial={{ y: 400 }} animate={{ y: 0 }} exit={{ y: 400 }} className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl shadow-xl max-w-[430px] mx-auto max-h-[85vh] overflow-y-auto">
               <div className="p-5">
                 <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-[16px] font-bold text-foreground">{editingItem ? 'Edit Item' : 'Add Menu Item'}</h3>
+                  <h3 className="text-[16px] font-bold text-foreground">{editingItem ? t('menu.editItem') : t('menu.addMenuItem')}</h3>
                   <button onClick={() => { setShowAddForm(false); setEditingItem(null); }}><X size={20} className="text-muted-foreground" /></button>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-[13px] font-semibold text-foreground mb-1.5 block">Dish Name *</label>
-                    <input className={inputClass} placeholder="e.g., Chicken Shawarma" value={newItem.name} onChange={e => setNewItem(n => ({ ...n, name: e.target.value }))} />
+                    <label className="text-[13px] font-semibold text-foreground mb-1.5 block">{t('menu.dishName')}</label>
+                    <input className={inputClass} placeholder={t('menu.dishNamePlaceholder')} value={newItem.name} onChange={e => setNewItem(n => ({ ...n, name: e.target.value }))} />
                   </div>
                   <div>
-                    <label className="text-[13px] font-semibold text-foreground mb-1.5 block">Description</label>
-                    <textarea className="w-full min-h-[64px] rounded-2xl bg-card border border-border p-4 text-[14px] focus:border-primary focus:outline-none resize-none" placeholder="Describe the dish..." value={newItem.description} onChange={e => setNewItem(n => ({ ...n, description: e.target.value }))} />
+                    <label className="text-[13px] font-semibold text-foreground mb-1.5 block">{t('menu.description')}</label>
+                    <textarea className="w-full min-h-[64px] rounded-2xl bg-card border border-border p-4 text-[14px] focus:border-primary focus:outline-none resize-none" placeholder={t('menu.descriptionPlaceholder')} value={newItem.description} onChange={e => setNewItem(n => ({ ...n, description: e.target.value }))} />
                   </div>
                   <div>
-                    <label className="text-[13px] font-semibold text-foreground mb-1.5 block">Price (SAR)</label>
+                    <label className="text-[13px] font-semibold text-foreground mb-1.5 block">{t('menu.price')}</label>
                     <input type="number" className={inputClass} placeholder="25" value={newItem.price} onChange={e => setNewItem(n => ({ ...n, price: e.target.value }))} />
                   </div>
                   <div>
-                    <label className="text-[13px] font-semibold text-foreground mb-1.5 block">Category</label>
+                    <label className="text-[13px] font-semibold text-foreground mb-1.5 block">{t('menu.category')}</label>
                     <select className={inputClass} value={newItem.category} onChange={e => setNewItem(n => ({ ...n, category: e.target.value }))}>
-                      {categories.map(c => <option key={c}>{c}</option>)}
+                      {categories.map(c => <option key={c} value={c}>{t(categoryLabelKeys[c] ?? c, c)}</option>)}
                     </select>
                   </div>
                   <button onClick={handleSave} className="w-full h-[52px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[14px] shadow-btn btn-press">
-                    {editingItem ? 'Update Item' : 'Save Item'}
+                    {editingItem ? t('menu.updateItem') : t('menu.saveItem')}
                   </button>
                 </div>
               </div>

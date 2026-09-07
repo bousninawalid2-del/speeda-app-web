@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
-import { Poppins } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
 
-const poppins = Poppins({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
-  variable: '--font-poppins',
-});
+// Note: this app used to load Poppins via next/font/google here, but the
+// generated font variable was never attached to any element — globals.css
+// (see --font-poppins there) sets the font-family directly instead — so the
+// import only added an unused build-time fetch to fonts.googleapis.com with
+// no effect on rendering. Removed so production builds don't depend on that
+// network call succeeding.
 
 export const metadata: Metadata = {
   title: 'Speeda — AI Social Media Companion',
@@ -23,20 +23,19 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-  params,
 }: {
   children: React.ReactNode;
-  params: { locale?: string };
 }) {
-  const locale = params?.locale || 'ar';
-  const isRtl = locale === 'ar';
-
+  // This app has no [locale] route segment — the language is a per-user
+  // choice stored in localStorage, not part of the URL — so there is no
+  // `params.locale` to read on the server. We render the default (English,
+  // LTR) shell here; src/i18n/index.ts corrects `<html lang>`/`dir` on the
+  // client immediately on mount, based on the saved language, before paint.
   return (
-    <html lang={locale} dir={isRtl ? 'rtl' : 'ltr'}>
+    <html lang="en" dir="ltr">
       <body className="min-h-screen bg-background text-foreground antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>
   );
-}
 }
