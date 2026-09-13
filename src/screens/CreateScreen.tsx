@@ -1243,10 +1243,10 @@ export const CreateScreen = ({ posts, postsLoading, onPublish, onUploadMedia, co
         {/* Segmented Control — 4 tabs */}
         <div className="mt-5 bg-card rounded-2xl p-1 flex border border-border-light">
           {([
-            { key: 'calendar' as const, label: '📅 Calendar' },
-            { key: 'quick' as const, label: 'Quick Post' },
-            { key: 'strategy' as const, label: 'Strategy' },
-            { key: 'media' as const, label: '📁 Media' },
+            { key: 'calendar' as const, label: t('create.tabCalendar') },
+            { key: 'quick' as const, label: t('create.tabQuickPost') },
+            { key: 'strategy' as const, label: t('create.tabStrategy') },
+            { key: 'media' as const, label: t('create.tabMedia') },
           ]).map(m => (
             <button key={m.key} onClick={() => setMode(m.key)}
               className={`flex-1 py-3 rounded-xl text-[12px] font-bold transition-all duration-200 ${
@@ -1287,7 +1287,7 @@ export const CreateScreen = ({ posts, postsLoading, onPublish, onUploadMedia, co
             {mode === 'media' && (
               <MediaLibrary mode="tab" onSelect={(items) => {
                 setMode('quick');
-                toast.success(`${items.length} media selected — opening Quick Post`);
+                toast.success(t('create.mediaSelectedToast', { count: items.length }));
               }} />
             )}
           </motion.div>
