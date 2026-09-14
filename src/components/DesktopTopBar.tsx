@@ -8,21 +8,21 @@ interface DesktopTopBarProps {
   onNavigate: (screen: string) => void;
 }
 
-function getGreeting(): string {
+function getGreetingKey(): string {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  return 'Good evening';
+  if (h < 12) return 'homeExtra.goodMorning';
+  if (h < 18) return 'homeExtra.goodAfternoon';
+  return 'homeExtra.goodEvening';
 }
 
 export const DesktopTopBar = ({ onNavigate }: DesktopTopBarProps) => {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { data: tokensData } = useTokens();
   const [langMenuOpen, setLangMenuOpen] = useState(false);
 
   const tokenCount = tokensData?.balance ?? 0;
-  const displayName = user?.name?.split(' ')[0] ?? 'there';
+  const displayName = user?.name?.split(' ')[0] ?? t('homeExtra.there');
 
   const switchLang = (lang: string) => {
     i18n.changeLanguage(lang);
@@ -33,13 +33,13 @@ export const DesktopTopBar = ({ onNavigate }: DesktopTopBarProps) => {
     <div className="h-[72px] bg-card border-b border-border-light flex items-center justify-between px-8 flex-shrink-0">
       <div>
         <span className="text-[20px] font-bold text-foreground">
-          {getGreeting()}, <span className="text-foreground">{displayName}</span>
+          {t(getGreetingKey())}, <span className="text-foreground">{displayName}</span>
         </span>
       </div>
 
       <div className="flex items-center gap-1.5">
         <div className="w-2 h-2 rounded-full bg-green-accent animate-pulse-dot" />
-        <span className="text-[13px] text-green-accent font-medium">Marketing Operating System · Active</span>
+        <span className="text-[13px] text-green-accent font-medium">{t('homeExtra.marketingOsActive')}</span>
       </div>
 
       <div className="flex items-center gap-4">

@@ -22,7 +22,7 @@ export const ContentSuggestions = ({ onNavigate }: ContentSuggestionsProps) => {
     // Suggest creating content if few posts
     if (postsCount < 5) {
       items.push({
-        text: `You have ${postsCount} post${postsCount !== 1 ? 's' : ''}. Creating more content increases your visibility and engagement.`,
+        text: t('contentSuggestions.lowPostsMessage', { count: postsCount }),
         action: t('contentSuggestions.createReel'),
         nav: 'create',
       });
@@ -38,7 +38,7 @@ export const ContentSuggestions = ({ onNavigate }: ContentSuggestionsProps) => {
     // Suggest posting if reach is low
     if (reach < 1000) {
       items.push({
-        text: 'Your reach is growing. Post consistently to build momentum and attract more followers.',
+        text: t('contentSuggestions.lowReachMessage'),
         action: t('contentSuggestions.postNow'),
         nav: 'create',
       });
@@ -47,7 +47,7 @@ export const ContentSuggestions = ({ onNavigate }: ContentSuggestionsProps) => {
     // If there is some engagement, suggest building on it
     if (engagement > 0) {
       items.push({
-        text: `You have ${engagement} engagements. Create similar content to keep the momentum going.`,
+        text: t('contentSuggestions.engagementMessage', { count: engagement }),
         action: t('contentSuggestions.createSimilar'),
         nav: 'create',
       });

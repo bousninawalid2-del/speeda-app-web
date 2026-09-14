@@ -1,50 +1,51 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface ComingSoonConfig {
   icon: string;
   iconBg: string;
-  title: string;
-  description: string;
+  titleKey: string;
+  descriptionKey: string;
 }
 
 export const comingSoonFeatures: Record<string, ComingSoonConfig> = {
   competitorIntelligence: {
     icon: '🔍',
     iconBg: 'hsl(264 80% 55%)',
-    title: 'Competitor Intelligence',
-    description: 'Track your competitors\' social media activity, compare performance, and get AI-powered counter-moves.',
+    titleKey: 'comingSoon.features.competitorIntelligence.title',
+    descriptionKey: 'comingSoon.features.competitorIntelligence.description',
   },
   autoBoost: {
     icon: '🚀',
     iconBg: 'hsl(25 100% 55%)',
-    title: 'AI Auto-Boost',
-    description: 'AI automatically promotes your best-performing posts to reach more customers.',
+    titleKey: 'comingSoon.features.autoBoost.title',
+    descriptionKey: 'comingSoon.features.autoBoost.description',
   },
   budgetOptimization: {
     icon: '💰',
     iconBg: 'hsl(233 100% 42%)',
-    title: 'AI Budget Optimization',
-    description: 'AI automatically reallocates your ad budget to the highest-performing platforms and campaigns.',
+    titleKey: 'comingSoon.features.budgetOptimization.title',
+    descriptionKey: 'comingSoon.features.budgetOptimization.description',
   },
   pdfReports: {
     icon: '📄',
     iconBg: 'hsl(0 70% 55%)',
-    title: 'PDF Reports',
-    description: 'Download and share beautiful PDF reports of your marketing performance.',
+    titleKey: 'comingSoon.features.pdfReports.title',
+    descriptionKey: 'comingSoon.features.pdfReports.description',
   },
   frenchLanguage: {
     icon: '🇫🇷',
     iconBg: 'hsl(233 80% 55%)',
-    title: 'French Language',
-    description: 'Full French language support is coming soon.',
+    titleKey: 'comingSoon.features.frenchLanguage.title',
+    descriptionKey: 'comingSoon.features.frenchLanguage.description',
   },
   dataExport: {
     icon: '📤',
     iconBg: 'hsl(193 100% 42%)',
-    title: 'Data Export',
-    description: 'Export your analytics data to CSV or Excel for custom reporting.',
+    titleKey: 'comingSoon.features.dataExport.title',
+    descriptionKey: 'comingSoon.features.dataExport.description',
   },
 };
 
@@ -55,6 +56,7 @@ interface ComingSoonModalProps {
 }
 
 export const ComingSoonModal = ({ feature, open, onClose }: ComingSoonModalProps) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const config = comingSoonFeatures[feature];
@@ -98,14 +100,14 @@ export const ComingSoonModal = ({ feature, open, onClose }: ComingSoonModalProps
               <span className="text-[28px]">{config.icon}</span>
             </div>
 
-            <h3 className="text-[20px] font-extrabold text-foreground mt-5">{config.title}</h3>
+            <h3 className="text-[20px] font-extrabold text-foreground mt-5">{t(config.titleKey)}</h3>
 
             <p className="text-[14px] text-muted-foreground mt-2 leading-relaxed max-w-[320px] mx-auto">
-              {config.description}
+              {t(config.descriptionKey)}
             </p>
 
             <span className="inline-block mt-4 text-[11px] font-bold uppercase tracking-[0.08em] text-primary-foreground gradient-hero px-5 py-1.5 rounded-full">
-              Coming Soon
+              {t('comingSoon.badge')}
             </span>
 
             {!submitted ? (
@@ -114,14 +116,14 @@ export const ComingSoonModal = ({ feature, open, onClose }: ComingSoonModalProps
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
+                  placeholder={t('comingSoon.emailPlaceholder')}
                   className="flex-1 h-12 rounded-2xl bg-background border border-border px-4 text-[14px] text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
                 />
                 <button
                   onClick={handleNotify}
                   className="h-12 px-6 rounded-2xl gradient-btn text-primary-foreground font-bold text-[13px] shadow-btn btn-press whitespace-nowrap"
                 >
-                  Notify Me
+                  {t('competitor.notifyMe')}
                 </button>
               </div>
             ) : (
@@ -130,12 +132,12 @@ export const ComingSoonModal = ({ feature, open, onClose }: ComingSoonModalProps
                 animate={{ opacity: 1, y: 0 }}
                 className="mt-6 text-[14px] font-semibold text-green-accent"
               >
-                ✓ We'll notify you when it's ready!
+                {t('comingSoon.notifiedConfirm')}
               </motion.p>
             )}
 
             <p className="text-[11px] text-muted-foreground mt-3">
-              We'll let you know as soon as this feature is ready
+              {t('comingSoon.footerNote')}
             </p>
           </motion.div>
         </motion.div>

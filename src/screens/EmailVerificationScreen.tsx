@@ -15,13 +15,14 @@ interface EmailVerificationScreenProps {
 }
 
 export const EmailVerificationScreen = ({
-  email = 'your email',
+  email,
   onVerified,
   onBack,
   onVerifyCode,
   onResend,
 }: EmailVerificationScreenProps) => {
   const { t } = useTranslation();
+  const displayEmail = email ?? t('emailVerification.yourEmail');
   const [resendDisabled, setResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [envelopeOpened, setEnvelopeOpened] = useState(false);
@@ -49,7 +50,7 @@ export const EmailVerificationScreen = ({
   };
 
   const handleVerify = async () => {
-    if (code.length !== 6) { setCodeError('Please enter the 6-digit code'); return; }
+    if (code.length !== 6) { setCodeError(t('emailVerification.enterCodeError')); return; }
     setCodeError('');
     setIsVerifying(true);
     try {
@@ -59,7 +60,7 @@ export const EmailVerificationScreen = ({
       setEnvelopeOpened(true);
       setTimeout(() => onVerified(), 800);
     } catch (err: unknown) {
-      setCodeError(err instanceof Error ? err.message : 'Invalid code');
+      setCodeError(err instanceof Error ? err.message : t('emailVerification.invalidCode'));
     } finally {
       setIsVerifying(false);
     }
@@ -92,7 +93,7 @@ export const EmailVerificationScreen = ({
 
         <h1 className="text-[24px] font-extrabold text-foreground">{t('emailVerification.checkInbox')}</h1>
         <p className="text-[14px] text-muted-foreground mt-2">{t('emailVerification.sentTo')}</p>
-        <p className="text-[16px] font-bold text-brand-blue mt-1">{email}</p>
+        <p className="text-[16px] font-bold text-brand-blue mt-1">{displayEmail}</p>
 
         {/* OTP input */}
         <div className="mt-8">
@@ -116,9 +117,9 @@ export const EmailVerificationScreen = ({
             {isVerifying ? (
               <span className="flex items-center justify-center gap-2">
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Verifying…
+                {t('emailVerification.verifying')}
               </span>
-            ) : 'Verify Email'}
+            ) : t('emailVerification.verifyEmail')}
           </button>
           <button onClick={handleOpenEmail} className="w-full h-[44px] rounded-2xl bg-card border border-border text-foreground text-[14px] font-medium btn-press">
             {t('emailVerification.openEmailApp')}
@@ -128,7 +129,7 @@ export const EmailVerificationScreen = ({
             disabled={resendDisabled}
             className={`w-full h-[44px] rounded-2xl border border-border text-[14px] font-medium btn-press ${resendDisabled ? 'text-muted-foreground opacity-60' : 'text-foreground'}`}
           >
-            {resendDisabled ? `Resend in ${countdown}s` : t('emailVerification.resendEmail')}
+            {resendDisabled ? t('emailVerification.resendIn', { count: countdown }) : t('emailVerification.resendEmail')}
           </button>
         </div>
 

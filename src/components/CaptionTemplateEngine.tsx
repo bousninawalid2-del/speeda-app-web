@@ -194,13 +194,13 @@ export const CaptionTemplateEngine = ({ open, onClose, onUseCaption }: CaptionTe
 
   const fillTemplate = (text: string) => {
     return text
-      .replace(/{product}/g, product || '[Product]')
-      .replace(/{offer}/g, offer || '[Offer]')
+      .replace(/{product}/g, product || t('captionEngine.placeholderProduct'))
+      .replace(/{offer}/g, offer || t('captionEngine.placeholderOffer'))
       .replace(/{brand}/g, 'Speeda')
-      .replace(/{topic}/g, topic || newsText || '[Topic]')
-      .replace(/{event}/g, eventName || '[Event]')
-      .replace(/{date}/g, eventDate || '[Date]')
-      .replace(/{location}/g, eventLocation || '[Location]');
+      .replace(/{topic}/g, topic || newsText || t('captionEngine.placeholderTopic'))
+      .replace(/{event}/g, eventName || t('captionEngine.placeholderEvent'))
+      .replace(/{date}/g, eventDate || t('captionEngine.placeholderDate'))
+      .replace(/{location}/g, eventLocation || t('captionEngine.placeholderLocation'));
   };
 
   const matchingTemplates = useMemo(() => {
@@ -283,7 +283,7 @@ export const CaptionTemplateEngine = ({ open, onClose, onUseCaption }: CaptionTe
                 </button>
               ))}
             </div>
-            <button onClick={() => setStep(1)} className="mt-3 text-[12px] text-brand-blue font-medium">← Back</button>
+            <button onClick={() => setStep(1)} className="mt-3 text-[12px] text-brand-blue font-medium">{t('captionEngine.back')}</button>
           </div>
         )}
 
@@ -332,9 +332,9 @@ export const CaptionTemplateEngine = ({ open, onClose, onUseCaption }: CaptionTe
               </>
             )}
             <div className="flex gap-2 mt-2">
-              <button onClick={() => setStep(2)} className="text-[12px] text-brand-blue font-medium">← Back</button>
+              <button onClick={() => setStep(2)} className="text-[12px] text-brand-blue font-medium">{t('captionEngine.back')}</button>
               <button onClick={() => canProceedStep3() && setStep(4)} disabled={!canProceedStep3()}
-                className="ms-auto px-5 py-2 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold disabled:opacity-50">Next →</button>
+                className="ms-auto px-5 py-2 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold disabled:opacity-50">{t('captionEngine.next')}</button>
             </div>
           </div>
         )}
@@ -356,7 +356,7 @@ export const CaptionTemplateEngine = ({ open, onClose, onUseCaption }: CaptionTe
                 </button>
               ))}
             </div>
-            <button onClick={() => setStep(3)} className="mt-3 text-[12px] text-brand-blue font-medium">← Back</button>
+            <button onClick={() => setStep(3)} className="mt-3 text-[12px] text-brand-blue font-medium">{t('captionEngine.back')}</button>
           </div>
         )}
 
@@ -382,7 +382,7 @@ export const CaptionTemplateEngine = ({ open, onClose, onUseCaption }: CaptionTe
               })
             )}
             <button onClick={() => setRefreshKey(k => k + 1)} className="w-full text-center text-[13px] text-brand-blue font-semibold mt-2">{t('captionEngine.refresh')}</button>
-            <button onClick={() => setStep(4)} className="text-[12px] text-brand-blue font-medium">← Back</button>
+            <button onClick={() => setStep(4)} className="text-[12px] text-brand-blue font-medium">{t('captionEngine.back')}</button>
           </div>
         )}
       </motion.div>

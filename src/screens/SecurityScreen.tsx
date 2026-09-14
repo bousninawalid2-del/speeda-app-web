@@ -48,7 +48,7 @@ export const SecurityScreen = ({ onBack }: SecurityScreenProps) => {
       toast.success(t('security.passwordUpdated'));
       setCurrentPw(''); setNewPw(''); setConfirmPw('');
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to change password');
+      toast.error(err instanceof Error ? err.message : t('security.passwordUpdateFailed'));
     } finally {
       setIsChangingPw(false);
     }
@@ -152,10 +152,10 @@ export const SecurityScreen = ({ onBack }: SecurityScreenProps) => {
                 <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden pb-4">
                   <p className="text-[13px] font-semibold text-foreground mb-3">{t('security.chooseMethod')}</p>
                   <div className="space-y-2">
-                    <button onClick={() => select2FAMethod('SMS')} className="w-full h-[48px] rounded-2xl border border-border text-foreground text-[14px] font-medium btn-press flex items-center justify-center gap-2">
+                    <button onClick={() => select2FAMethod(t('security.methodSms'))} className="w-full h-[48px] rounded-2xl border border-border text-foreground text-[14px] font-medium btn-press flex items-center justify-center gap-2">
                       {t('security.smsMethod')}
                     </button>
-                    <button onClick={() => select2FAMethod('Authenticator App')} className="w-full h-[48px] rounded-2xl border border-border text-foreground text-[14px] font-medium btn-press flex items-center justify-center gap-2">
+                    <button onClick={() => select2FAMethod(t('security.methodAuthenticator'))} className="w-full h-[48px] rounded-2xl border border-border text-foreground text-[14px] font-medium btn-press flex items-center justify-center gap-2">
                       {t('security.authenticatorMethod')}
                     </button>
                   </div>

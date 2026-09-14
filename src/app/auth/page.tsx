@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { AuthScreen } from '@/screens/AuthScreen';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -9,6 +10,7 @@ import { toast } from 'sonner';
 function AuthContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useTranslation();
   const { login, register, sendMagicLink } = useAuth();
 
   const referralCode = searchParams.get('ref') ?? undefined;
@@ -18,7 +20,7 @@ function AuthContent() {
       await login(email, password);
       router.replace('/setup');
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Login failed');
+      toast.error(err instanceof Error ? err.message : t('auth.loginFailed'));
       throw err;
     }
   };
@@ -28,7 +30,7 @@ function AuthContent() {
       const { userId } = await register({ ...data, referralCode });
       router.push(`/auth/verify?userId=${userId}&email=${encodeURIComponent(data.email)}`);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Registration failed');
+      toast.error(err instanceof Error ? err.message : t('auth.registrationFailed'));
       throw err;
     }
   };
@@ -36,9 +38,9 @@ function AuthContent() {
   const handleQuickLogin = async (email: string) => {
     try {
       await sendMagicLink(email);
-      toast.success('Magic link sent! Check your email.');
+      toast.success(t('auth.magicLinkSentToast'));
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Could not send magic link');
+      toast.error(err instanceof Error ? err.message : t('auth.couldNotSendMagicLink'));
       throw err;
     }
   };

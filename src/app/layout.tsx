@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
-import { Poppins } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
 
-const poppins = Poppins({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
-  variable: '--font-poppins',
-});
+// Note: this app used to load Poppins via next/font/google here, but the
+// generated font variable was never read anywhere — globals.css hardcodes
+// --font-poppins: 'Poppins', sans-serif directly instead — so the import
+// only added an unused build-time fetch to fonts.googleapis.com with no
+// effect on rendering. Removed so production builds don't depend on that
+// network call succeeding.
 
 export const metadata: Metadata = {
   title: 'Speeda — AI Social Media Companion',
@@ -26,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={poppins.variable}>
+    <html lang="en">
       <body className="min-h-screen bg-background text-foreground antialiased">
         <Providers>{children}</Providers>
       </body>

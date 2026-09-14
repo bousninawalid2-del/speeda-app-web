@@ -72,7 +72,7 @@ export const DesktopSidebar = ({ active, onNavigate, collapsed, onToggleCollapse
   const isTrialActive = subData?.trial?.active ?? true;
   const hasSubscription = !!subData?.subscription;
   const showSubscriptionNav = !isTrialActive && !hasSubscription;
-  const planLabel = subData?.subscription?.plan?.name ?? (subData?.trial?.active ? 'Free Trial' : 'Free');
+  const planLabel = subData?.subscription?.plan?.name ?? (subData?.trial?.active ? t('trial.freeTrial') : t('common.free'));
   const userInitial = (user?.name?.[0] ?? user?.email?.[0] ?? 'U').toUpperCase();
   const displayName = user?.name ?? user?.email ?? '';
   const isRTL = i18n.language === 'ar';

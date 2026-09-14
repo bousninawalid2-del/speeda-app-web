@@ -5,6 +5,7 @@
  *    (the refresh token is stored in an httpOnly cookie — never exposed to JS)
  *  - Exposes typed helpers for every auth endpoint
  */
+import i18n from '@/i18n';
 
 const BASE = '/api';
 
@@ -93,12 +94,12 @@ export async function apiFetch<T = unknown>(
     if (newToken) {
       return apiFetch<T>(path, options, false); // retry once with new token
     }
-    throw new Error('Session expired');
+    throw new Error(i18n.t('common.sessionExpired'));
   }
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error ?? 'Request failed');
+    throw new Error(err.error ?? i18n.t('common.requestFailed'));
   }
 
   return res.json() as Promise<T>;

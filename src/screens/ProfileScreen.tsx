@@ -4,6 +4,14 @@ import { ChevronLeft, Camera, Upload } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+const countryKeyMap: Record<string, string> = {
+  'Saudi Arabia': 'sa', 'UAE': 'ae', 'Bahrain': 'bh', 'Kuwait': 'kw',
+  'Qatar': 'qa', 'Egypt': 'eg', 'Tunisia': 'tn', 'Morocco': 'ma', 'France': 'fr',
+};
+const cityKeyMap: Record<string, string> = {
+  'Riyadh': 'riyadh', 'Jeddah': 'jeddah', 'Dammam': 'dammam', 'Makkah': 'makkah', 'Madinah': 'madinah',
+};
+
 export interface ProfileInitialData {
   name:          string | null;
   email:         string;
@@ -179,7 +187,7 @@ export const ProfileScreen = ({ onBack, onNavigate, initialData, isLoading, onSa
             <label className="text-[13px] font-semibold text-foreground mb-1.5 block">{t('profile.country')}</label>
             <select className={inputClass} value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value }))}>
               {['Saudi Arabia', 'UAE', 'Bahrain', 'Kuwait', 'Qatar', 'Egypt', 'Tunisia', 'Morocco', 'France'].map(c => (
-                <option key={c}>{c}</option>
+                <option key={c} value={c}>{t(`setup.countries.${countryKeyMap[c]}`)}</option>
               ))}
             </select>
           </div>
@@ -188,7 +196,7 @@ export const ProfileScreen = ({ onBack, onNavigate, initialData, isLoading, onSa
             <label className="text-[13px] font-semibold text-foreground mb-1.5 block">{t('profile.city')}</label>
             <select className={inputClass} value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))}>
               {['Riyadh', 'Jeddah', 'Dammam', 'Makkah', 'Madinah'].map(c => (
-                <option key={c}>{c}</option>
+                <option key={c} value={c}>{t(`setup.cities.${cityKeyMap[c]}`)}</option>
               ))}
             </select>
           </div>

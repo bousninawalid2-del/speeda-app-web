@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Sparkles, Crown, Zap, TrendingUp, MessageSquare, Send, ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useFreeTier } from './FreeTier';
 
 // ── Sales Agent Context (shared state) ──
@@ -65,26 +66,29 @@ interface ChatMessage {
   text: string;
 }
 
-const agentResponses: Record<string, string[]> = {
+type TFn = (key: string, options?: Record<string, unknown>) => string;
+
+const buildAgentResponses = (t: TFn): Record<string, string[]> => ({
   pricing: [
-    "Great question! Here's a quick breakdown:\n\n🟢 **Starter** (549﷼/mo) — 200 tokens, 3 platforms, basic analytics\n🔵 **Pro** (1,199﷼/mo) — 800 tokens, 10 platforms, full features\n🟣 **Business** (2,499﷼/mo) — 3,000 tokens, competitor intel, priority support\n\nSave 20% with annual billing!",
-    "Which plan sounds like a fit? I can help you decide based on your usage.",
+    t('salesAgent.responses.pricingIntro'),
+    t('salesAgent.responses.pricingFollowup'),
   ],
   tokens: [
-    "Tokens power every AI action — content generation, rewrites, translations, and more.\n\nYour current plan includes a monthly allowance. If you need more, you can top up anytime:\n• 200 tokens — 99﷼\n• 500 tokens — 199﷼\n• 1,500 tokens — 499﷼\n• 5,000 tokens — 1,299﷼",
+    t('salesAgent.responses.tokensInfo'),
   ],
   competitor: [
-    "Competitor Intelligence is available on the **Business plan** (2,499﷼/mo). It includes:\n\n🔍 Track up to 5 competitors\n📊 Engagement & follower comparison\n🎯 AI counter-move suggestions\n📄 Competitive PDF reports\n\nWant me to help you upgrade?",
+    t('salesAgent.responses.competitorInfo'),
   ],
   upgrade: [
-    "Upgrading is simple! Just go to Settings → Subscription and pick your plan. Annual billing saves you 20%.\n\nBased on your usage, I'd recommend **Pro** — it unlocks everything except Competitor Intelligence.",
+    t('salesAgent.responses.upgradeInfo'),
   ],
   default: [
-    "I'd be happy to help! I can answer questions about:\n\n• 💳 Plans & pricing\n• 🪙 Tokens & usage\n• 🔒 Locked features\n• 🚀 Which plan fits you best\n\nWhat would you like to know?",
+    t('salesAgent.responses.default'),
   ],
-};
+});
 
-const getAgentResponse = (input: string): string => {
+const getAgentResponse = (input: string, t: TFn): string => {
+  const agentResponses = buildAgentResponses(t);
   const lower = input.toLowerCase();
   if (lower.includes('price') || lower.includes('plan') || lower.includes('cost') || lower.includes('how much')) {
     return agentResponses.pricing[Math.floor(Math.random() * agentResponses.pricing.length)];
@@ -102,14 +106,14 @@ const getAgentResponse = (input: string): string => {
 };
 
 // ── Contextual opening messages ──
-const contextualMessages: Record<string, string> = {
-  competitorIntelligence: "I see you're interested in **Competitor Intelligence**! This feature lets you track competitors, compare performance, and get AI counter-moves. It's available on the Business plan (2,499﷼/mo). Want to know more?",
-  analytics: "Looking at **Advanced Analytics**? The Pro plan (1,199﷼/mo) unlocks the full analytics suite with platform breakdowns, trend charts, and AI insights. Shall I compare plans for you?",
-  dmManagement: "**DM Management** with AI auto-responses is available on Pro (1,199﷼/mo). It helps you respond to customers faster with smart templates. Interested?",
-  variations: "**Post Variations A/B** lets you generate multiple versions of your content to find what works best. Available on Pro (1,199﷼/mo).",
-  translation: "**Post Translation** supports 6+ languages with AI-powered accuracy. Available on Pro. Want to upgrade?",
-  default: "Hi! 👋 I'm your Plan Advisor. I can help you find the perfect plan based on your needs. What would you like to know?",
-};
+const buildContextualMessages = (t: TFn): Record<string, string> => ({
+  competitorIntelligence: t('salesAgent.contextual.competitorIntelligence'),
+  analytics: t('salesAgent.contextual.analytics'),
+  dmManagement: t('salesAgent.contextual.dmManagement'),
+  variations: t('salesAgent.contextual.variations'),
+  translation: t('salesAgent.contextual.translation'),
+  default: t('salesAgent.contextual.default'),
+});
 
 // ── Props ──
 interface SalesAgentProps {
@@ -130,6 +134,8 @@ interface SalesChatProps {
 
 // ── Mini Sales Chat Widget ──
 export const SalesChatWidget = ({ onNavigate, onClose, contextFeature }: SalesChatProps) => {
+  const { t } = useTranslation();
+  const contextualMessages = buildContextualMessages(t);
   const openingMessage = contextFeature && contextualMessages[contextFeature]
     ? contextualMessages[contextFeature]
     : contextualMessages.default;
@@ -153,7 +159,7 @@ export const SalesChatWidget = ({ onNavigate, onClose, contextFeature }: SalesCh
     setTyping(true);
 
     setTimeout(() => {
-      const response = getAgentResponse(userMsg.text);
+      const response = getAgentResponse(userMsg.text, t);
       setMessages(prev => [...prev, { id: Date.now() + 1, role: 'agent', text: response }]);
       setTyping(false);
     }, 1200);
@@ -172,7 +178,7 @@ export const SalesChatWidget = ({ onNavigate, onClose, contextFeature }: SalesCh
           <Sparkles size={16} className="text-primary-foreground" />
           <div>
             <p className="text-[14px] font-bold text-primary-foreground">✦ Speeda</p>
-            <p className="text-[10px] text-primary-foreground/70">Plan Advisor</p>
+            <p className="text-[10px] text-primary-foreground/70">{t('salesAgent.planAdvisor')}</p>
           </div>
         </div>
         <button onClick={onClose} className="w-8 h-8 rounded-lg bg-primary-foreground/10 flex items-center justify-center hover:bg-primary-foreground/20 transition-colors">
@@ -223,7 +229,7 @@ export const SalesChatWidget = ({ onNavigate, onClose, contextFeature }: SalesCh
         {/* Quick Actions */}
         {messages.length <= 2 && (
           <div className="flex flex-wrap gap-1.5 pt-1">
-            {['Compare plans', 'How do tokens work?', 'Which plan for me?'].map(q => (
+            {[t('salesAgent.quickActions.comparePlans'), t('salesAgent.quickActions.howTokens'), t('salesAgent.quickActions.whichPlan')].map(q => (
               <button
                 key={q}
                 onClick={() => { setInput(q); }}
@@ -242,7 +248,7 @@ export const SalesChatWidget = ({ onNavigate, onClose, contextFeature }: SalesCh
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSend()}
-          placeholder="Ask about plans..."
+          placeholder={t('salesAgent.inputPlaceholder')}
           className="flex-1 h-10 px-4 rounded-xl bg-background border border-border text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
         />
         <button
@@ -267,6 +273,7 @@ export const SalesAgent = ({
   trialDaysRemaining = 14,
   salesEnabled = true,
 }: SalesAgentProps) => {
+  const { t } = useTranslation();
   const [dismissed, setDismissed] = useState(getSalesDismissed());
   const [minimized, setMinimized] = useState(false);
   const [showChat, setShowChat] = useState(false);
@@ -289,30 +296,30 @@ export const SalesAgent = ({
   if (showTokenPopup) {
     showNudge = true;
     nudgeIcon = Zap;
-    nudgeTitle = tokensRemaining <= (tokensLimit * 0.05) ? '⚡ Almost out of tokens!' : 'Running low on tokens';
-    nudgeMessage = `${tokensRemaining} tokens remaining. Top up to keep AI running.`;
-    nudgeCta = 'Top Up';
+    nudgeTitle = tokensRemaining <= (tokensLimit * 0.05) ? t('salesAgent.nudges.almostOutTokens') : t('salesAgent.nudges.lowTokens');
+    nudgeMessage = t('salesAgent.nudges.tokensRemainingMsg', { count: tokensRemaining });
+    nudgeCta = t('salesAgent.nudges.topUp');
     nudgeAction = 'tokens';
   } else if (lockedTaps >= 3) {
     showNudge = true;
     nudgeIcon = Crown;
-    nudgeTitle = 'Unlock more features';
-    nudgeMessage = "You've been exploring locked features. Want me to explain which plan fits?";
-    nudgeCta = 'Chat with Speeda →';
+    nudgeTitle = t('salesAgent.nudges.unlockMoreFeatures');
+    nudgeMessage = t('salesAgent.nudges.exploringLocked');
+    nudgeCta = t('salesAgent.nudges.chatWithSpeeda');
     nudgeAction = 'chat';
   } else if (trialDaysRemaining <= 2 && trialDaysRemaining > 0 && currentPlan === 'free_trial') {
     showNudge = true;
     nudgeIcon = TrendingUp;
-    nudgeTitle = `⏳ Trial ends in ${trialDaysRemaining} day${trialDaysRemaining > 1 ? 's' : ''}`;
-    nudgeMessage = 'Want help picking the right plan?';
-    nudgeCta = 'Compare Plans →';
+    nudgeTitle = t('salesAgent.nudges.trialEndsIn', { count: trialDaysRemaining });
+    nudgeMessage = t('salesAgent.nudges.wantHelpPicking');
+    nudgeCta = t('salesAgent.nudges.comparePlansCta');
     nudgeAction = 'planComparison';
   } else if (postsThisMonth >= 15 && currentPlan === 'starter') {
     showNudge = true;
     nudgeIcon = TrendingUp;
-    nudgeTitle = "🚀 You're super active!";
-    nudgeMessage = `${postsThisMonth} posts this month! Pro might be a better fit with more tokens and features.`;
-    nudgeCta = 'Explore Pro →';
+    nudgeTitle = t('salesAgent.nudges.superActive');
+    nudgeMessage = t('salesAgent.nudges.postsThisMonthMsg', { count: postsThisMonth });
+    nudgeCta = t('salesAgent.nudges.explorePro');
     nudgeAction = 'planComparison';
   }
 
@@ -402,7 +409,7 @@ export const SalesAgent = ({
               {nudgeCta}
             </button>
             <button onClick={handleChatButton} className="h-10 px-4 rounded-xl bg-muted text-muted-foreground text-[12px] font-bold btn-press flex items-center gap-1.5">
-              <MessageSquare size={14} /> Chat
+              <MessageSquare size={14} /> {t('salesAgent.chatLabel')}
             </button>
           </div>
         </div>
@@ -413,7 +420,7 @@ export const SalesAgent = ({
               <motion.div initial={{ width: 0 }} animate={{ width: `${tokenPercent}%` }}
                 className={`h-full rounded-full ${tokenPercent >= 95 ? 'bg-destructive' : 'bg-orange'}`} />
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1 text-center">{tokensRemaining} / {tokensLimit} tokens remaining</p>
+            <p className="text-[10px] text-muted-foreground mt-1 text-center">{t('salesAgent.nudges.tokensProgress', { remaining: tokensRemaining, limit: tokensLimit })}</p>
           </div>
         )}
       </div>

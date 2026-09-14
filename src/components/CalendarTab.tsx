@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { CalendarPost, AISuggestion, getPostsForDay, getSuggestionsForDay, demoCampaigns, demoEvents, platformDotColors, TODAY, isSameDay, getWeekDates } from './CalendarData';
 import { platformLogoMap } from './PlatformLogos';
 import { PostDetailPanel } from './PostDetailPanel';
@@ -9,25 +10,25 @@ import { useIsMobile } from '../hooks/use-mobile';
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-const statusBadge = (status: string) => {
+const statusBadge = (status: string, t: (key: string) => string) => {
   switch (status) {
-    case 'scheduled': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-green-soft text-green-accent">Scheduled ✅</span>;
-    case 'draft': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-soft text-orange-accent">Draft 📝</span>;
-    case 'ai-generated': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-soft text-purple">AI Generated ✦</span>;
-    case 'published': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-muted text-muted-foreground">Published</span>;
-    case 'failed': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-red-50 text-red-600">Failed</span>;
-    case 'boosted': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md gradient-hero text-primary-foreground">🚀 Boosted</span>;
+    case 'scheduled': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-green-soft text-green-accent">{t('calendarTab.statusScheduled')}</span>;
+    case 'draft': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-soft text-orange-accent">{t('calendarTab.statusDraft')}</span>;
+    case 'ai-generated': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-soft text-purple">{t('calendarTab.statusAiGenerated')}</span>;
+    case 'published': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-muted text-muted-foreground">{t('calendarTab.statusPublished')}</span>;
+    case 'failed': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-red-50 text-red-600">{t('calendarTab.statusFailed')}</span>;
+    case 'boosted': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md gradient-hero text-primary-foreground">{t('calendarTab.statusBoosted')}</span>;
     default: return null;
   }
 };
 
-const statusBadgeSmall = (status: string) => {
+const statusBadgeSmall = (status: string, t: (key: string) => string) => {
   switch (status) {
-    case 'scheduled': return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-green-soft text-green-accent">Scheduled</span>;
-    case 'draft': return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-soft text-orange-accent">Draft</span>;
-    case 'ai-generated': return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-soft text-purple">✦ AI</span>;
-    case 'published': return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Published</span>;
-    case 'failed': return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-50 text-red-600">Failed</span>;
+    case 'scheduled': return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-green-soft text-green-accent">{t('calendarTab.statusScheduledShort')}</span>;
+    case 'draft': return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-soft text-orange-accent">{t('calendarTab.statusDraftShort')}</span>;
+    case 'ai-generated': return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-soft text-purple">{t('calendarTab.statusAiShort')}</span>;
+    case 'published': return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{t('calendarTab.statusPublished')}</span>;
+    case 'failed': return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-50 text-red-600">{t('calendarTab.statusFailed')}</span>;
     default: return null;
   }
 };
@@ -61,12 +62,17 @@ interface CalendarTabProps {
 }
 
 export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onEditPost, onDeletePost, postsLoading = false }: CalendarTabProps) => {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === 'ar' ? 'ar' : i18n.language === 'fr' ? 'fr' : 'en';
   const [view, setView] = useState<'week' | 'month'>('week');
   const [weekStart, setWeekStart] = useState(new Date(2026, 2, 17));
   const [selectedDay, setSelectedDay] = useState(17);
   const [selectedPost, setSelectedPost] = useState<CalendarPost | null>(null);
   const [monthYear, setMonthYear] = useState({ month: 2, year: 2026 });
   const isMobile = useIsMobile();
+
+  const DAY_LABELS = DAY_NAMES.map(d => t(`calendarTab.day${d}`));
+  const MONTH_LABELS = MONTH_NAMES.map(m => t(`calendarTab.month${m}`));
 
   const weekDates = useMemo(() => getWeekDates(weekStart), [weekStart]);
 
@@ -80,8 +86,8 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
   const weekLabel = useMemo(() => {
     const end = new Date(weekStart);
     end.setDate(weekStart.getDate() + 6);
-    return `${MONTH_NAMES[weekStart.getMonth()]} ${weekStart.getDate()} — ${end.getDate()}, ${weekStart.getFullYear()}`;
-  }, [weekStart]);
+    return `${MONTH_LABELS[weekStart.getMonth()]} ${weekStart.getDate()} — ${end.getDate()}, ${weekStart.getFullYear()}`;
+  }, [weekStart, MONTH_LABELS]);
 
   const hasExternalPosts = strategyPosts !== undefined;
   const getPostsForCalendarDay = (day: number) => {
@@ -142,7 +148,7 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
               }`}
               style={{ width: 48, height: 72, scrollSnapAlign: 'center', padding: '6px 4px' }}
             >
-              <span className={`text-[11px] ${isToday ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>{DAY_NAMES[i]}</span>
+              <span className={`text-[11px] ${isToday ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>{DAY_LABELS[i]}</span>
               <span className={`text-[18px] font-bold ${isToday ? 'text-primary-foreground' : isSelected ? 'text-brand-blue' : 'text-foreground'}`}>{day}</span>
               {posts.length > 0 ? (
                 <PlatformDots platformIds={platformIds} size={4} />
@@ -186,7 +192,7 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
             {Logo && <Logo size={24} />}
             <span className="text-[14px] font-bold text-foreground">{post.title}</span>
             <span className="text-[10px] bg-muted px-2 py-0.5 rounded-md text-muted-foreground font-medium">{post.type}</span>
-            <div className="ms-auto">{statusBadge(post.status)}</div>
+            <div className="ms-auto">{statusBadge(post.status, t)}</div>
           </div>
           {post.caption && (
             <p className="text-[12px] text-muted-foreground mt-1.5 truncate">{post.caption}</p>
@@ -212,10 +218,10 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
           <div className="w-2 h-2 rounded-full border-2 border-dashed border-brand-blue/40 mt-4 z-10 shrink-0" />
         </div>
         <div className="flex-1 border-2 border-dashed border-brand-blue/20 rounded-2xl p-3.5 ms-2 mb-2">
-          <span className="text-[13px] font-semibold text-brand-blue">✦ {suggestion.time} — Best time for a {suggestion.platform.charAt(0).toUpperCase() + suggestion.platform.slice(1)} Story</span>
+          <span className="text-[13px] font-semibold text-brand-blue">✦ {suggestion.time} — {t('calendarTab.bestTimeForStory', { platform: suggestion.platform.charAt(0).toUpperCase() + suggestion.platform.slice(1) })}</span>
           <p className="text-[11px] text-muted-foreground mt-1">{suggestion.reason}</p>
           <button onClick={() => onCreatePost?.(String(selectedDay), suggestion.time)} className="mt-2 text-[12px] font-bold text-brand-blue btn-press">
-            + Create
+            {t('calendarTab.createAction')}
           </button>
         </div>
       </motion.div>
@@ -259,9 +265,9 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
 
         {timelineItems.length === 0 && (
           <div className="text-center py-8">
-            <p className="text-[14px] text-muted-foreground">No posts scheduled for this day</p>
+            <p className="text-[14px] text-muted-foreground">{t('calendarTab.noPostsScheduled')}</p>
             <button onClick={() => onCreatePost?.(String(selectedDay))} className="mt-3 h-10 px-5 rounded-xl border border-brand-blue text-brand-blue text-[13px] font-bold btn-press">
-              + Create Post
+              {t('calendarTab.createPostAction')}
             </button>
           </div>
         )}
@@ -274,7 +280,7 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
     dayPosts.length > 0 ? (
       <div className="mt-4 bg-purple-soft rounded-xl p-3 flex items-center justify-center gap-2">
         <span className="text-[12px] font-medium text-foreground">
-          {dayPosts.length} post{dayPosts.length > 1 ? 's' : ''} · {uniquePlatforms.length} platform{uniquePlatforms.length > 1 ? 's' : ''} · {peakHoursCovered} peak hour{peakHoursCovered !== 1 ? 's' : ''} covered
+          {t('calendarTab.daySummaryLine', { posts: dayPosts.length, platforms: uniquePlatforms.length, peak: peakHoursCovered })}
         </span>
       </div>
     ) : null
@@ -300,7 +306,7 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
               className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all ${
                 view === v ? 'bg-brand-blue text-primary-foreground' : 'border border-border text-muted-foreground hover:bg-muted'
               }`}>
-              {v.charAt(0).toUpperCase() + v.slice(1)}
+              {v === 'week' ? t('calendarTab.weekView') : t('calendarTab.monthView')}
             </button>
           ))}
         </div>
@@ -311,7 +317,7 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
 
       {/* Today's Schedule header */}
       <h3 className={`font-bold text-foreground ${isMobile ? 'text-[16px]' : 'text-[18px]'}`}>
-        {isSameDay(weekDates.find(d => d.getDate() === selectedDay) || TODAY, TODAY) ? "Today's Schedule" : `${DAY_NAMES[weekDates.findIndex(d => d.getDate() === selectedDay)]}'s Schedule`}
+        {isSameDay(weekDates.find(d => d.getDate() === selectedDay) || TODAY, TODAY) ? t('calendarTab.todaysSchedule') : t('calendarTab.daysSchedule', { day: DAY_LABELS[weekDates.findIndex(d => d.getDate() === selectedDay)] })}
       </h3>
 
       {/* Timeline */}
@@ -368,7 +374,7 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
             <button onClick={() => navigateMonth(-1)} className="w-8 h-8 rounded-xl border border-border flex items-center justify-center btn-press hover:bg-muted transition-colors">
               <ChevronLeft size={16} className="text-muted-foreground rtl:rotate-180" />
             </button>
-            <h2 className="text-[18px] font-bold text-foreground">{MONTH_NAMES[month]} {year}</h2>
+            <h2 className="text-[18px] font-bold text-foreground">{MONTH_LABELS[month]} {year}</h2>
             <button onClick={() => navigateMonth(1)} className="w-8 h-8 rounded-xl border border-border flex items-center justify-center btn-press hover:bg-muted transition-colors">
               <ChevronRight size={16} className="text-muted-foreground rtl:rotate-180" />
             </button>
@@ -379,7 +385,7 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
                 className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all ${
                   view === v ? 'bg-brand-blue text-primary-foreground' : 'border border-border text-muted-foreground hover:bg-muted'
                 }`}>
-                {v.charAt(0).toUpperCase() + v.slice(1)}
+                {v === 'week' ? t('calendarTab.weekView') : t('calendarTab.monthView')}
               </button>
             ))}
           </div>
@@ -390,7 +396,7 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
           <div key={i} className="rounded-xl px-3 py-2 bg-brand-teal/10 flex items-center gap-2">
             <span className="text-[12px] font-semibold text-foreground">{evt.emoji} {evt.name}</span>
             <span className="text-[11px] text-muted-foreground">
-              {evt.startDate.toLocaleDateString('en', { month: 'short', day: 'numeric' })} — {evt.endDate.toLocaleDateString('en', { month: 'short', day: 'numeric' })}
+              {evt.startDate.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })} — {evt.endDate.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })}
             </span>
           </div>
         ))}
@@ -398,9 +404,9 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
         {/* Grid */}
         <div className="grid grid-cols-7 gap-px bg-border rounded-xl overflow-hidden border border-border">
           {/* Headers */}
-          {DAY_NAMES.map(d => (
+          {DAY_NAMES.map((d, i) => (
             <div key={d} className="bg-muted/50 py-2 text-center">
-              <span className="text-[11px] font-semibold text-muted-foreground">{d}</span>
+              <span className="text-[11px] font-semibold text-muted-foreground">{DAY_LABELS[i]}</span>
             </div>
           ))}
           {/* Cells */}
@@ -439,7 +445,7 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
                   </div>
                 )}
                 {posts.length > 0 && (
-                  <span className="text-[9px] text-muted-foreground mt-0.5 block">{posts.length} post{posts.length > 1 ? 's' : ''}</span>
+                  <span className="text-[9px] text-muted-foreground mt-0.5 block">{t('calendarTab.postsCountShort', { count: posts.length })}</span>
                 )}
                 {/* Desktop: mini post previews */}
                 {!isMobile && posts.length > 0 && (
@@ -453,7 +459,7 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
                         </div>
                       );
                     })}
-                    {posts.length > 2 && <span className="text-[8px] text-brand-blue">+{posts.length - 2} more</span>}
+                    {posts.length > 2 && <span className="text-[8px] text-brand-blue">{t('calendarTab.morePosts', { count: posts.length - 2 })}</span>}
                   </div>
                 )}
                 {/* Ramadan indicator */}
@@ -489,7 +495,7 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
       {view === 'month' ? <MonthView /> : <WeekView />}
 
       {postsLoading && (
-        <p className="mt-3 text-[12px] text-muted-foreground text-center">Loading posts...</p>
+        <p className="mt-3 text-[12px] text-muted-foreground text-center">{t('calendarTab.loadingPosts')}</p>
       )}
 
       {/* Schedule Post button */}
@@ -499,7 +505,7 @@ export const CalendarTab = ({ onCreatePost, onCreateStrategy, strategyPosts, onE
         className="w-full mt-5 h-12 rounded-2xl gradient-btn text-primary-foreground text-[14px] font-bold flex items-center justify-center gap-2 shadow-btn btn-press"
       >
         <Plus size={18} />
-        Schedule Post
+        {t('calendarTab.schedulePostBtn')}
       </motion.button>
 
       {/* Mobile FAB removed — replaced by bottom button */}

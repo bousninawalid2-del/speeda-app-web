@@ -13,9 +13,9 @@ interface QRCodeModalProps {
 }
 
 const SIZE_OPTIONS = [
-  { label: 'Small', value: 512 },
-  { label: 'Medium', value: 1024 },
-  { label: 'Large', value: 2048 },
+  { labelKey: 'qr.sizeSmall', value: 512 },
+  { labelKey: 'qr.sizeMedium', value: 1024 },
+  { labelKey: 'qr.sizeLarge', value: 2048 },
 ] as const;
 
 export const QRCodeModal = ({ url, onClose }: QRCodeModalProps) => {
@@ -160,7 +160,7 @@ export const QRCodeModal = ({ url, onClose }: QRCodeModalProps) => {
                 {SIZE_OPTIONS.map(s => (
                   <button key={s.value} onClick={() => setDownloadSize(s.value)}
                     className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold ${downloadSize === s.value ? 'bg-brand-blue text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-                    {s.label}
+                    {t(s.labelKey)}
                   </button>
                 ))}
               </div>

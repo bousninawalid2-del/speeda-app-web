@@ -2,20 +2,21 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Pencil, Trash2, BarChart3, RefreshCw, Rocket, Pause, DollarSign } from 'lucide-react';
 import Image from 'next/image';
+import { useTranslation } from 'react-i18next';
 import { CalendarPost } from './CalendarData';
 import { platformLogoMap } from './PlatformLogos';
 import { BoostFlow } from './BoostFlow';
 import { useIsMobile } from '../hooks/use-mobile';
 
-const statusBadge = (status: string) => {
+const statusBadge = (status: string, t: (key: string) => string) => {
   switch (status) {
-    case 'scheduled': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-green-soft text-green-accent">Scheduled ✅</span>;
-    case 'draft': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-soft text-orange-accent">Draft 📝</span>;
-    case 'ai-generated': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-soft text-purple">AI Generated ✦</span>;
-    case 'published': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-muted text-muted-foreground">Published ✓</span>;
-    case 'failed': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-red-50 text-red-600">Failed</span>;
-    case 'boosted': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md text-primary-foreground gradient-hero">Boosted 🚀</span>;
-    case 'pending-approval': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-soft text-purple border border-purple/30">✦ Pending Approval</span>;
+    case 'scheduled': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-green-soft text-green-accent">{t('calendarTab.statusScheduled')}</span>;
+    case 'draft': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-soft text-orange-accent">{t('calendarTab.statusDraft')}</span>;
+    case 'ai-generated': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-soft text-purple">{t('calendarTab.statusAiGenerated')}</span>;
+    case 'published': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-muted text-muted-foreground">{t('postDetail.statusPublished')}</span>;
+    case 'failed': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-red-50 text-red-600">{t('calendarTab.statusFailed')}</span>;
+    case 'boosted': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md text-primary-foreground gradient-hero">{t('postDetail.statusBoosted')}</span>;
+    case 'pending-approval': return <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-soft text-purple border border-purple/30">{t('postDetail.statusPendingApproval')}</span>;
     default: return null;
   }
 };
@@ -29,6 +30,7 @@ interface PostDetailPanelProps {
 }
 
 export const PostDetailPanel = ({ post, onClose, onBoostComplete, onEditPost, onDeletePost }: PostDetailPanelProps) => {
+  const { t } = useTranslation();
   const [showBoost, setShowBoost] = useState(false);
   const [boosted, setBoosted] = useState(post.status === 'boosted');
   const [deleting, setDeleting] = useState(false);
@@ -46,7 +48,7 @@ export const PostDetailPanel = ({ post, onClose, onBoostComplete, onEditPost, on
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         {showBoost ? (
-          <button onClick={() => setShowBoost(false)} className="text-[14px] font-semibold text-brand-blue">← Back</button>
+          <button onClick={() => setShowBoost(false)} className="text-[14px] font-semibold text-brand-blue">{t('postDetail.back')}</button>
         ) : (
           <div className="flex items-center gap-2">
             {PlatformLogo && <PlatformLogo size={28} />}
@@ -69,7 +71,7 @@ export const PostDetailPanel = ({ post, onClose, onBoostComplete, onEditPost, on
             <motion.div key="detail" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
               {/* Status */}
               <div className="flex items-center gap-2">
-                {boosted ? statusBadge('boosted') : statusBadge(post.status)}
+                {boosted ? statusBadge('boosted', t) : statusBadge(post.status, t)}
               </div>
 
               {/* Media thumbnail */}
@@ -95,14 +97,14 @@ export const PostDetailPanel = ({ post, onClose, onBoostComplete, onEditPost, on
               <div className="flex items-center gap-3 flex-wrap">
                 <span className="text-[12px] text-muted-foreground">📅 {post.time}</span>
                 {post.brandMatch && (
-                  <span className="text-[11px] font-bold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">Brand Match {post.brandMatch}%</span>
+                  <span className="text-[11px] font-bold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">{t('postDetail.brandMatch', { pct: post.brandMatch })}</span>
                 )}
               </div>
 
               {/* Boost metrics */}
               {boosted && (
                 <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-green-soft rounded-xl p-3">
-                  <p className="text-[11px] font-semibold text-brand-teal">🚀 2.4K reach · 89 clicks · 2.1x ROAS</p>
+                  <p className="text-[11px] font-semibold text-brand-teal">{t('postDetail.boostMetrics', { reach: '2.4K', clicks: 89, roas: '2.1x' })}</p>
                 </motion.div>
               )}
 
@@ -110,24 +112,24 @@ export const PostDetailPanel = ({ post, onClose, onBoostComplete, onEditPost, on
               <div className="space-y-2 pt-2">
                 {post.status === 'ai-generated' && (
                   <button className="w-full h-[48px] rounded-2xl gradient-btn text-primary-foreground text-[14px] font-bold btn-press">
-                    Approve & Publish
+                    {t('postDetail.approvePublish')}
                   </button>
                 )}
 
                 {(post.status === 'scheduled' || post.status === 'ai-generated') && (
                   <>
                     <button onClick={() => onEditPost?.(post)} className="w-full h-[44px] rounded-2xl border border-border text-foreground text-[13px] font-medium btn-press flex items-center justify-center gap-2">
-                      <Pencil size={14} /> Edit Post
+                      <Pencil size={14} /> {t('postDetail.editPost')}
                     </button>
                     <button className="w-full h-[44px] rounded-2xl border border-border text-foreground text-[13px] font-medium btn-press flex items-center justify-center gap-2">
-                      <Calendar size={14} /> Reschedule
+                      <Calendar size={14} /> {t('postDetail.reschedule')}
                     </button>
                     <button className="w-full h-[44px] rounded-2xl border border-border text-foreground text-[13px] font-medium btn-press flex items-center justify-center gap-2">
-                      🌐 Translate & Repost
+                      {t('postDetail.translateRepost')}
                     </button>
                     {!boosted && (
                       <button onClick={() => setShowBoost(true)} className="w-full h-[48px] rounded-2xl border-2 border-brand-blue/20 text-foreground text-[14px] font-bold btn-press flex items-center justify-center gap-2" style={{ borderLeft: '4px solid', borderImage: 'linear-gradient(to bottom, hsl(233,100%,42%), hsl(193,100%,48%)) 1' }}>
-                        <Rocket size={16} className="text-brand-blue" /> Boost This Post
+                        <Rocket size={16} className="text-brand-blue" /> {t('postDetail.boostThisPost')}
                       </button>
                     )}
                   </>
@@ -137,14 +139,14 @@ export const PostDetailPanel = ({ post, onClose, onBoostComplete, onEditPost, on
                   <>
                     {!boosted && (
                       <button onClick={() => setShowBoost(true)} className="w-full h-[48px] rounded-2xl gradient-btn text-primary-foreground text-[14px] font-bold btn-press flex items-center justify-center gap-2">
-                        <Rocket size={16} /> Boost This Post
+                        <Rocket size={16} /> {t('postDetail.boostThisPost')}
                       </button>
                     )}
                     <button className="w-full h-[44px] rounded-2xl border border-border text-foreground text-[13px] font-medium btn-press flex items-center justify-center gap-2">
-                      <BarChart3 size={14} /> View Full Analytics
+                      <BarChart3 size={14} /> {t('postDetail.viewFullAnalytics')}
                     </button>
                     <button className="w-full h-[44px] rounded-2xl border border-border text-foreground text-[13px] font-medium btn-press flex items-center justify-center gap-2">
-                      <RefreshCw size={14} /> Repurpose
+                      <RefreshCw size={14} /> {t('postDetail.repurpose')}
                     </button>
                   </>
                 )}
@@ -152,10 +154,10 @@ export const PostDetailPanel = ({ post, onClose, onBoostComplete, onEditPost, on
                 {post.status === 'draft' && (
                   <>
                     <button onClick={() => onEditPost?.(post)} className="w-full h-[48px] rounded-2xl gradient-btn text-primary-foreground text-[14px] font-bold btn-press">
-                      ✏️ Continue Editing
+                      {t('postDetail.continueEditing')}
                     </button>
                     <button className="w-full h-[44px] rounded-2xl border border-border text-foreground text-[13px] font-medium btn-press flex items-center justify-center gap-2">
-                      <Calendar size={14} /> Schedule
+                      <Calendar size={14} /> {t('postDetail.schedule')}
                     </button>
                   </>
                 )}
@@ -163,13 +165,13 @@ export const PostDetailPanel = ({ post, onClose, onBoostComplete, onEditPost, on
                 {boosted && (
                   <>
                     <button className="w-full h-[44px] rounded-2xl border border-border text-foreground text-[13px] font-medium btn-press flex items-center justify-center gap-2">
-                      <BarChart3 size={14} /> Boost Performance
+                      <BarChart3 size={14} /> {t('postDetail.boostPerformance')}
                     </button>
                     <button className="w-full h-[44px] rounded-2xl border border-border text-foreground text-[13px] font-medium btn-press flex items-center justify-center gap-2">
-                      <Pause size={14} /> Pause Boost
+                      <Pause size={14} /> {t('postDetail.pauseBoost')}
                     </button>
                     <button className="w-full h-[44px] rounded-2xl border border-border text-foreground text-[13px] font-medium btn-press flex items-center justify-center gap-2">
-                      <DollarSign size={14} /> Increase Budget
+                      <DollarSign size={14} /> {t('postDetail.increaseBudget')}
                     </button>
                   </>
                 )}
@@ -177,10 +179,10 @@ export const PostDetailPanel = ({ post, onClose, onBoostComplete, onEditPost, on
                 {post.status === 'pending-approval' && (
                   <>
                     <button className="w-full h-[48px] rounded-2xl gradient-btn text-primary-foreground text-[14px] font-bold btn-press">
-                      Approve & Schedule
+                      {t('postDetail.approveSchedule')}
                     </button>
                     <button onClick={() => onEditPost?.(post)} className="w-full h-[44px] rounded-2xl border border-border text-foreground text-[13px] font-medium btn-press flex items-center justify-center gap-2">
-                      <Pencil size={14} /> Edit
+                      <Pencil size={14} /> {t('common.edit')}
                     </button>
                   </>
                 )}
@@ -199,7 +201,7 @@ export const PostDetailPanel = ({ post, onClose, onBoostComplete, onEditPost, on
                   disabled={!onDeletePost || deleting}
                   className="w-full text-center text-[13px] text-red-accent font-medium py-2 flex items-center justify-center gap-1 disabled:opacity-50"
                 >
-                  <Trash2 size={13} /> Delete
+                  <Trash2 size={13} /> {t('common.delete')}
                 </button>
               </div>
             </motion.div>

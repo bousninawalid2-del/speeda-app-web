@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { toast } from 'sonner';
 import type { MediaItem } from '../MediaLibrary';
 
@@ -13,12 +14,12 @@ const typeIcon = (type: string) => {
   }
 };
 
-const typeLabel = (type: string) => {
+const typeLabel = (type: string, t: TFunction) => {
   switch (type) {
-    case 'video': return 'Video';
-    case 'logo': return 'Logo';
-    case 'brand': return 'Brand';
-    default: return 'Photo';
+    case 'video': return t('media.typeVideo');
+    case 'logo': return t('media.typeLogo');
+    case 'brand': return t('media.typeBrand');
+    default: return t('media.typePhoto');
   }
 };
 
@@ -74,7 +75,7 @@ export const MediaDetailPanel = ({ item, mode, isMobile, onClose, onSelect }: Me
                   { label: t('media.fileSize', 'File size'), value: item.size },
                   { label: t('media.dimensions', 'Dimensions'), value: item.dimensions ?? '—' },
                   { label: t('media.uploaded', 'Uploaded'), value: item.date },
-                  { label: t('media.type', 'Type'), value: typeLabel(item.type) },
+                  { label: t('media.type', 'Type'), value: typeLabel(item.type, t) },
                 ].map((row, i) => (
                   <div key={i} className="flex justify-between text-[13px]">
                     <span className="text-muted-foreground">{row.label}</span>
@@ -104,7 +105,7 @@ export const MediaDetailPanel = ({ item, mode, isMobile, onClose, onSelect }: Me
 
               {/* Actions */}
               <div className="space-y-2 pt-2">
-                <button onClick={() => { onSelect?.([item]); onClose(); toast.success('Opening Quick Post...'); }}
+                <button onClick={() => { onSelect?.([item]); onClose(); toast.success(t('media.openingQuickPostToast')); }}
                   className="w-full h-11 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold btn-press">
                   {t('media.useInNewPost', 'Use in New Post')}
                 </button>

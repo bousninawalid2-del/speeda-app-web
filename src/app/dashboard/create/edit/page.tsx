@@ -1,6 +1,7 @@
 'use client';
 import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { PostEditScreen } from '@/screens/PostEditScreen';
 import { usePosts, useUpdatePost } from '@/hooks/usePosts';
@@ -30,6 +31,7 @@ function toEditStatus(status: string): 'draft' | 'scheduled' | 'ai-generated' | 
 
 function EditPageContent() {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useSearchParams();
   const postId = params.get('postId');
   const from = params.get('from');
@@ -67,18 +69,23 @@ function EditPageContent() {
         caption: nextPost.caption,
         hashtags: nextPost.hashtags.map((tag: string) => tag.replace(/^#/, '')).join(','),
       });
-      toast.success('Post updated!');
+      toast.success(t('postEdit.toasts.postUpdated'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update post');
+      toast.error(err instanceof Error ? err.message : t('postEdit.toasts.failedToUpdatePost'));
     }
   };
 
   return <PostEditScreen post={post} onBack={handleBack} onSave={handleSave} />;
 }
 
+function EditPageFallback() {
+  const { t } = useTranslation();
+  return <div className="flex h-screen items-center justify-center">{t('common.loading')}</div>;
+}
+
 export default function Page() {
   return (
-    <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}>
+    <Suspense fallback={<EditPageFallback />}>
       <EditPageContent />
     </Suspense>
   );

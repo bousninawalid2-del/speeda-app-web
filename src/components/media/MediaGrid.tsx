@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import type { MediaItem } from '../MediaLibrary';
 
 const typeIcon = (type: string) => {
@@ -12,12 +13,12 @@ const typeIcon = (type: string) => {
   }
 };
 
-const typeLabel = (type: string) => {
+const typeLabel = (type: string, t: TFunction) => {
   switch (type) {
-    case 'video': return 'Video';
-    case 'logo': return 'Logo';
-    case 'brand': return 'Brand';
-    default: return 'Photo';
+    case 'video': return t('media.typeVideo');
+    case 'logo': return t('media.typeLogo');
+    case 'brand': return t('media.typeBrand');
+    default: return t('media.typePhoto');
   }
 };
 
@@ -37,7 +38,7 @@ export const MediaGrid = ({ items, isMobile, mode, selectedItems, onItemClick, o
   if (items.length === 0) {
     return (
       <div className="rounded-2xl border border-border bg-card p-6 text-center text-[13px] text-muted-foreground">
-        {t('media.empty', 'No media yet')}
+        {t('media.empty')}
       </div>
     );
   }
@@ -77,7 +78,7 @@ export const MediaGrid = ({ items, isMobile, mode, selectedItems, onItemClick, o
 
           {/* Type badge */}
           <div className="absolute bottom-8 start-1.5 bg-foreground/70 text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-md">
-            {typeIcon(item.type)} {typeLabel(item.type)}
+            {typeIcon(item.type)} {typeLabel(item.type, t)}
           </div>
 
           {/* Desktop hover overlay */}
@@ -85,7 +86,7 @@ export const MediaGrid = ({ items, isMobile, mode, selectedItems, onItemClick, o
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 rounded-xl bg-foreground/30 flex items-center justify-center">
               <button onClick={(e) => { e.stopPropagation(); onUseInPost(item); }}
                 className="px-3 py-1.5 rounded-lg bg-card text-[11px] font-bold text-foreground shadow-lg">
-                Use in Post
+                {t('media.useInPost')}
               </button>
             </motion.div>
           )}

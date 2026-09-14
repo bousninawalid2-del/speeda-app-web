@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { HomeScreen } from '@/screens/HomeScreen';
 import { resolveScreen } from '@/lib/navigation';
 
@@ -28,9 +29,14 @@ function DashboardContent() {
   );
 }
 
+function DashboardFallback() {
+  const { t } = useTranslation();
+  return <div className="flex h-screen items-center justify-center">{t('common.loadingDashboard')}</div>;
+}
+
 export default function Page() {
   return (
-    <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading Dashboard...</div>}>
+    <Suspense fallback={<DashboardFallback />}>
       <DashboardContent />
     </Suspense>
   );

@@ -153,7 +153,7 @@ export const SubscriptionScreen = ({
             : t('subscription.upgradeTo', {
                 name: selectedPlan?.name ?? '',
                 price: selectedPlan ? fmt(getPrice(selectedPlan)) : '',
-                period: annual ? 'mo' : t('subscription.perMonth'),
+                period: annual ? t('subscription.perMonthShort') : t('subscription.perMonth'),
               })}
         </button>
 

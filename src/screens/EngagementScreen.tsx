@@ -263,13 +263,13 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
           const platform = String(entry.platform ?? 'Instagram');
           return {
             id: String(entry.id ?? `m_${index}`),
-            name: String(entry.name ?? 'Customer'),
+            name: String(entry.name ?? t('common.customer')),
             emoji: String(entry.emoji ?? '👍'),
             Logo: platformToLogo[platform] ?? InstagramLogo,
             platform,
             type: String(entry.type ?? 'Comment'),
             filter: String(entry.filter ?? deriveFilterFromType(entry.type)),
-            time: String(entry.time ?? 'Just now'),
+            time: String(entry.time ?? t('common.justNow')),
             msg: String(entry.msg ?? ''),
             rating: Number(entry.rating ?? 0),
             existingReply: entry.existingReply == null ? null : String(entry.existingReply),
@@ -281,20 +281,20 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
           const platform = String(entry.platform ?? 'Instagram');
           return {
             id: String(entry.id ?? `dm_${index}`),
-            name: String(entry.name ?? 'Customer'),
+            name: String(entry.name ?? t('common.customer')),
             Logo: platformToLogo[platform] ?? InstagramLogo,
             platform,
             avatar: String(entry.avatar ?? '💬'),
             unread: Boolean(entry.unread),
             lastMsg: String(entry.lastMsg ?? ''),
-            time: String(entry.time ?? 'Just now'),
+            time: String(entry.time ?? t('common.justNow')),
             thread: Array.isArray(entry.thread)
                 ? entry.thread.map((messageUnknown: unknown) => {
                   const message = asRecord(messageUnknown);
                   return {
                     from: message.from === 'us' ? 'us' : 'them',
                     text: String(message.text ?? ''),
-                    time: String(message.time ?? 'Just now'),
+                    time: String(message.time ?? t('common.justNow')),
                   };
                 })
               : [],
@@ -331,7 +331,7 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
 
   const handleSendDM = () => {
     if (!dmInput.trim() || !activeDM) return;
-    const newThread = [...activeThread, { from: 'us', text: dmInput, time: 'Just now' }];
+    const newThread = [...activeThread, { from: 'us', text: dmInput, time: t('common.justNow') }];
     setLocalThreads(prev => ({ ...prev, [activeDM.id]: newThread }));
     setDmInput('');
     toast.success(t('engagement.replySent', 'Reply sent ✓'));
@@ -592,7 +592,7 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
           <div className="mt-3 bg-brand-blue/5 rounded-xl p-3 border border-brand-blue/10">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[10px] font-bold text-brand-blue uppercase">{isReview ? t('engagement.yourResponse', 'Your Response') : t('common.you', 'You')}</span>
-              <span className="text-[10px] text-muted-foreground">Just now</span>
+              <span className="text-[10px] text-muted-foreground">{t('common.justNow')}</span>
             </div>
             <p className="text-[13px] text-foreground leading-relaxed">{existingReply}</p>
             <button onClick={() => { setOpenComposer(m.id); }} className="text-[11px] text-brand-blue font-semibold mt-1.5">
@@ -606,7 +606,7 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
           <div className="mt-2 bg-brand-blue/5 rounded-xl p-3 border border-brand-blue/10">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[10px] font-bold text-brand-blue bg-brand-blue/10 px-1.5 py-0.5 rounded">{t('common.you', 'You')}</span>
-              <span className="text-[10px] text-muted-foreground">Just now</span>
+              <span className="text-[10px] text-muted-foreground">{t('common.justNow')}</span>
             </div>
             <p className="text-[13px] text-foreground">{barReply}</p>
           </div>

@@ -53,7 +53,7 @@ export const IndustryHashtags = ({ industry = 'restaurant', onAdd, existingTags 
         ))}
         {!expanded && available.length > 6 && (
           <button onClick={() => setExpanded(true)} className="text-[11px] text-brand-blue font-medium px-2 py-1">
-            +{available.length - 6} more
+            {t('calendarTab.morePosts', { count: available.length - 6 })}
           </button>
         )}
       </div>

@@ -135,7 +135,8 @@ const MiniChart = ({ data, color }: { data: number[]; color: string }) => {
 };
 
 const DualLineChart = ({ data1, data2, color1, color2 }: { data1: number[]; data2: number[]; color1: string; color2: string }) => {
-  if (!data1.length || !data2.length) return <div className="h-40 flex items-center justify-center text-muted-foreground text-[13px]">No data yet</div>;
+  const { t } = useTranslation();
+  if (!data1.length || !data2.length) return <div className="h-40 flex items-center justify-center text-muted-foreground text-[13px]">{t('campaigns.noDataYet')}</div>;
   const max = Math.max(...data1, ...data2);
   const h = 120, w = 300;
   const toPoints = (data: number[]) => data.map((v, i) => `${(i / (data.length - 1)) * w},${h - (v / max) * (h - 10)}`).join(' ');

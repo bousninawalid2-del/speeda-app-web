@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 interface MosScoreRingProps {
   score: number;
@@ -6,6 +7,7 @@ interface MosScoreRingProps {
 }
 
 export const MosScoreRing = ({ score, size = 64 }: MosScoreRingProps) => {
+  const { t } = useTranslation();
   const strokeWidth = 4;
   const center = size / 2;
   const radius = (size - strokeWidth) / 2;
@@ -47,7 +49,7 @@ export const MosScoreRing = ({ score, size = 64 }: MosScoreRingProps) => {
           </motion.span>
         </div>
       </div>
-      <span className="text-[9px] text-muted-foreground font-semibold mt-1.5">MOS Score</span>
+      <span className="text-[9px] text-muted-foreground font-semibold mt-1.5">{t('mosScore.title')}</span>
     </div>
   );
 };
