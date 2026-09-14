@@ -66,7 +66,7 @@ const EngagementSubTab = ({ engFilter, setEngFilter, filteredEngagement, onNavig
           <button key={f} onClick={() => setEngFilter(f)}
             className={`rounded-3xl px-4 py-2 text-[12px] font-semibold transition-all ${
               engFilter === f ? 'bg-brand-blue text-primary-foreground' : 'bg-card border border-border text-muted-foreground'
-            }`}>{f}</button>
+            }`}>{t(`engagement.${f.toLowerCase()}`, f)}</button>
         ))}
       </div>
       {loading && filteredEngagement.length === 0 && (
@@ -132,7 +132,7 @@ const EngagementSubTab = ({ engFilter, setEngFilter, filteredEngagement, onNavig
                 <div className="mt-3 bg-brand-blue/5 rounded-xl p-3 border border-brand-blue/10">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10px] font-bold text-brand-blue uppercase">{t('common.you', 'You')}</span>
-                    <span className="text-[10px] text-muted-foreground">Just now</span>
+                    <span className="text-[10px] text-muted-foreground">{t('common.justNow')}</span>
                   </div>
                   <p className="text-[13px] text-foreground leading-relaxed">{reply}</p>
                 </div>
@@ -236,7 +236,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
 
   const welcomeMsg: ChatMessage = {
     role: 'assistant',
-    content: "Good afternoon! 👋 I've been analyzing your restaurant's performance. Your engagement is up 23% this week. What would you like to work on today?",
+    content: t('chat.welcomeMessage'),
     type: 'text',
     timestamp: new Date(),
   };
@@ -266,11 +266,11 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
   } | null>(null);
 
   const quickPrompts = [
-    'Create Instagram post',
-    'Launch campaign',
-    'Analyze performance',
-    'Reply to reviews',
-    'Generate Ramadan plan',
+    t('chat.createInstaPost'),
+    t('chat.launchCampaign'),
+    t('chat.showAnalytics'),
+    t('chat.replyReviews'),
+    t('chat.generateRamadan'),
   ];
 
   const scrollToBottom = () => {
@@ -343,21 +343,21 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          throw new Error(data?.error ?? `Engagement feed unavailable (${res.status})`);
+          throw new Error(data?.error ?? t('chat.engagementFeedUnavailableStatus', { status: res.status }));
         }
         const items: any[] = Array.isArray(data.items) ? data.items : [];
 
         const nextFeed = items.map((entry, index) => ({
           id: String(entry.id ?? `eng_${index}`),
           rawId: String(entry.rawId ?? entry.id ?? ''),
-          name: String(entry.name ?? 'Customer'),
+          name: String(entry.name ?? t('common.customer')),
           emoji: String(entry.emoji ?? '👍'),
           Logo: platformToLogo[entry.platform] ?? InstagramLogo,
           platform: String(entry.platform ?? 'Instagram'),
           sourcePlatform: String(entry.sourcePlatform ?? '').toLowerCase(),
           type: String(entry.type ?? 'Comment'),
           filter: String(entry.filter ?? 'Comments'),
-          time: String(entry.time ?? 'Just now'),
+          time: String(entry.time ?? t('common.justNow')),
           msg: String(entry.msg ?? ''),
           ai: String(entry.ai ?? ''),
           isNegative: Boolean(entry.isNegative),
@@ -370,7 +370,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
         setEngagementError(null);
       } catch (err) {
         if (!alive) return;
-        const message = err instanceof Error ? err.message : 'Engagement feed unavailable';
+        const message = err instanceof Error ? err.message : t('chat.engagementFeedUnavailable');
         if (isInitial) setEngagementError(message);
       } finally {
         if (alive && isInitial) setEngagementLoading(false);
@@ -434,7 +434,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
 
       if (!res.ok) {
         const err = await res.json();
-        alert(err.error ?? 'Upload failed');
+        alert(err.error ?? t('chat.uploadFailed'));
         return;
       }
 
@@ -446,7 +446,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
         filename: data.filename,
       });
     } catch {
-      alert('Upload failed. Please try again.');
+      alert(t('chat.uploadFailedRetry'));
     }
 
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -501,7 +501,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
       if (!authRes.ok) {
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: data.error ?? 'Sorry, the chat service is currently unavailable. Please try again later.',
+          content: data.error ?? t('chat.serviceUnavailable'),
           type: 'text',
           timestamp: new Date(),
         }]);
@@ -528,7 +528,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
     } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Connection error. Please check your network and try again.',
+        content: t('chat.connectionError'),
         type: 'text',
         timestamp: new Date(),
       }]);
@@ -580,7 +580,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
             <h2 className="text-[15px] font-bold text-foreground leading-tight">Speeda AI</h2>
             <div className="flex items-center gap-1">
               <div className="w-1.5 h-1.5 rounded-full bg-green-accent animate-pulse-dot" />
-              <span className="text-[11px] text-green-accent">Online</span>
+              <span className="text-[11px] text-green-accent">{t('chat.online')}</span>
             </div>
           </div>
         </div>
@@ -607,7 +607,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
                 subTab === tab ? 'bg-brand-blue text-primary-foreground shadow-sm' : 'text-muted-foreground'
               }`}
             >
-              {tab === 'chat' ? t('chat.chatTab', 'Chat') : t('chat.engagementTab', 'Engagement')}
+              {tab === 'chat' ? t('chat.chatTab') : t('engagement.title')}
               {tab === 'engagement' && engagementFeed.length > 0 && <span className="ms-1.5 w-4 h-4 inline-flex items-center justify-center rounded-full bg-red-accent text-primary-foreground text-[9px] font-bold">{engagementFeed.length > 99 ? '99+' : engagementFeed.length}</span>}
             </button>
           ))}
@@ -644,7 +644,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
                     <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer"
                       className="flex items-center gap-2 bg-muted rounded-xl p-3 mb-3 hover:bg-muted/80 transition-colors">
                       <span className="text-lg">📄</span>
-                      <span className="text-[13px] font-medium text-brand-blue underline">Download file</span>
+                      <span className="text-[13px] font-medium text-brand-blue underline">{t('chat.downloadFile')}</span>
                     </a>
                   )}
 
@@ -685,16 +685,16 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
                       </p>
                       <div className="flex items-center gap-3 mt-4 text-[12px] text-muted-foreground">
                         <div className="flex items-center gap-1"><InstagramLogo size={14} /><span>Instagram</span></div>
-                        <span>·</span><span>Feed Post</span><span>·</span><span>Est. reach ~3.2K</span>
+                        <span>·</span><span>{t('chat.feedPost')}</span><span>·</span><span>{t('chat.estReach')}</span>
                       </div>
                       <div className="mt-2">
-                        <span className="text-[11px] font-bold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">Brand Match 96%</span>
+                        <span className="text-[11px] font-bold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">{t('postDetail.brandMatch', { pct: 96 })}</span>
                       </div>
                       <div className="flex gap-2 mt-4">
-                        <button className="flex-1 h-10 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold shadow-btn btn-press">Approve &amp; Schedule</button>
-                        <button className="h-10 px-4 rounded-xl border border-border text-muted-foreground text-[13px] font-medium btn-press">Edit</button>
+                        <button className="flex-1 h-10 rounded-xl gradient-btn text-primary-foreground text-[13px] font-bold shadow-btn btn-press">{t('postDetail.approveSchedule')}</button>
+                        <button className="h-10 px-4 rounded-xl border border-border text-muted-foreground text-[13px] font-medium btn-press">{t('common.edit')}</button>
                       </div>
-                      <button className="w-full text-center text-[12px] text-brand-blue font-medium mt-2 btn-press">Want to see different versions?</button>
+                      <button className="w-full text-center text-[12px] text-brand-blue font-medium mt-2 btn-press">{t('chat.differentVersions')}</button>
                     </div>
                   </motion.div>
                 )}
@@ -728,17 +728,17 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
                   <div className="w-10 h-1 rounded-full bg-border mx-auto mb-4" />
                   <div className="space-y-1">
                     {[
-                      { icon: Camera, label: '📷 Take Photo', type: 'photo' },
-                      { icon: Image, label: '📂 Choose from Library', type: 'photo' },
-                      { icon: Film, label: '🎬 Video', type: 'video' },
-                      { icon: FileText, label: '📁 Upload File', type: 'doc' },
+                      { icon: Camera, label: t('chat.takePhoto'), type: 'photo' },
+                      { icon: Image, label: t('chat.chooseFromLibrary'), type: 'photo' },
+                      { icon: Film, label: t('chat.video'), type: 'video' },
+                      { icon: FileText, label: t('chat.uploadFile'), type: 'doc' },
                     ].map((item, i) => (
                       <button key={i} onClick={() => handleAttach(item.type)} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-start">
                         <span className="text-[15px]">{item.label}</span>
                       </button>
                     ))}
                   </div>
-                  <button onClick={() => setAttachMenuOpen(false)} className="w-full h-11 mt-3 rounded-2xl border border-border text-muted-foreground text-[14px] font-medium">Cancel</button>
+                  <button onClick={() => setAttachMenuOpen(false)} className="w-full h-11 mt-3 rounded-2xl border border-border text-muted-foreground text-[14px] font-medium">{t('common.cancel')}</button>
                 </motion.div>
               </>
             )}
@@ -825,7 +825,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
                 value={inputVal}
                 readOnly
                 disabled
-                placeholder="Ask Speeda..."
+                placeholder={t('chat.placeholder')}
                 className="flex-1 bg-transparent border-none outline-none text-[14px] text-foreground placeholder:text-muted-foreground/50 cursor-not-allowed"
               />
               <button
@@ -893,7 +893,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
         )}
       </AnimatePresence>
 
-      <UpgradePrompt feature="Unlimited AI" benefit="get unlimited AI conversations and responses" open={showUpgrade} onClose={() => setShowUpgrade(false)} />
+      <UpgradePrompt feature={t('chat.upgradeFeatureName')} benefit={t('chat.upgradeFeatureBenefit')} open={showUpgrade} onClose={() => setShowUpgrade(false)} />
     </motion.div>
   );
 };

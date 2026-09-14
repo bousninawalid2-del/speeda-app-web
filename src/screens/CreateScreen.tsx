@@ -39,18 +39,18 @@ const platforms = [
 const contentTypes = ['Feed Post', 'Reel', 'Story', 'Carousel'];
 
 const templates = [
-  { icon: '⭐', title: 'Product Showcase', desc: 'Highlight a menu item', type: 'Feed Post', prompt: 'Showcase our [menu item] with mouth-watering visuals and a compelling caption' },
-  { icon: '⏰', title: 'Limited Offer', desc: 'Time-sensitive promo', type: 'Story', prompt: 'Create urgency around our [offer] — limited time only, drive immediate action' },
-  { icon: '🎬', title: 'Behind the Scenes', desc: 'Show your kitchen', type: 'Reel', prompt: 'Take followers behind the scenes of our kitchen — show the passion and process' },
-  { icon: '📣', title: 'Announcement', desc: 'New item or event', type: 'Feed Post', prompt: 'Announce our new [item/event] — build excitement and encourage sharing' },
-  { icon: '⭐', title: 'Customer Review', desc: 'Share a 5-star review', type: 'Carousel', prompt: 'Feature a glowing customer review with their testimonial and our best dish photos' },
-  { icon: '🌙', title: 'Ramadan Special', desc: 'Iftar & Suhoor content', type: 'Reel', prompt: 'Create Ramadan-themed content for our Iftar specials — warm, inviting, family-focused' },
+  { icon: '⭐', key: 'productShowcase', title: 'Product Showcase', desc: 'Highlight a menu item', type: 'Feed Post', prompt: 'Showcase our [menu item] with mouth-watering visuals and a compelling caption' },
+  { icon: '⏰', key: 'limitedOffer', title: 'Limited Offer', desc: 'Time-sensitive promo', type: 'Story', prompt: 'Create urgency around our [offer] — limited time only, drive immediate action' },
+  { icon: '🎬', key: 'behindScenes', title: 'Behind the Scenes', desc: 'Show your kitchen', type: 'Reel', prompt: 'Take followers behind the scenes of our kitchen — show the passion and process' },
+  { icon: '📣', key: 'announcement', title: 'Announcement', desc: 'New item or event', type: 'Feed Post', prompt: 'Announce our new [item/event] — build excitement and encourage sharing' },
+  { icon: '⭐', key: 'customerReview', title: 'Customer Review', desc: 'Share a 5-star review', type: 'Carousel', prompt: 'Feature a glowing customer review with their testimonial and our best dish photos' },
+  { icon: '🌙', key: 'ramadanSpecial', title: 'Ramadan Special', desc: 'Iftar & Suhoor content', type: 'Reel', prompt: 'Create Ramadan-themed content for our Iftar specials — warm, inviting, family-focused' },
 ];
 
 const menuTemplates = [
-  { icon: '🍗', title: 'Promote: Chicken Shawarma', desc: 'SAR 25', type: 'Feed Post', prompt: 'Create a post promoting our Chicken Shawarma — grilled chicken wrapped with garlic sauce and fresh vegetables, SAR 25' },
-  { icon: '🍔', title: 'Promote: Smash Burger', desc: 'SAR 35', type: 'Reel', prompt: 'Create a post promoting our Smash Burger — double beef patties with cheddar cheese and special sauce, SAR 35' },
-  { icon: '🍮', title: 'Promote: Kunafa Dessert', desc: 'SAR 18', type: 'Story', prompt: 'Create a post promoting our Kunafa Dessert — traditional kunafa with cream cheese and pistachio, SAR 18' },
+  { icon: '🍗', key: 'shawarma', title: 'Promote: Chicken Shawarma', desc: 'SAR 25', type: 'Feed Post', prompt: 'Create a post promoting our Chicken Shawarma — grilled chicken wrapped with garlic sauce and fresh vegetables, SAR 25' },
+  { icon: '🍔', key: 'burger', title: 'Promote: Smash Burger', desc: 'SAR 35', type: 'Reel', prompt: 'Create a post promoting our Smash Burger — double beef patties with cheddar cheese and special sauce, SAR 35' },
+  { icon: '🍮', key: 'kunafa', title: 'Promote: Kunafa Dessert', desc: 'SAR 18', type: 'Story', prompt: 'Create a post promoting our Kunafa Dessert — traditional kunafa with cream cheese and pistachio, SAR 18' },
 ];
 
 const tones = ['Professional', 'Casual', 'Fun', 'Urgent', 'Inspirational', 'Bold'];
@@ -63,6 +63,30 @@ const langOptions = [
   { id: 'english', label: 'English 🇬🇧' },
   { id: 'other', label: 'Other' },
 ];
+
+// ── Display-label lookup: keeps the canonical English value used for state
+// and payloads, while showing a translated label in the UI ──
+type LabelCategory = 'contentTypes' | 'tones' | 'goals' | 'durations' | 'pillars' | 'indicators';
+const KEY_MAPS: Record<LabelCategory, Record<string, string>> = {
+  contentTypes: { 'Feed Post': 'feedPost', Reel: 'reel', Story: 'story', Carousel: 'carousel' },
+  tones: { Professional: 'professional', Casual: 'casual', Fun: 'fun', Urgent: 'urgent', Inspirational: 'inspirational', Bold: 'bold' },
+  goals: { 'Brand Awareness': 'brandAwareness', Engagement: 'engagement', Conversions: 'conversions', Promotion: 'promotion', Event: 'event' },
+  durations: { '3 days': 'threeDays', '1 week': 'oneWeek', '2 weeks': 'twoWeeks', '1 month': 'oneMonth' },
+  pillars: {
+    'Product Showcase': 'productShowcase', 'Behind the Scenes': 'behindScenes', 'Customer Stories': 'customerStories',
+    'Promotions & Deals': 'promotionsDeals', 'Educational Tips': 'educationalTips', 'Seasonal Content': 'seasonalContent',
+    'Team & Culture': 'teamCulture', 'User-Generated Content': 'userGeneratedContent',
+  },
+  indicators: {
+    Reach: 'reach', 'Engagement Rate': 'engagementRate', 'Follower Growth': 'followerGrowth',
+    'Website Clicks': 'websiteClicks', Orders: 'orders', Revenue: 'revenue', 'Brand Awareness': 'brandAwareness',
+  },
+};
+type TFn = ReturnType<typeof useTranslation>['t'];
+const trLabel = (t: TFn, category: LabelCategory, value: string): string => {
+  const key = KEY_MAPS[category][value];
+  return key ? t(`create.${category}.${key}`, value) : value;
+};
 
 const PlatformIcon = ({ id, size = 16 }: { id: string; size?: number }) => {
   const p = platforms.find(pl => pl.id === id);
@@ -120,19 +144,20 @@ const Chip = ({ label, active, onClick }: { label: string; active: boolean; onCl
 
 // ── Language selector with max 2 ──
 const LangSelector = ({ selected, setSelected }: { selected: string[]; setSelected: (v: string[]) => void }) => {
+  const { t } = useTranslation();
   const toggle = (id: string) => {
     if (selected.includes(id)) {
       if (selected.length <= 1) return;
       setSelected(selected.filter(s => s !== id));
     } else {
-      if (selected.length >= 2) { toast('Maximum 2 languages. Deselect one first.'); return; }
+      if (selected.length >= 2) { toast(t('create.maxLanguages')); return; }
       setSelected([...selected, id]);
     }
   };
   return (
     <div className="flex flex-wrap gap-2">
       {langOptions.map(l => (
-        <Chip key={l.id} label={l.label} active={selected.includes(l.id)} onClick={() => toggle(l.id)} />
+        <Chip key={l.id} label={t(`create.langs.${l.id}`, l.label)} active={selected.includes(l.id)} onClick={() => toggle(l.id)} />
       ))}
     </div>
   );
@@ -355,7 +380,7 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
           revokeObjectUrl(failedItem?.localPreview);
           return prev.filter(item => item.id !== tempId);
         });
-        toast.error(err instanceof Error ? err.message : 'Failed to upload media');
+        toast.error(err instanceof Error ? err.message : t('create.failedToUploadMedia'));
       }
     }
     event.target.value = '';
@@ -383,11 +408,11 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
 
   const handleSchedulePost = async () => {
     if (selectedPlatforms.length === 0) {
-      toast.error('Select at least one platform');
+      toast.error(t('create.selectAtLeastOnePlatform'));
       return;
     }
     if (!generatedCaption.trim()) {
-      toast.error('No caption to publish');
+      toast.error(t('create.noCaptionToPublish'));
       return;
     }
     if (externalPublishing === undefined) {
@@ -408,7 +433,7 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
       };
       const skippedMediaCount = mediaFiles.length - uploadedMediaUrls.length;
       if (skippedMediaCount > 0) {
-        toast.warning(`${skippedMediaCount} media item(s) were not uploaded and will be skipped.`);
+        toast.warning(t('create.mediaSkipped', { count: skippedMediaCount }));
       }
       if (onPublish) {
         await onPublish(payload);
@@ -416,10 +441,13 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
         await createPost.mutateAsync(payload);
       }
       const timeLabel = scheduleMode === 'later' && schedDate ? `${schedDate} ${schedTime || ''}`.trim() : 'now';
-      toast.success(`Post scheduled ${scheduleMode === 'now' ? 'for immediate publish' : `for ${timeLabel}`} ✓`, { duration: 2000 });
+      toast.success(
+        scheduleMode === 'now' ? t('create.postScheduledNow') : t('create.postScheduledFor', { time: timeLabel }),
+        { duration: 2000 },
+      );
       setTimeout(() => onScheduled?.(), 500);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to publish');
+      toast.error(err instanceof Error ? err.message : t('create.failedToPublish'));
     } finally {
       if (externalPublishing === undefined) {
         setLocalIsPublishing(false);
@@ -434,24 +462,24 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
       {isFree && <ContentLockedBanner />}
 
       {/* Schedule For */}
-      <Section label="Schedule for">
+      <Section label={t('create.scheduleFor')}>
         <div className="bg-card rounded-2xl border border-border-light p-3">
           {scheduleMode === 'now' ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <CalendarIcon size={16} className="text-brand-blue" />
-                <span className="text-[14px] font-medium text-foreground">Now (publish immediately)</span>
+                <span className="text-[14px] font-medium text-foreground">{t('create.publishNowLabel')}</span>
               </div>
-              <button onClick={() => setScheduleMode('later')} className="text-[12px] text-brand-blue font-semibold">Schedule for later</button>
+              <button onClick={() => setScheduleMode('later')} className="text-[12px] text-brand-blue font-semibold">{t('create.scheduleForLater')}</button>
             </div>
           ) : (
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <CalendarIcon size={16} className="text-brand-blue" />
                 <span className="text-[14px] font-medium text-foreground">
-                  {schedDate ? `📅 ${schedDate} · ${schedTime || 'Pick time'}` : '📅 Pick date & time'}
+                  {schedDate ? `📅 ${schedDate} · ${schedTime || t('create.pickTime')}` : t('create.pickDateTime')}
                 </span>
-                <button onClick={() => setScheduleMode('now')} className="text-[12px] text-muted-foreground font-medium ms-auto">Publish now</button>
+                <button onClick={() => setScheduleMode('now')} className="text-[12px] text-muted-foreground font-medium ms-auto">{t('create.publishNow')}</button>
               </div>
               <div className="flex gap-2">
                 <input type="date" value={schedDate} onChange={e => setSchedDate(e.target.value)}
@@ -462,7 +490,7 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
               {/* Smart scheduling recommendation */}
               <button onClick={() => { setSchedTime('20:00'); }}
                 className="flex items-center gap-1.5 text-[11px] text-green-accent font-semibold bg-green-soft px-3 py-1.5 rounded-lg w-fit">
-                ✦ Recommended by AI: Thursday at 8:00 PM
+                {t('create.aiRecommendedTime')}
               </button>
             </div>
           )}
@@ -470,9 +498,9 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
       </Section>
 
       {/* Platform */}
-      <Section label="Platform">
+      <Section label={t('create.platformLabel')}>
         {availablePlatforms.length === 0 ? (
-          <p className="text-[13px] text-muted-foreground">No platforms connected. Go to Settings to connect your social media accounts.</p>
+          <p className="text-[13px] text-muted-foreground">{t('create.noPlatformsConnected')}</p>
         ) : (
           <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
             {availablePlatforms.map(account => {
@@ -494,14 +522,14 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
       </Section>
 
       {/* Content Type */}
-      <Section label="Content Type">
+      <Section label={t('create.contentTypeLabel')}>
         <div className="flex flex-wrap gap-2">
-          {contentTypes.map(ct => <Chip key={ct} label={ct} active={type === ct} onClick={() => setType(ct)} />)}
+          {contentTypes.map(ct => <Chip key={ct} label={trLabel(t, 'contentTypes', ct)} active={type === ct} onClick={() => setType(ct)} />)}
         </div>
       </Section>
 
       {/* Templates */}
-      <Section label="Templates">
+      <Section label={t('create.templatesLabel')}>
         <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
           {templates.map((tpl, i) => (
             <button key={i} onClick={() => selectTemplate(i)}
@@ -509,21 +537,21 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
                 selectedTemplate === i ? 'border-2 border-brand-blue shadow-md' : 'border border-border-light'
               }`}>
               <span className="text-2xl">{tpl.icon}</span>
-              <h4 className="text-[13px] font-bold text-foreground mt-2">{tpl.title}</h4>
-              <p className="text-[11px] text-muted-foreground mt-1">{tpl.desc}</p>
+              <h4 className="text-[13px] font-bold text-foreground mt-2">{t(`create.templates.${tpl.key}.title`, tpl.title)}</h4>
+              <p className="text-[11px] text-muted-foreground mt-1">{t(`create.templates.${tpl.key}.desc`, tpl.desc)}</p>
             </button>
           ))}
         </div>
       </Section>
 
       {/* From Your Menu */}
-      <Section label="From Your Menu 🍽️">
+      <Section label={t('create.fromYourMenu')}>
         <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
           {menuTemplates.map((tpl, i) => (
             <button key={`menu-${i}`} onClick={() => { setDesc(tpl.prompt); const matchedType = contentTypes.find(ct => ct === tpl.type); if (matchedType) setType(matchedType); }}
               className="min-w-[150px] bg-card rounded-2xl p-4 text-start flex-shrink-0 transition-all card-tap border border-border-light hover:border-brand-blue">
               <span className="text-2xl">{tpl.icon}</span>
-              <h4 className="text-[13px] font-bold text-foreground mt-2">{tpl.title}</h4>
+              <h4 className="text-[13px] font-bold text-foreground mt-2">{t(`create.menuTemplates.${tpl.key}.title`, tpl.title)}</h4>
               <p className="text-[11px] text-brand-blue font-semibold mt-1">{tpl.desc}</p>
             </button>
           ))}
@@ -531,7 +559,7 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
       </Section>
 
       {/* Media with Library access */}
-      <Section label="Upload Media">
+      <Section label={t('create.uploadMediaLabel')}>
         <MediaUpload files={mediaFiles} add={addMedia} remove={removeMedia} onOpenLibrary={() => setShowMediaLibrary(true)} />
         <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileUpload} />
         {/* Image resize notice */}
@@ -539,28 +567,28 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
       </Section>
 
       {/* Description */}
-      <Section label="What&apos;s this post about?">
+      <Section label={t('create.whatsThisAbout')}>
         <div className="flex gap-2 items-center mb-2">
-          <button onClick={() => setShowTemplateEngine(true)} className="text-[12px] font-bold text-brand-blue bg-brand-blue/10 px-3 py-1.5 rounded-lg">✦ Help Me Write</button>
+          <button onClick={() => setShowTemplateEngine(true)} className="text-[12px] font-bold text-brand-blue bg-brand-blue/10 px-3 py-1.5 rounded-lg">{t('create.helpMeWrite')}</button>
         </div>
         <textarea value={desc} onChange={e => setDesc(e.target.value)}
           className="w-full min-h-[80px] rounded-2xl bg-card border border-border p-4 text-[14px] focus:border-primary focus:outline-none resize-none"
-          placeholder="e.g., Promote our weekend Shawarma special with 20% off..." />
+          placeholder={t('create.descPlaceholder')} />
         <p className="text-[11px] text-muted-foreground mt-1">✦ Uses 3 {t('common.tokens')} · {tokensData?.balance ?? 142} remaining</p>
         {/* Link detection */}
         <LinkShortener caption={desc} />
       </Section>
 
       {/* Language */}
-      <Section label="Language">
+      <Section label={t('create.languageLabel')}>
         <LangSelector selected={langs} setSelected={setLangs} />
-        <p className="text-[11px] text-muted-foreground mt-1.5">Select 1-2 languages for your content</p>
+        <p className="text-[11px] text-muted-foreground mt-1.5">{t('create.selectLanguagesHint')}</p>
       </Section>
 
       {/* Generate — also opens template engine */}
       <button onClick={() => setShowTemplateEngine(true)}
         className="w-full h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press mt-5">
-        ✦ AI Write
+        {t('create.aiWriteBtn')}
       </button>
 
       {/* Template Engine Modal */}
@@ -579,11 +607,11 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
       <AnimatePresence>
         {generated && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
-            <h2 className="text-[18px] font-bold text-foreground">Generated Content</h2>
+            <h2 className="text-[18px] font-bold text-foreground">{t('create.generatedContent')}</h2>
 
             {mediaFiles.length > 0 && (
               <div className="bg-purple-soft rounded-2xl p-3 mt-2 mb-3">
-                <p className="text-[13px] text-purple font-medium">✦ I&apos;ve analyzed your photo and created content optimized for {selectedPlatform?.name} {type} format.</p>
+                <p className="text-[13px] text-purple font-medium">{t('create.analyzedPhoto', { platform: selectedPlatform?.name, type: trLabel(t, 'contentTypes', type) })}</p>
               </div>
             )}
 
@@ -591,9 +619,9 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {selectedPlatform && <selectedPlatform.Logo size={20} />}
-                  <span className="text-[13px] font-semibold text-foreground">{selectedPlatform?.name} · {type}</span>
+                  <span className="text-[13px] font-semibold text-foreground">{selectedPlatform?.name} · {trLabel(t, 'contentTypes', type)}</span>
                 </div>
-                <span className="text-[11px] font-bold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">Brand Match 94%</span>
+                <span className="text-[11px] font-bold text-green-accent bg-green-soft px-2 py-0.5 rounded-md">{t('create.brandMatch', { percent: 94 })}</span>
               </div>
 
               {mediaFiles.length > 0 && (
@@ -626,22 +654,22 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
               {/* Action buttons */}
               <div className="flex gap-2 mt-4">
                 <button onClick={handleSchedulePost} disabled={isPublishing || selectedPlatforms.length === 0} className="flex-1 h-12 rounded-2xl gradient-btn text-primary-foreground text-[14px] font-bold btn-press disabled:opacity-50">
-                  {isPublishing ? 'Publishing...' : 'Schedule Post'}
+                  {isPublishing ? t('create.publishing') : t('create.schedulePost')}
                 </button>
                 <button onClick={() => { setGenerated(false); setTimeout(() => { setGenerated(true); }, 100); }}
-                  className="h-12 px-5 rounded-2xl border border-border text-muted-foreground text-[14px] font-medium btn-press">Regenerate</button>
+                  className="h-12 px-5 rounded-2xl border border-border text-muted-foreground text-[14px] font-medium btn-press">{t('create.regenerate')}</button>
               </div>
 
               {/* New: Variations + Translation buttons */}
               <div className="flex gap-2 mt-2">
                 <button onClick={() => setShowVariations(true)}
                   className="flex-1 h-10 rounded-xl border border-brand-blue/30 text-brand-blue text-[13px] font-medium btn-press">
-                  ✦ Generate Variations
+                  {t('create.generateVariations')}
                 </button>
                 <PostTranslation currentLang="en" onUseTranslation={(caption, hashtags) => {
                   setGeneratedCaption(caption);
                   setCurrentHashtags(hashtags.split(' '));
-                  toast.success('Translation applied ✓');
+                  toast.success(t('create.translationApplied'));
                 }} />
               </div>
             </div>
@@ -651,7 +679,7 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
               <PostVariations onSelectVariation={(caption, hashtags) => {
                 setGeneratedCaption(caption);
                 setCurrentHashtags(hashtags.split(' '));
-                toast.success('Variation selected ✓');
+                toast.success(t('create.variationSelected'));
               }} />
             )}
           </motion.div>
@@ -668,14 +696,14 @@ const QuickPostMode = ({ scheduledDate, scheduledTime, onScheduled, onPublish, o
               <MediaLibrary mode="picker" multiSelect onSelect={(items) => {
                 appendLibraryMedia(items.map(item => ({ id: item.id, name: item.name, size: item.size })));
                 setShowMediaLibrary(false);
-                toast.success(`${items.length} media added`);
+                toast.success(t('create.mediaAdded', { count: items.length }));
               }} onClose={() => setShowMediaLibrary(false)} />
             </motion.div>
           </>
         )}
       </AnimatePresence>
 
-      <UpgradePrompt feature="AI Content Generation" benefit="generate unlimited AI content" open={showUpgrade} onClose={() => setShowUpgrade(false)} />
+      <UpgradePrompt feature={t('create.upgradeAiContentFeature')} benefit={t('create.upgradeAiContentBenefit')} open={showUpgrade} onClose={() => setShowUpgrade(false)} />
     </>
   );
 };
@@ -693,6 +721,7 @@ const StrategyMode = ({
   onPreviewInCalendar?: () => void;
   onUploadMedia?: (file: File) => Promise<{ id: string; url: string }>;
 }) => {
+  const { t } = useTranslation();
   const { data: socialAccounts } = useSocialAccounts();
   const createBulkPosts = useCreateBulkPosts();
   const [name, setName] = useState('');
@@ -828,7 +857,7 @@ const StrategyMode = ({
           revokeObjectUrl(failedItem?.localPreview);
           return prev.filter(item => item.id !== tempId);
         });
-        toast.error(error instanceof Error ? error.message : 'Failed to upload media');
+        toast.error(error instanceof Error ? error.message : t('create.failedToUploadMedia'));
       }
     }
 
@@ -856,23 +885,23 @@ const StrategyMode = ({
 
   const handleApproveAllAndSchedule = async () => {
     if (selectedConnectedPlatforms.length === 0) {
-      toast.error('Select at least one connected platform');
+      toast.error(t('create.selectAtLeastOneConnectedPlatform'));
       return;
     }
     if (!startDate) {
-      toast.error('Select a start date');
+      toast.error(t('create.selectStartDate'));
       return;
     }
     if (!scheduleTime) {
-      toast.error('Select a scheduling time');
+      toast.error(t('create.selectSchedulingTime'));
       return;
     }
 
     const mediaUrls = mediaFiles.map(file => file.url).filter((url): url is string => Boolean(url));
-    const caption = desc.trim() || name.trim() || `Content strategy post for ${goal}`;
+    const caption = desc.trim() || name.trim() || t('create.strategyPostCaptionFallback', { goal: trLabel(t, 'goals', goal) });
     const skippedMediaCount = mediaFiles.length - mediaUrls.length;
     if (skippedMediaCount > 0) {
-      toast.warning(`${skippedMediaCount} media item(s) were not uploaded and will be skipped.`);
+      toast.warning(t('create.mediaSkipped', { count: skippedMediaCount }));
     }
 
     const items = strategySchedulePreview.flatMap(day =>
@@ -886,72 +915,72 @@ const StrategyMode = ({
     );
 
     if (items.length === 0) {
-      toast.error('No posts to schedule');
+      toast.error(t('create.noPostsToSchedule'));
       return;
     }
 
     try {
       const result = await createBulkPosts.mutateAsync({ timeZone, items });
       if (result.failed > 0) {
-        toast.warning(`Scheduled ${result.scheduled}/${result.created} posts. ${result.failed} failed.`);
+        toast.warning(t('create.scheduledPartial', { scheduled: result.scheduled, created: result.created, failed: result.failed }));
       } else {
-        toast.success(`Scheduled ${result.scheduled} posts successfully ✓`);
+        toast.success(t('create.scheduledSuccess', { count: result.scheduled }));
       }
       onPreviewInCalendar?.();
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : 'Failed to bulk schedule strategy');
+      toast.error(error instanceof Error ? error.message : t('create.failedBulkSchedule'));
     }
   };
 
   return (
     <>
       {/* Strategy Name */}
-      <Section label="Strategy Name">
+      <Section label={t('create.strategyNameLabel')}>
         <input value={name} onChange={e => setName(e.target.value)}
           className="w-full rounded-2xl bg-card border border-border px-4 py-3 text-[14px] focus:border-primary focus:outline-none"
-          placeholder="e.g., Ramadan Content Plan, Weekend Brunch Push" />
+          placeholder={t('create.strategyNamePlaceholder')} />
       </Section>
 
       {/* Goal */}
-      <Section label="Goal">
+      <Section label={t('create.goalLabel')}>
         <div className="flex flex-wrap gap-2">
-          {goals.map(g => <Chip key={g} label={g} active={goal === g} onClick={() => setGoal(g)} />)}
+          {goals.map(g => <Chip key={g} label={trLabel(t, 'goals', g)} active={goal === g} onClick={() => setGoal(g)} />)}
         </div>
       </Section>
 
       {/* Content Pillars */}
-      <Section label="Content Pillars">
+      <Section label={t('create.contentPillarsLabel')}>
         <div className="flex flex-wrap gap-2">
-          {contentPillars.map(p => <Chip key={p} label={p} active={selectedPillars.includes(p)} onClick={() => togglePillar(p)} />)}
+          {contentPillars.map(p => <Chip key={p} label={trLabel(t, 'pillars', p)} active={selectedPillars.includes(p)} onClick={() => togglePillar(p)} />)}
         </div>
-        <p className="text-[11px] text-muted-foreground mt-1.5">Select 1-4 themes for your content</p>
+        <p className="text-[11px] text-muted-foreground mt-1.5">{t('create.selectPillarsHint')}</p>
       </Section>
 
       {/* Target Audience */}
-      <Section label="Target Audience">
+      <Section label={t('create.targetAudienceLabel')}>
         <input value={targetAudience} onChange={e => setTargetAudience(e.target.value)}
           className="w-full rounded-2xl bg-card border border-border px-4 py-3 text-[14px] focus:border-primary focus:outline-none"
-          placeholder="e.g., Families in Riyadh, young professionals 22-35" />
-        <p className="text-[11px] text-muted-foreground mt-1">Pre-filled from your profile</p>
+          placeholder={t('create.targetAudiencePlaceholder')} />
+        <p className="text-[11px] text-muted-foreground mt-1">{t('create.prefilledFromProfile')}</p>
       </Section>
 
       {/* Success Indicators */}
-      <Section label="How will you measure success?">
+      <Section label={t('create.measureSuccessLabel')}>
         <div className="flex flex-wrap gap-2">
-          {successIndicators.map(ind => <Chip key={ind} label={ind} active={selectedIndicators.includes(ind)} onClick={() => toggleIndicator(ind)} />)}
+          {successIndicators.map(ind => <Chip key={ind} label={trLabel(t, 'indicators', ind)} active={selectedIndicators.includes(ind)} onClick={() => toggleIndicator(ind)} />)}
         </div>
-        <p className="text-[11px] text-muted-foreground mt-1.5">Select 1-3 indicators</p>
+        <p className="text-[11px] text-muted-foreground mt-1.5">{t('create.selectIndicatorsHint')}</p>
       </Section>
 
       {/* Duration */}
-      <Section label="Duration">
+      <Section label={t('create.durationLabel')}>
         <div className="flex flex-wrap gap-2">
-          {durations.map(d => <Chip key={d} label={d} active={duration === d} onClick={() => setDuration(d)} />)}
+          {durations.map(d => <Chip key={d} label={trLabel(t, 'durations', d)} active={duration === d} onClick={() => setDuration(d)} />)}
         </div>
       </Section>
 
       {/* Scheduling */}
-      <Section label="Scheduling">
+      <Section label={t('create.schedulingLabel')}>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           <input
             type="date"
@@ -978,9 +1007,9 @@ const StrategyMode = ({
       </Section>
 
       {/* Platforms (multi-select) */}
-      <Section label="Platforms">
+      <Section label={t('create.platformsLabel')}>
         {availablePlatforms.length === 0 ? (
-          <p className="text-[13px] text-muted-foreground">No connected platforms found. Connect social accounts first.</p>
+          <p className="text-[13px] text-muted-foreground">{t('create.noConnectedPlatformsFound')}</p>
         ) : (
           <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
             {availablePlatforms.map(account => {
@@ -1004,7 +1033,7 @@ const StrategyMode = ({
       </Section>
 
       {/* Templates */}
-      <Section label="Templates">
+      <Section label={t('create.templatesLabel')}>
         <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
           {templates.map((tpl, i) => (
             <button key={i} onClick={() => selectTemplate(i)}
@@ -1012,37 +1041,37 @@ const StrategyMode = ({
                 selectedTemplate === i ? 'border-2 border-brand-blue shadow-md' : 'border border-border-light'
               }`}>
               <span className="text-2xl">{tpl.icon}</span>
-              <h4 className="text-[13px] font-bold text-foreground mt-2">{tpl.title}</h4>
-              <p className="text-[11px] text-muted-foreground mt-1">{tpl.desc}</p>
+              <h4 className="text-[13px] font-bold text-foreground mt-2">{t(`create.templates.${tpl.key}.title`, tpl.title)}</h4>
+              <p className="text-[11px] text-muted-foreground mt-1">{t(`create.templates.${tpl.key}.desc`, tpl.desc)}</p>
             </button>
           ))}
         </div>
       </Section>
 
       {/* Tone */}
-      <Section label="Tone">
+      <Section label={t('create.toneLabel')}>
         <div className="flex flex-wrap gap-2">
-          {tones.map(to => <Chip key={to} label={to} active={tone === to} onClick={() => setTone(to)} />)}
+          {tones.map(to => <Chip key={to} label={trLabel(t, 'tones', to)} active={tone === to} onClick={() => setTone(to)} />)}
         </div>
       </Section>
 
       {/* Language */}
-      <Section label="Language">
+      <Section label={t('create.languageLabel')}>
         <LangSelector selected={langs} setSelected={setLangs} />
-        <p className="text-[11px] text-muted-foreground mt-1.5">Select 1-2 languages for your content</p>
+        <p className="text-[11px] text-muted-foreground mt-1.5">{t('create.selectLanguagesHint')}</p>
       </Section>
 
       {/* Media (optional) */}
-      <Section label="Upload Media (optional)">
+      <Section label={t('create.uploadMediaOptional')}>
         <MediaUpload files={mediaFiles} add={addMedia} remove={removeMedia} onOpenLibrary={() => setShowMediaLibrary(true)} />
         <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileUpload} />
       </Section>
 
       {/* Description */}
-      <Section label="Describe your strategy goal">
+      <Section label={t('create.describeStrategyGoal')}>
         <textarea value={desc} onChange={e => setDesc(e.target.value)}
           className="w-full min-h-[80px] rounded-2xl bg-card border border-border p-4 text-[14px] focus:border-primary focus:outline-none resize-none"
-          placeholder="e.g., Generate buzz around our new Iftar menu..." />
+          placeholder={t('create.strategyDescPlaceholder')} />
       </Section>
 
       {/* Generate Strategy */}
@@ -1051,9 +1080,9 @@ const StrategyMode = ({
         {loading ? (
           <span className="flex items-center justify-center gap-2">
             <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity }}>✦</motion.span>
-            Building your strategy...
+            {t('create.buildingStrategy')}
           </span>
-        ) : '✦ Generate Full Strategy'}
+        ) : t('create.generateFullStrategy')}
       </button>
 
       {/* Generated Strategy */}
@@ -1063,23 +1092,23 @@ const StrategyMode = ({
             {/* Summary */}
             <div className="bg-card rounded-3xl p-5 shadow-card border border-border-light">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-brand-blue">✦ Strategy Ready</span>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-brand-blue">{t('create.strategyReady')}</span>
               </div>
-              <h3 className="text-[16px] font-bold text-foreground">{duration} strategy · {selectedConnectedPlatforms.length} platforms · {totalPosts} posts total</h3>
-              <p className="text-[13px] text-muted-foreground mt-1">Est. reach: 45K · Est. engagement: 2,800</p>
+              <h3 className="text-[16px] font-bold text-foreground">{t('create.strategySummary', { duration: trLabel(t, 'durations', duration), platforms: selectedConnectedPlatforms.length, posts: totalPosts })}</h3>
+              <p className="text-[13px] text-muted-foreground mt-1">{t('create.estReachEngagement')}</p>
               {selectedPillars.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {selectedPillars.map(p => <span key={p} className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-purple-soft text-purple">{p}</span>)}
+                  {selectedPillars.map(p => <span key={p} className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-purple-soft text-purple">{trLabel(t, 'pillars', p)}</span>)}
                 </div>
               )}
               {selectedIndicators.length > 0 && (
-                <p className="text-[12px] text-muted-foreground mt-2">Success Indicators: {selectedIndicators.join(', ')}</p>
+                <p className="text-[12px] text-muted-foreground mt-2">{t('create.successIndicatorsList', { list: selectedIndicators.map(ind => trLabel(t, 'indicators', ind)).join(', ') })}</p>
               )}
             </div>
 
             {/* Calendar */}
             <div>
-              <h3 className="text-[16px] font-bold text-foreground mb-3">Content Calendar</h3>
+              <h3 className="text-[16px] font-bold text-foreground mb-3">{t('create.contentCalendarLabel')}</h3>
               <div className="space-y-2">
                 {strategySchedulePreview.map(day => (
                   <div key={day.key} className="bg-card rounded-2xl border border-border-light overflow-hidden">
@@ -1092,7 +1121,7 @@ const StrategyMode = ({
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[12px] text-muted-foreground">{day.items.length} post{day.items.length > 1 ? 's' : ''}</span>
+                        <span className="text-[12px] text-muted-foreground">{t('create.postCount', { count: day.items.length })}</span>
                         <ChevronDown size={16} className={`text-muted-foreground transition-transform ${expandedDay === day.key ? 'rotate-180' : ''}`} />
                       </div>
                     </button>
@@ -1104,8 +1133,8 @@ const StrategyMode = ({
                             <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-border-light last:border-0">
                               <PlatformIcon id={item.platform} size={20} />
                               <div className="flex-1">
-                                <span className="text-[13px] font-semibold text-foreground">{getPlatformDetails(item.platform).name} — {item.type}</span>
-                                <p className="text-[12px] text-muted-foreground mt-0.5">AI-generated content ready for review</p>
+                                <span className="text-[13px] font-semibold text-foreground">{getPlatformDetails(item.platform).name} — {t('create.postTypeLabel', item.type)}</span>
+                                <p className="text-[12px] text-muted-foreground mt-0.5">{t('create.aiGeneratedReadyForReview')}</p>
                               </div>
                               <ChevronRight size={14} className="text-muted-foreground rtl:rotate-180" />
                             </div>
@@ -1125,19 +1154,19 @@ const StrategyMode = ({
                 disabled={createBulkPosts.isPending || selectedConnectedPlatforms.length === 0 || strategySchedulePreview.length === 0}
                 className="w-full h-[56px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press disabled:opacity-60"
               >
-                {createBulkPosts.isPending ? 'Scheduling...' : 'Approve All & Schedule'}
+                {createBulkPosts.isPending ? t('create.schedulingEllipsis') : t('create.approveAllAndSchedule')}
               </button>
               {/* Preview in Calendar */}
               <button onClick={onPreviewInCalendar}
                 className="w-full h-[48px] rounded-2xl border border-brand-blue text-brand-blue text-[14px] font-bold btn-press flex items-center justify-center gap-2">
-                <CalendarIcon size={16} /> Preview in Calendar
+                <CalendarIcon size={16} /> {t('create.previewInCalendar')}
               </button>
               <button className="w-full h-[48px] rounded-2xl border border-border text-foreground text-[14px] font-medium btn-press">
-                Edit Plan
+                {t('create.editPlan')}
               </button>
               <button onClick={() => { setGenerated(false); setTimeout(() => setGenerated(true), 100); }}
                 className="w-full text-center text-[13px] text-muted-foreground font-medium py-2">
-                Regenerate
+                {t('create.regenerate')}
               </button>
             </div>
           </motion.div>
@@ -1154,13 +1183,13 @@ const StrategyMode = ({
               <MediaLibrary mode="picker" multiSelect onSelect={(items) => {
                 appendLibraryMedia(items.map(item => ({ id: item.id, name: item.name, size: item.size })));
                 setShowMediaLibrary(false);
-                toast.success(`${items.length} media added`);
+                toast.success(t('create.mediaAdded', { count: items.length }));
               }} onClose={() => setShowMediaLibrary(false)} />
             </motion.div>
           </>
         )}
       </AnimatePresence>
-      <UpgradePrompt feature="AI Strategy Planning" benefit="generate unlimited AI content strategies" open={showUpgradeStrategy} onClose={() => setShowUpgradeStrategy(false)} />
+      <UpgradePrompt feature={t('create.upgradeAiStrategyFeature')} benefit={t('create.upgradeAiStrategyBenefit')} open={showUpgradeStrategy} onClose={() => setShowUpgradeStrategy(false)} />
     </>
   );
 };

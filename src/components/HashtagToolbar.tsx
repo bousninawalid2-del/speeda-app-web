@@ -30,7 +30,7 @@ export const HashtagToolbar = ({ hashtags, onUpdate }: HashtagToolbarProps) => {
       if (found.length === 0) {
         toast.success(t('hashtags.noBanned', '✓ No banned hashtags found'));
       } else {
-        toast.error(`${found.length} ${t('hashtags.bannedFound', 'banned hashtag(s) found')}`);
+        toast.error(t('hashtags.bannedFound', { count: found.length }));
       }
     }, 800);
   };

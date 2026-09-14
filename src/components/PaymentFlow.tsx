@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, Check, ArrowRight, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 type PaymentStep = 'redirect' | 'success';
 
@@ -20,7 +21,9 @@ interface PaymentRedirectProps {
   onCancel: () => void;
 }
 
-export const PaymentRedirectScreen = ({ title, subtitle, summaryLabel, summaryValue, summaryDetails, onConfirm, onCancel }: PaymentRedirectProps) => (
+export const PaymentRedirectScreen = ({ title, subtitle, summaryLabel, summaryValue, summaryDetails, onConfirm, onCancel }: PaymentRedirectProps) => {
+  const { t } = useTranslation();
+  return (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
@@ -57,17 +60,18 @@ export const PaymentRedirectScreen = ({ title, subtitle, summaryLabel, summaryVa
       onClick={onConfirm}
       className="w-full max-w-[340px] h-[52px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press flex items-center justify-center gap-2 mb-3"
     >
-      Continue to Payment <ArrowRight size={16} className="rtl:rotate-180" />
+      {t('paymentFlow.continueToPayment')} <ArrowRight size={16} className="rtl:rotate-180" />
     </button>
-    <button onClick={onCancel} className="text-muted-foreground text-[13px] font-medium mb-6">Cancel</button>
+    <button onClick={onCancel} className="text-muted-foreground text-[13px] font-medium mb-6">{t('common.cancel')}</button>
 
     <div className="flex items-center gap-1.5">
       <Lock size={12} className="text-muted-foreground/50" />
-      <span className="text-[11px] text-muted-foreground/50">Secured by</span>
+      <span className="text-[11px] text-muted-foreground/50">{t('paymentFlow.securedByPrefix')}</span>
       <MamoPayLogo />
     </div>
   </motion.div>
-);
+  );
+};
 
 // ── Success Celebration Screen ──
 interface PaymentSuccessProps {

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { BusinessSetupScreen, SetupInitialData } from '@/screens/BusinessSetupScreen';
 import { setupApi, SetupPayload } from '@/lib/api-client';
 import { socialService } from '@/services/social.service';
@@ -8,6 +9,7 @@ import { toast } from 'sonner';
 
 export default function Page() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [initialData, setInitialData] = useState<SetupInitialData | undefined>();
   const [loading, setLoading] = useState(true);
 
@@ -20,7 +22,7 @@ export default function Page() {
 
   const handleSubmit = async (data: SetupPayload) => {
     await setupApi.save(data);
-    toast.success('Setup saved!');
+    toast.success(t('setup.savedToast'));
     // Mark setup as done via cookie so middleware allows dashboard access
     document.cookie = 'speeda_setup_done=1; path=/; max-age=31536000; SameSite=Lax';
   };

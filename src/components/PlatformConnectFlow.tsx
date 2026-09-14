@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X, Lock, MoreVertical } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 type FlowStep = 'connecting' | 'success' | 'error';
 
@@ -12,6 +13,7 @@ interface PlatformConnectFlowProps {
 }
 
 export const PlatformConnectFlow = ({ platformName, platformLogo, onComplete, onCancel }: PlatformConnectFlowProps) => {
+  const { t } = useTranslation();
   const [step, setStep] = useState<FlowStep>('connecting');
 
   useEffect(() => {
@@ -44,14 +46,14 @@ export const PlatformConnectFlow = ({ platformName, platformLogo, onComplete, on
               />
             </div>
             
-            <p className="text-[14px] text-muted-foreground mb-2">Connecting your {platformName} account…</p>
+            <p className="text-[14px] text-muted-foreground mb-2">{t('platformConnect.connectingDesc', { platform: platformName })}</p>
             <p className="text-[13px] text-muted-foreground/70 max-w-[300px]">
-              You'll be redirected to securely authorize access. This takes about 30 seconds.
+              {t('platformConnect.authorizeNote')}
             </p>
-            
+
             <div className="flex items-center gap-1.5 mt-8">
               <Lock size={12} className="text-muted-foreground/50" />
-              <span className="text-[11px] text-muted-foreground/50">Secured by Ayrshare</span>
+              <span className="text-[11px] text-muted-foreground/50">{t('platformConnect.securedByAyrshare')}</span>
             </div>
           </motion.div>
         )}
@@ -95,23 +97,23 @@ export const PlatformConnectFlow = ({ platformName, platformLogo, onComplete, on
               </div>
             </div>
             
-            <h2 className="text-[20px] font-bold text-green-accent mb-2">{platformName} Connected!</h2>
-            <p className="text-[14px] text-muted-foreground mb-4">Your account @maleks_kitchen is now linked</p>
-            
+            <h2 className="text-[20px] font-bold text-green-accent mb-2">{t('platformConnect.connectedTitle', { platform: platformName })}</h2>
+            <p className="text-[14px] text-muted-foreground mb-4">{t('platformConnect.accountLinked', { handle: '@maleks_kitchen' })}</p>
+
             {/* Account info card */}
             <div className="bg-card rounded-2xl border border-border-light p-4 w-full max-w-[300px] mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 flex items-center justify-center">{platformLogo}</div>
                 <div className="text-start">
                   <p className="text-[14px] font-bold text-foreground">@maleks_kitchen</p>
-                  <p className="text-[12px] text-muted-foreground">12.4K followers</p>
-                  <p className="text-[11px] text-muted-foreground">Last post: 2 days ago</p>
+                  <p className="text-[12px] text-muted-foreground">{t('platformConnect.accountFollowers', { count: '12.4K' })}</p>
+                  <p className="text-[11px] text-muted-foreground">{t('platformConnect.lastPost', { time: t('platformConnect.daysAgo', { count: 2 }) })}</p>
                 </div>
               </div>
             </div>
-            
+
             <button onClick={onComplete} className="w-full max-w-[300px] h-[52px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press">
-              Continue
+              {t('platformConnect.continueBtn')}
             </button>
           </motion.div>
         )}
@@ -127,15 +129,15 @@ export const PlatformConnectFlow = ({ platformName, platformLogo, onComplete, on
               <X size={32} className="text-primary-foreground" strokeWidth={3} />
             </motion.div>
             
-            <h2 className="text-[20px] font-bold text-destructive mb-2">Connection Failed</h2>
+            <h2 className="text-[20px] font-bold text-destructive mb-2">{t('platformConnect.connectionFailedTitle')}</h2>
             <p className="text-[14px] text-muted-foreground max-w-[300px] mb-6">
-              We couldn't connect your {platformName}. This usually happens if the authorization was cancelled.
+              {t('platformConnect.connectionFailedDesc', { platform: platformName })}
             </p>
-            
+
             <button onClick={() => setStep('connecting')} className="w-full max-w-[300px] h-[52px] rounded-2xl gradient-btn text-primary-foreground font-bold text-[15px] shadow-btn btn-press mb-3">
-              Try Again
+              {t('platformConnect.tryAgainBtn')}
             </button>
-            <button onClick={onCancel} className="text-muted-foreground text-[13px] font-medium">Skip for Now</button>
+            <button onClick={onCancel} className="text-muted-foreground text-[13px] font-medium">{t('platformConnect.skipForNow')}</button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -150,7 +152,9 @@ interface DisconnectDialogProps {
   onCancel: () => void;
 }
 
-export const DisconnectDialog = ({ platformName, onConfirm, onCancel }: DisconnectDialogProps) => (
+export const DisconnectDialog = ({ platformName, onConfirm, onCancel }: DisconnectDialogProps) => {
+  const { t } = useTranslation();
+  return (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
@@ -168,19 +172,20 @@ export const DisconnectDialog = ({ platformName, onConfirm, onCancel }: Disconne
       <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
         <X size={24} className="text-destructive" />
       </div>
-      <h3 className="text-[18px] font-bold text-foreground mb-2">Disconnect {platformName}?</h3>
+      <h3 className="text-[18px] font-bold text-foreground mb-2">{t('platformConnect.disconnectTitle', { platform: platformName })}</h3>
       <p className="text-[13px] text-muted-foreground mb-6">
-        Are you sure you want to disconnect {platformName}? You won't be able to post or track analytics for this platform.
+        {t('platformConnect.disconnectDesc', { platform: platformName })}
       </p>
       <button onClick={onConfirm} className="w-full h-[48px] rounded-2xl bg-destructive text-primary-foreground font-bold text-[14px] mb-2">
-        Disconnect
+        {t('platformConnect.disconnectBtn')}
       </button>
       <button onClick={onCancel} className="w-full h-[48px] rounded-2xl text-foreground font-medium text-[14px]">
-        Cancel
+        {t('common.cancel')}
       </button>
     </motion.div>
   </motion.div>
-);
+  );
+};
 
 // Platform manage menu (3 dots)
 interface PlatformManageMenuProps {
@@ -189,7 +194,9 @@ interface PlatformManageMenuProps {
   onClose: () => void;
 }
 
-export const PlatformManageMenu = ({ platformName, onDisconnect, onClose }: PlatformManageMenuProps) => (
+export const PlatformManageMenu = ({ platformName, onDisconnect, onClose }: PlatformManageMenuProps) => {
+  const { t } = useTranslation();
+  return (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
@@ -207,11 +214,12 @@ export const PlatformManageMenu = ({ platformName, onDisconnect, onClose }: Plat
       <div className="w-10 h-1 rounded-full bg-border mx-auto mb-4" />
       <h3 className="text-[16px] font-bold text-foreground mb-3">{platformName}</h3>
       <button className="w-full text-start px-4 py-3.5 rounded-xl text-[14px] text-foreground hover:bg-muted transition-colors">
-        View Account
+        {t('platformConnect.viewAccount')}
       </button>
       <button onClick={onDisconnect} className="w-full text-start px-4 py-3.5 rounded-xl text-[14px] text-destructive hover:bg-destructive/5 transition-colors">
-        Disconnect
+        {t('platformConnect.disconnectBtn')}
       </button>
     </motion.div>
   </motion.div>
-);
+  );
+};

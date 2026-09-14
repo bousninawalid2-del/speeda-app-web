@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { EmailVerificationScreen } from '@/screens/EmailVerificationScreen';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -9,6 +10,7 @@ import { toast } from 'sonner';
 function VerifyContent() {
   const router = useRouter();
   const params = useSearchParams();
+  const { t } = useTranslation();
   const { verifyEmail, resendVerification } = useAuth();
 
   const userId = params.get('userId') ?? '';
@@ -26,9 +28,9 @@ function VerifyContent() {
   const handleResend = async () => {
     try {
       await resendVerification(userId);
-      toast.success('Verification code resent!');
+      toast.success(t('emailVerification.codeResentToast'));
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Could not resend code');
+      toast.error(err instanceof Error ? err.message : t('emailVerification.couldNotResendCode'));
     }
   };
 

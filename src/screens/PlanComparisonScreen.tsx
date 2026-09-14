@@ -115,7 +115,7 @@ export const PlanComparisonScreen = ({ onBack }: PlanComparisonScreenProps) => {
                   {plan.badge && <span className="text-[10px] font-bold text-primary-foreground gradient-btn px-2 py-0.5 rounded-md">{plan.badge}</span>}
                   {plan.popular && <span className="text-[10px] font-bold text-brand-blue bg-purple-soft px-2 py-0.5 rounded-md">{t('planComparison.mostPopular')}</span>}
                 </div>
-                <p className="text-[24px] font-extrabold text-foreground mt-2">{getPrice(plan)} ﷼<span className="text-[14px] font-medium text-muted-foreground">/{annual ? 'mo' : 'mo'}</span></p>
+                <p className="text-[24px] font-extrabold text-foreground mt-2">{getPrice(plan)} ﷼<span className="text-[14px] font-medium text-muted-foreground">/{t('subscription.perMonth')}</span></p>
                 {annual && <p className="text-[11px] text-green-accent font-medium">{t('planComparison.billedYearly', { amount: formatPrice(Math.round(plan.monthlyPrice * 12 * 0.2)) })}</p>}
                 {plan.watermark && <p className="text-[10px] text-muted-foreground mt-1">{t('planComparison.watermarkNote')}</p>}
                 <div className="mt-3 space-y-2">

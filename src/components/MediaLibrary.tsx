@@ -74,8 +74,8 @@ export const MediaLibrary = ({ mode = 'tab', onSelect, multiSelect = false, onCl
     const uploadedCount = results.filter(result => result.status === 'fulfilled').length;
     const failedCount = results.length - uploadedCount;
 
-    if (uploadedCount > 0) toast.success(t('media.uploadedCount', `${uploadedCount} file(s) uploaded ✓`));
-    if (failedCount > 0) toast.error(t('media.uploadFailedCount', `Failed to upload ${failedCount} file(s)`));
+    if (uploadedCount > 0) toast.success(t('media.uploadedCount', { count: uploadedCount }));
+    if (failedCount > 0) toast.error(t('media.uploadFailedCount', { count: failedCount }));
     if (activeFilter === 'Logos' || activeFilter === 'Brand Kit') {
       toast.info(t('media.logosBrandKitUploadInfo', 'Uploaded files are available in All/Photos/Videos.'));
     }
@@ -125,8 +125,8 @@ export const MediaLibrary = ({ mode = 'tab', onSelect, multiSelect = false, onCl
             className="fixed inset-0 z-50 bg-brand-blue/10 border-4 border-dashed border-brand-blue rounded-3xl flex items-center justify-center pointer-events-none">
             <div className="bg-card rounded-2xl p-8 shadow-xl text-center">
               <Upload size={40} className="mx-auto text-brand-blue mb-3" />
-              <p className="text-[16px] font-bold text-foreground">Drop files to upload</p>
-              <p className="text-[13px] text-muted-foreground mt-1">JPG, PNG, WebP, GIF, MP4, MOV</p>
+              <p className="text-[16px] font-bold text-foreground">{t('media.dropToUpload', 'Drop files to upload')}</p>
+              <p className="text-[13px] text-muted-foreground mt-1">{t('media.acceptedFormats', 'JPG, PNG, WebP, GIF, MP4, MOV')}</p>
             </div>
           </motion.div>
         )}
@@ -195,7 +195,7 @@ export const MediaLibrary = ({ mode = 'tab', onSelect, multiSelect = false, onCl
           mode={mode}
           selectedItems={selectedItems}
           onItemClick={(item) => mode === 'picker' ? toggleSelect(item.id) : setSelectedDetail(item)}
-          onUseInPost={(item) => { onSelect?.([item]); toast.success('Added to post'); }}
+          onUseInPost={(item) => { onSelect?.([item]); toast.success(t('media.addedToPost', 'Added to post')); }}
         />
       )}
 

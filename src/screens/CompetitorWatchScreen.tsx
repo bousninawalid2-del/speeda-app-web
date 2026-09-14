@@ -335,10 +335,10 @@ export const CompetitorWatchScreen = ({ onBack, onNavigate }: CompetitorWatchScr
                   <p className="text-[12px] font-bold text-brand-blue uppercase tracking-wide mb-3">{t('competitor.aiCompetitiveInsights')}</p>
                   <div className="space-y-3">
                     {[
-                      { text: `${selectedCompetitor.name} has ${selectedCompetitor.followers} followers but your engagement is 34% higher — focus on engagement-driven content`, action: 'Focus on Engagement →' },
-                      { text: `They post ${selectedCompetitor.postsPerWeek}x/week vs your ${userData.postsPerWeek}x — increase your Reel output to match`, action: 'Create More Reels →' },
-                      { text: `Their reviews dropped to ${selectedCompetitor.reviewRating} — highlight your ${userData.reviewRating}★ rating in posts`, action: 'Highlight Reviews →' },
-                      { text: `${selectedCompetitor.name} is trending on TikTok — create a counter challenge before the trend peaks`, action: 'Generate Challenge →' },
+                      { text: t('competitor.insight1', { name: selectedCompetitor.name, followers: selectedCompetitor.followers }), action: t('competitor.insight1Cta') },
+                      { text: t('competitor.insight2', { them: selectedCompetitor.postsPerWeek, you: userData.postsPerWeek }), action: t('competitor.insight2Cta') },
+                      { text: t('competitor.insight3', { them: selectedCompetitor.reviewRating, you: userData.reviewRating }), action: t('competitor.insight3Cta') },
+                      { text: t('competitor.insight4', { name: selectedCompetitor.name }), action: t('competitor.insight4Cta') },
                     ].map((insight, i) => (
                       <div key={i} className="flex items-start gap-2">
                         <span className="text-brand-blue text-[12px] shrink-0 mt-0.5">✦</span>
@@ -443,7 +443,7 @@ export const CompetitorWatchScreen = ({ onBack, onNavigate }: CompetitorWatchScr
 
                 <div className="bg-purple-soft rounded-2xl p-3 border border-border-light">
                   <p className="text-[12px] text-foreground">
-                    <span className="text-brand-blue font-bold">✦</span> {selectedCompetitor.name} uses <span className="font-bold">{selectedCompetitor.topHashtags[1]}</span> — consider adding it to your posts for better local reach.
+                    <span className="text-brand-blue font-bold">✦</span> {t('competitor.hashtagTip', { name: selectedCompetitor.name, hashtag: selectedCompetitor.topHashtags[1] })}
                   </p>
                 </div>
               </motion.div>
@@ -453,11 +453,11 @@ export const CompetitorWatchScreen = ({ onBack, onNavigate }: CompetitorWatchScr
             {activeTab === 'timeline' && (
               <motion.div key="timeline" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
                 <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
-                  {['all', 'content', 'promo', 'engagement', 'partnership'].map(f => (
+                  {(['all', 'content', 'promo', 'engagement', 'partnership'] as const).map(f => (
                     <button key={f} onClick={() => setTimelineFilter(f)}
                       className={`px-3 h-8 rounded-xl text-[11px] font-bold capitalize whitespace-nowrap transition-all ${
                         timelineFilter === f ? 'gradient-hero text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
-                      }`}>{f}</button>
+                      }`}>{t(`competitor.filters.${f}`)}</button>
                   ))}
                 </div>
                 <div className="relative">

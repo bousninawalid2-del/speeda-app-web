@@ -92,20 +92,20 @@ export default function StrategyPage() {
           className="w-10 h-10 rounded-xl border border-border flex items-center justify-center hover:bg-muted transition-colors">
           <ArrowLeft size={16} className="text-muted-foreground rtl:rotate-180" />
         </button>
-        <h2 className="text-[15px] font-bold text-foreground">AI Strategy</h2>
+        <h2 className="text-[15px] font-bold text-foreground">{t('strategyPage.headerTitle')}</h2>
       </div>
 
       <div className="px-5 py-4 space-y-5">
-        {loading && <p className="text-muted-foreground text-center py-8">Loading...</p>}
+        {loading && <p className="text-muted-foreground text-center py-8">{t('common.loading')}</p>}
 
         {!loading && !activeStrategy && (
           <div className="text-center py-12 space-y-3">
             <Target size={48} className="mx-auto text-muted-foreground" />
-            <p className="text-muted-foreground">No active strategy yet.</p>
-            <p className="text-[13px] text-muted-foreground">Start a conversation in the chat to create your 8-week social media strategy.</p>
+            <p className="text-muted-foreground">{t('strategyPage.noActiveStrategy')}</p>
+            <p className="text-[13px] text-muted-foreground">{t('strategyPage.startChatHint')}</p>
             <button onClick={() => router.push('/dashboard/chat')}
               className="mt-4 px-6 py-2.5 rounded-xl gradient-hero text-primary-foreground text-[14px] font-medium">
-              Start in Chat
+              {t('strategyPage.startInChat')}
             </button>
           </div>
         )}
@@ -115,9 +115,9 @@ export default function StrategyPage() {
             {/* Strategy overview card */}
             <div className="bg-card rounded-2xl border border-border-light p-5 space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-[16px] font-bold text-foreground">{activeStrategy.name ?? 'My Strategy'}</h3>
+                <h3 className="text-[16px] font-bold text-foreground">{activeStrategy.name ?? t('strategyPage.myStrategyFallback')}</h3>
                 <span className={`text-[11px] px-2.5 py-1 rounded-full font-medium ${statusColors[activeStrategy.status]}`}>
-                  {activeStrategy.status}
+                  {t(`strategyPage.status.${activeStrategy.status}`, activeStrategy.status)}
                 </span>
               </div>
               {activeStrategy.goal && (
@@ -125,13 +125,13 @@ export default function StrategyPage() {
               )}
               <div className="flex gap-4 text-[12px]">
                 <span className="flex items-center gap-1 text-muted-foreground">
-                  <Calendar size={12} /> {activeStrategy.weekCount} weeks
+                  <Calendar size={12} /> {t('strategyPage.weeksCount', { count: activeStrategy.weekCount })}
                 </span>
                 <span className="flex items-center gap-1 text-muted-foreground">
-                  <FileText size={12} /> {totalPosts} posts
+                  <FileText size={12} /> {t('strategyPage.postsCount', { count: totalPosts })}
                 </span>
                 <span className="flex items-center gap-1 text-green-accent">
-                  <CheckCircle2 size={12} /> {publishedPosts} published
+                  <CheckCircle2 size={12} /> {t('strategyPage.publishedCount', { count: publishedPosts })}
                 </span>
               </div>
               {activeStrategy.platforms && (
@@ -157,7 +157,7 @@ export default function StrategyPage() {
                       <span className="text-primary-foreground text-[13px] font-bold">{week.weekNumber}</span>
                     </div>
                     <div className="text-start">
-                      <p className="text-[14px] font-semibold text-foreground">Week {week.weekNumber}</p>
+                      <p className="text-[14px] font-semibold text-foreground">{t('strategyPage.weekLabel', { number: week.weekNumber })}</p>
                       {week.weeklyGoal && (
                         <p className="text-[12px] text-muted-foreground truncate max-w-[200px]">{week.weeklyGoal}</p>
                       )}
@@ -165,7 +165,7 @@ export default function StrategyPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${statusColors[week.status]}`}>
-                      {week.draftPosts.length} posts
+                      {t('strategyPage.postsCount', { count: week.draftPosts.length })}
                     </span>
                   </div>
                 </button>
@@ -173,7 +173,7 @@ export default function StrategyPage() {
                 {expandedWeek === week.id && (
                   <div className="border-t border-border-light px-5 py-3 space-y-3">
                     {week.draftPosts.length === 0 && (
-                      <p className="text-[13px] text-muted-foreground py-2">No posts yet for this week.</p>
+                      <p className="text-[13px] text-muted-foreground py-2">{t('strategyPage.noPostsThisWeek')}</p>
                     )}
                     {week.draftPosts.map(post => (
                       <div key={post.id} className="flex gap-3 py-2 border-b border-border-light last:border-0">
@@ -190,7 +190,7 @@ export default function StrategyPage() {
                               <span className="text-[11px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{post.platform}</span>
                             )}
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${statusColors[post.status]}`}>
-                              {post.status}
+                              {t(`strategyPage.status.${post.status}`, post.status)}
                             </span>
                           </div>
                           {post.caption && (
@@ -200,7 +200,7 @@ export default function StrategyPage() {
                             <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
                               <Clock size={10} />
                               {new Date(post.postDate).toLocaleDateString()}
-                              {post.postTime && ` at ${post.postTime}`}
+                              {post.postTime && t('strategyPage.atTime', { time: post.postTime })}
                             </p>
                           )}
                         </div>
@@ -216,17 +216,17 @@ export default function StrategyPage() {
         {/* Past strategies */}
         {pastStrategies.length > 0 && (
           <div className="space-y-3">
-            <h3 className="text-[14px] font-semibold text-muted-foreground">Past Strategies</h3>
+            <h3 className="text-[14px] font-semibold text-muted-foreground">{t('strategyPage.pastStrategiesTitle')}</h3>
             {pastStrategies.map(s => (
               <div key={s.id} className="bg-card rounded-xl border border-border-light p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-[14px] font-medium text-foreground">{s.name ?? 'Strategy'}</p>
+                  <p className="text-[14px] font-medium text-foreground">{s.name ?? t('strategyPage.strategyFallback')}</p>
                   <p className="text-[12px] text-muted-foreground">
-                    {new Date(s.createdAt).toLocaleDateString()} — {s.weekCount} weeks
+                    {new Date(s.createdAt).toLocaleDateString()} — {t('strategyPage.weeksCount', { count: s.weekCount })}
                   </p>
                 </div>
                 <span className={`text-[11px] px-2.5 py-1 rounded-full font-medium ${statusColors[s.status]}`}>
-                  {s.status}
+                  {t(`strategyPage.status.${s.status}`, s.status)}
                 </span>
               </div>
             ))}

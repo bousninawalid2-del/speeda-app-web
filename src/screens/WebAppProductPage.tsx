@@ -218,7 +218,7 @@ const WebAppProductPage = () => {
             >
               <MacBookFrame
                 src={webHome}
-                alt="Speeda AI Dashboard"
+                alt={t('webProduct.altDashboard')}
                 className="w-full max-w-[900px]"
                 style={{
                   transform: 'perspective(1200px) rotateX(2deg) rotateY(-2deg)',
@@ -237,7 +237,7 @@ const WebAppProductPage = () => {
       {/* ═══ FEATURE BLOCKS ═══ */}
       <FeatureBlock
         src={webAiChat}
-        alt="AI Chat Interface"
+        alt={t('webProduct.altAiChat')}
         category={t('webProduct.feat.aiCategory')}
         title={t('webProduct.feat.aiTitle')}
         description={t('webProduct.feat.aiDesc')}
@@ -253,7 +253,7 @@ const WebAppProductPage = () => {
 
       <FeatureBlock
         src={webContentStudio}
-        alt="Content Studio"
+        alt={t('webProduct.altContentStudio')}
         category={t('webProduct.feat.contentCategory')}
         title={t('webProduct.feat.contentTitle')}
         description={t('webProduct.feat.contentDesc')}
@@ -269,7 +269,7 @@ const WebAppProductPage = () => {
 
       <FeatureBlock
         src={webCalendar}
-        alt="Calendar View"
+        alt={t('webProduct.altCalendar')}
         category={t('webProduct.feat.planningCategory')}
         title={t('webProduct.feat.planningTitle')}
         description={t('webProduct.feat.planningDesc')}
@@ -285,7 +285,7 @@ const WebAppProductPage = () => {
 
       <FeatureBlock
         src={webAnalytics}
-        alt="Analytics Dashboard"
+        alt={t('webProduct.altAnalytics')}
         category={t('webProduct.feat.analyticsCategory')}
         title={t('webProduct.feat.analyticsTitle')}
         description={t('webProduct.feat.analyticsDesc')}
@@ -301,7 +301,7 @@ const WebAppProductPage = () => {
 
       <FeatureBlock
         src={webAds}
-        alt="Ads Manager"
+        alt={t('webProduct.altAds')}
         category={t('webProduct.feat.adsCategory')}
         title={t('webProduct.feat.adsTitle')}
         description={t('webProduct.feat.adsDesc')}

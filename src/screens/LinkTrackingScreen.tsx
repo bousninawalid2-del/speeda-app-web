@@ -117,7 +117,7 @@ export const LinkTrackingScreen = ({ onBack, onNavigate }: LinkTrackingScreenPro
           </div>
           <div className="flex gap-1.5 overflow-x-auto">
             {platformFilters.map(pf => (
-              <button key={pf} onClick={() => setPlatformFilter(pf)} className={`px-3 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap ${platformFilter === pf ? 'bg-brand-blue text-primary-foreground' : 'bg-card border border-border-light text-muted-foreground'}`}>{pf}</button>
+              <button key={pf} onClick={() => setPlatformFilter(pf)} className={`px-3 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap ${platformFilter === pf ? 'bg-brand-blue text-primary-foreground' : 'bg-card border border-border-light text-muted-foreground'}`}>{pf === 'All' ? t('linkTracking.allPlatforms') : pf}</button>
             ))}
           </div>
         </div>

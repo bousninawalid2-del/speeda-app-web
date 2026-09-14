@@ -17,10 +17,10 @@ export const BrandKitSection = () => {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Palette size={16} className="text-brand-blue" />
-            <span className="text-[14px] font-bold text-foreground">{t('brandKit.colors', 'Brand Colors')}</span>
+            <span className="text-[14px] font-bold text-foreground">{t('brandKit.colors')}</span>
           </div>
           <button onClick={() => setEditingColors(!editingColors)} className="text-[12px] text-brand-blue font-semibold">
-            {editingColors ? t('common.done', 'Done') : t('common.edit', 'Edit')}
+            {editingColors ? t('common.done') : t('common.edit')}
           </button>
         </div>
         <div className="flex gap-3">
@@ -42,7 +42,7 @@ export const BrandKitSection = () => {
       <div className="bg-card rounded-2xl p-4 border border-border-light">
         <div className="flex items-center gap-2 mb-3">
           <Type size={16} className="text-brand-blue" />
-          <span className="text-[14px] font-bold text-foreground">{t('brandKit.fonts', 'Brand Fonts')}</span>
+          <span className="text-[14px] font-bold text-foreground">{t('brandKit.fonts')}</span>
         </div>
         <div className="space-y-2">
           {brandFonts.map((font, i) => (
@@ -58,13 +58,13 @@ export const BrandKitSection = () => {
       <div className="bg-card rounded-2xl p-4 border border-border-light">
         <div className="flex items-center gap-2 mb-3">
           <Image size={16} className="text-brand-blue" />
-          <span className="text-[14px] font-bold text-foreground">{t('brandKit.logos', 'Logos')}</span>
+          <span className="text-[14px] font-bold text-foreground">{t('brandKit.logos')}</span>
         </div>
         <div className="flex gap-3">
           <div className="w-16 h-16 rounded-xl gradient-hero flex items-center justify-center text-2xl border border-border-light">🎨</div>
           <div className="w-16 h-16 rounded-xl bg-foreground flex items-center justify-center text-2xl border border-border-light">🎨</div>
           <button className="w-16 h-16 rounded-xl border-2 border-dashed border-brand-blue/30 flex items-center justify-center text-brand-blue text-[14px] font-bold">
-            + Add
+            {t('brandKit.addLogo')}
           </button>
         </div>
       </div>

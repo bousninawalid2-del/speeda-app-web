@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { ResetPasswordScreen } from '@/screens/ResetPasswordScreen';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -9,6 +10,7 @@ import { toast } from 'sonner';
 function ResetContent() {
   const router = useRouter();
   const params = useSearchParams();
+  const { t } = useTranslation();
   const { forgotPassword, resetPassword } = useAuth();
 
   const token = params.get('token'); // present when coming from reset email link
@@ -16,14 +18,14 @@ function ResetContent() {
   const handleForgot = async (email: string) => {
     try {
       await forgotPassword(email);
-      toast.success('Reset link sent! Check your email.');
+      toast.success(t('resetPassword.resetLinkSentToast'));
     } catch (err: unknown) {
       throw err;
     }
   };
 
   const handleReset = async (newPassword: string) => {
-    if (!token) throw new Error('Missing reset token');
+    if (!token) throw new Error(t('resetPassword.missingResetToken'));
     await resetPassword(token, newPassword);
   };
 

@@ -21,7 +21,7 @@ export const ContactSupportScreen = ({ onBack }: ContactSupportScreenProps) => {
 
   const handleSend = async () => {
     if (!name.trim() || !email.trim() || !subject.trim() || !message.trim()) {
-      toast.error('Please fill in all fields');
+      toast.error(t('contactSupport.fillAllFields'));
       return;
     }
     setSending(true);
@@ -32,7 +32,7 @@ export const ContactSupportScreen = ({ onBack }: ContactSupportScreenProps) => {
       toast.success(t('contactSupport.messageSent', 'Message sent successfully'));
       setSent(true);
     } catch {
-      toast.error('Failed to send message');
+      toast.error(t('contactSupport.sendFailed'));
     } finally {
       setSending(false);
     }
@@ -70,14 +70,14 @@ export const ContactSupportScreen = ({ onBack }: ContactSupportScreenProps) => {
             </div>
             <div>
               <label className="text-[12px] font-semibold text-muted-foreground mb-1 block">{t('contactSupport.subject')}</label>
-              <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="What do you need help with?" className="w-full h-12 rounded-xl bg-card border border-border px-4 text-[14px] text-foreground focus:border-brand-blue outline-none transition-colors" />
+              <input value={subject} onChange={e => setSubject(e.target.value)} placeholder={t('contactSupport.subjectPlaceholder')} className="w-full h-12 rounded-xl bg-card border border-border px-4 text-[14px] text-foreground focus:border-brand-blue outline-none transition-colors" />
             </div>
             <div>
               <label className="text-[12px] font-semibold text-muted-foreground mb-1 block">{t('contactSupport.message')}</label>
               <textarea value={message} onChange={e => setMessage(e.target.value)} rows={4} className="w-full rounded-xl bg-card border border-border px-4 py-3 text-[14px] text-foreground focus:border-brand-blue outline-none transition-colors resize-none" />
             </div>
             <button onClick={handleSend} disabled={sending} className="w-full h-14 rounded-2xl gradient-btn text-primary-foreground text-[15px] font-bold shadow-btn btn-press mt-2 disabled:opacity-60">
-              {sending ? 'Sending...' : t('contactSupport.sendMessage')}
+              {sending ? t('contactSupport.sending') : t('contactSupport.sendMessage')}
             </button>
           </div>
         )}

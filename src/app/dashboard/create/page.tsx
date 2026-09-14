@@ -1,11 +1,13 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { CreateScreen } from '@/screens/CreateScreen';
 import { useCreatePost, useDeletePost, usePosts, type CreatePostInput } from '@/hooks/usePosts';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { getAccessToken } from '@/lib/api-client';
 
 export default function Page() {
+  const { t } = useTranslation();
   const { data: postsData, isLoading: postsLoading } = usePosts();
   const { data: socialAccounts } = useSocialAccounts();
   const createPost = useCreatePost();
@@ -29,8 +31,8 @@ export default function Page() {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: `Failed to upload media (HTTP ${response.status})` }));
-      throw new Error(error.error ?? 'Upload failed');
+      const error = await response.json().catch(() => ({ error: `${t('create.failedToUploadMedia')} (HTTP ${response.status})` }));
+      throw new Error(error.error ?? t('create.failedToUploadMedia'));
     }
 
     return response.json() as Promise<{ id: string; url: string }>;

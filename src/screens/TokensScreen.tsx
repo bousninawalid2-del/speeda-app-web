@@ -99,7 +99,7 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, tokenPackages, i
     try {
       await onPurchase(pack.id);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Purchase failed. Please try again.');
+      toast.error(err instanceof Error ? err.message : t('tokens.purchaseFailed'));
     } finally {
       setPurchasingPackIdx(null);
     }
@@ -182,7 +182,7 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, tokenPackages, i
                     {purchasingPackIdx === i ? (
                       <span className="flex items-center gap-2">
                         <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        Processing…
+                        {t('tokens.processingLabel')}
                       </span>
                     ) : t('tokens.buy')}
                   </button>
@@ -262,7 +262,7 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, tokenPackages, i
             })}
             {packs.length === 0 && (
               <div className="bg-card rounded-2xl border border-border-light p-4 text-[13px] text-muted-foreground">
-                Token packs are currently unavailable. Please try again shortly.
+                {t('tokens.packsUnavailable')}
               </div>
             )}
           </div>
@@ -273,14 +273,14 @@ export const TokensScreen = ({ onBack, scrollToPacks, liveData, tokenPackages, i
       <AnimatePresence>
         {buyingPack !== null && (
           <PaymentFlow
-             redirectTitle={`Purchasing ${packs[buyingPack].tokenCount.toLocaleString()} tokens…`}
-             redirectSubtitle="You'll be redirected to our secure payment page"
-             summaryLabel={`${packs[buyingPack].tokenCount.toLocaleString()} Tokens`}
+             redirectTitle={t('tokens.purchasingTitle', { count: packs[buyingPack].tokenCount.toLocaleString() })}
+             redirectSubtitle={t('planComparison.redirectSubtitle')}
+             summaryLabel={t('tokens.packsLabel', { count: packs[buyingPack].tokenCount.toLocaleString() })}
              summaryValue={formatPrice(packs[buyingPack].price, i18n.language)}
-             successTitle="Tokens Added! ✦"
-             successSubtitle={`${packs[buyingPack].tokenCount.toLocaleString()} tokens have been added to your account`}
-             successDetail={`New balance: ${balance + packs[buyingPack].tokenCount} tokens`}
-            successButton="Continue"
+             successTitle={t('tokens.addedTitle')}
+             successSubtitle={t('tokens.addedSubtitle', { count: packs[buyingPack].tokenCount.toLocaleString() })}
+             successDetail={t('tokens.newBalance', { balance: balance + packs[buyingPack].tokenCount })}
+            successButton={t('tokens.continueBtn')}
             variant="tokens"
             onComplete={() => setBuyingPack(null)}
             onCancel={() => setBuyingPack(null)}

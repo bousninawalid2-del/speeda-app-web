@@ -2,11 +2,13 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 
 function MagicLinkContent() {
   const router = useRouter();
   const params = useSearchParams();
+  const { t } = useTranslation();
   const { loginWithTokens } = useAuth();
   const [status, setStatus] = useState<'loading' | 'error'>('loading');
 
@@ -36,13 +38,13 @@ function MagicLinkContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center p-8">
-          <p className="text-xl font-semibold text-destructive mb-2">Link expired or invalid</p>
-          <p className="text-muted-foreground mb-6">This magic link has already been used or has expired.</p>
+          <p className="text-xl font-semibold text-destructive mb-2">{t('authMagic.linkExpired')}</p>
+          <p className="text-muted-foreground mb-6">{t('authMagic.linkExpiredDesc')}</p>
           <button
             onClick={() => router.replace('/auth')}
             className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold"
           >
-            Back to Sign In
+            {t('auth.backToSignIn')}
           </button>
         </div>
       </div>
@@ -53,7 +55,7 @@ function MagicLinkContent() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center p-8">
         <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-lg font-semibold">Signing you in…</p>
+        <p className="text-lg font-semibold">{t('authMagic.signingYouIn')}</p>
       </div>
     </div>
   );

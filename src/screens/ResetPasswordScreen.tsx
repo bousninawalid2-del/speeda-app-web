@@ -35,28 +35,28 @@ export const ResetPasswordScreen = ({ onComplete, token, onForgot, onReset }: Re
 
   const handleReset = async () => {
     setFormError('');
-    if (newPw.length < 8) { setFormError('Password must be at least 8 characters'); return; }
-    if (newPw !== confirmPw) { setFormError('Passwords do not match'); return; }
+    if (newPw.length < 8) { setFormError(t('resetPassword.minLength')); return; }
+    if (newPw !== confirmPw) { setFormError(t('resetPassword.mismatch')); return; }
     setIsSubmitting(true);
     try {
       if (onReset) await onReset(newPw);
       setSuccess(true);
     } catch (err: unknown) {
-      setFormError(err instanceof Error ? err.message : 'Failed to reset password');
+      setFormError(err instanceof Error ? err.message : t('resetPassword.resetFailed'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleForgot = async () => {
-    if (!forgotEmail) { setFormError('Please enter your email'); return; }
+    if (!forgotEmail) { setFormError(t('resetPassword.emailRequired')); return; }
     setFormError('');
     setIsSubmitting(true);
     try {
       if (onForgot) await onForgot(forgotEmail);
       setSuccess(true);
     } catch (err: unknown) {
-      setFormError(err instanceof Error ? err.message : 'Failed to send reset link');
+      setFormError(err instanceof Error ? err.message : t('resetPassword.sendFailed'));
     } finally {
       setIsSubmitting(false);
     }

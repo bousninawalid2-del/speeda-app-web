@@ -7,11 +7,11 @@ interface PostVariationsProps {
 }
 
 const toneOptions = [
-  { key: 'professional', label: '💼 Professional', color: 'bg-brand-blue' },
-  { key: 'casual', label: '😊 Casual', color: 'bg-brand-teal' },
-  { key: 'bold', label: '⚡ Bold', color: 'bg-purple' },
-  { key: 'fun', label: '🎉 Fun', color: 'bg-orange-accent' },
-  { key: 'urgent', label: '🔥 Urgent', color: 'bg-red-accent' },
+  { key: 'professional', labelKey: 'variations.toneProfessional', color: 'bg-brand-blue' },
+  { key: 'casual', labelKey: 'variations.toneCasual', color: 'bg-brand-teal' },
+  { key: 'bold', labelKey: 'variations.toneBold', color: 'bg-purple' },
+  { key: 'fun', labelKey: 'variations.toneFun', color: 'bg-orange-accent' },
+  { key: 'urgent', labelKey: 'variations.toneUrgent', color: 'bg-red-accent' },
 ];
 
 const variations = [
@@ -79,14 +79,14 @@ export const PostVariations = ({ onSelectVariation }: PostVariationsProps) => {
           className={`rounded-3xl px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap transition-all ${
             !activeTone ? 'gradient-btn text-primary-foreground' : 'bg-card border border-border text-muted-foreground'
           }`}>
-          All Tones
+          {t('variations.toneAll', 'All Tones')}
         </button>
         {toneOptions.map(tone => (
           <button key={tone.key} onClick={() => setActiveTone(activeTone === tone.key ? null : tone.key)}
             className={`rounded-3xl px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap transition-all ${
               activeTone === tone.key ? 'gradient-btn text-primary-foreground' : 'bg-card border border-border text-muted-foreground'
             }`}>
-            {tone.label}
+            {t(tone.labelKey)}
           </button>
         ))}
       </div>

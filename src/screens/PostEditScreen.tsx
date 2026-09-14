@@ -106,7 +106,7 @@ export const PostEditScreen = ({ post, onBack, onSave }: PostEditScreenProps) =>
   const handleUndo = () => {
     setCaption(previousCaption);
     setShowUndo(false);
-    toast.success('Caption restored');
+    toast.success(t('postEdit.toasts.captionRestored', 'Caption restored'));
   };
 
   const handleSuggestHashtags = () => {
@@ -116,7 +116,7 @@ export const PostEditScreen = ({ post, onBack, onSave }: PostEditScreenProps) =>
       const newTags = suggestions.filter(s => !hashtags.includes(s)).slice(0, 5);
       setHashtags(prev => [...prev, ...newTags]);
       setSuggesting(false);
-      toast.success(`Added ${newTags.length} hashtags`);
+      toast.success(t('postEdit.toasts.hashtagsAdded', { count: newTags.length }));
     }, 1000);
   };
 
@@ -127,9 +127,9 @@ export const PostEditScreen = ({ post, onBack, onSave }: PostEditScreenProps) =>
       setBannedTags(banned);
       setCheckingBanned(false);
       if (banned.length > 0) {
-        toast.error(`${banned.length} banned hashtag(s) found`);
+        toast.error(t('postEdit.toasts.bannedFound', { count: banned.length }));
       } else {
-        toast.success('All hashtags are safe ✓');
+        toast.success(t('postEdit.toasts.hashtagsSafe', 'All hashtags are safe ✓'));
       }
     }, 1000);
   };
@@ -256,16 +256,16 @@ export const PostEditScreen = ({ post, onBack, onSave }: PostEditScreenProps) =>
                 onChange={e => setNewHashtag(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && addHashtag()}
                 className="w-24 h-7 rounded-lg bg-muted px-2 text-[12px] text-foreground placeholder:text-muted-foreground border-0 outline-none"
-                placeholder="+ Add"
+                placeholder={t('postEdit.addHashtagPlaceholder', '+ Add')}
               />
             </div>
           </div>
           <div className="flex items-center gap-3 mt-2">
             <button onClick={handleSuggestHashtags} disabled={suggesting} className="text-brand-blue text-[11px] font-semibold flex items-center gap-1">
-              <Hash size={10} /> {suggesting ? 'Adding...' : t('postEdit.suggestHashtags', '✦ Suggest Hashtags')}
+              <Hash size={10} /> {suggesting ? t('postEdit.addingHashtags', 'Adding...') : t('postEdit.suggestHashtags', '✦ Suggest Hashtags')}
             </button>
             <button onClick={handleCheckBanned} disabled={checkingBanned} className="text-muted-foreground text-[11px] font-semibold flex items-center gap-1">
-              <Ban size={10} /> {checkingBanned ? 'Checking...' : t('postEdit.checkBanned', '🚫 Check Banned')}
+              <Ban size={10} /> {checkingBanned ? t('postEdit.checkingInProgress', 'Checking...') : t('postEdit.checkBanned', '🚫 Check Banned')}
             </button>
             <span className="text-[11px] text-muted-foreground ms-auto">{hashtags.length}/30</span>
           </div>

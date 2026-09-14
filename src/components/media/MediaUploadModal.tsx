@@ -18,7 +18,7 @@ export const MediaUploadModal = ({ open, onClose }: MediaUploadModalProps) => {
     setTimeout(() => {
       setUploading(false);
       onClose();
-      toast.success('✓ Uploaded successfully');
+      toast.success(t('media.uploadedSuccessfully', '✓ Uploaded successfully'));
     }, 1500);
   };
 
@@ -36,7 +36,7 @@ export const MediaUploadModal = ({ open, onClose }: MediaUploadModalProps) => {
               <Upload size={32} className="text-brand-blue" />
               <p className="text-[14px] font-bold text-foreground">{t('media.dragDrop', 'Drag photos or videos here')}</p>
               <p className="text-[12px] text-muted-foreground">{t('media.orBrowse', 'Or browse files')}</p>
-              <p className="text-[10px] text-muted-foreground">JPG, PNG, WebP, GIF, MP4, MOV · Max 50MB video, 10MB images</p>
+              <p className="text-[10px] text-muted-foreground">{t('media.fileTypesHint', 'JPG, PNG, WebP, GIF, MP4, MOV · Max 50MB video, 10MB images')}</p>
             </div>
             {uploading && (
               <div className="mt-4">
@@ -44,7 +44,7 @@ export const MediaUploadModal = ({ open, onClose }: MediaUploadModalProps) => {
                   <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                     <motion.div initial={{ width: 0 }} animate={{ width: '100%' }} transition={{ duration: 1.5 }} className="h-full gradient-btn rounded-full" />
                   </div>
-                  <span className="text-[12px] text-muted-foreground">Uploading...</span>
+                  <span className="text-[12px] text-muted-foreground">{t('media.uploading')}</span>
                 </div>
               </div>
             )}

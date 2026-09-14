@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { CampaignsScreen } from '@/screens/CampaignsScreen';
 import { resolveScreen } from '@/lib/navigation';
 import { apiFetch } from '@/lib/api-client';
@@ -80,6 +81,7 @@ function hydrate(raw: RawCampaign) {
 
 export default function Page() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const [isLoading, setIsLoading] = useState(true);
   const [campaignData, setCampaignData] = useState<{
@@ -98,12 +100,12 @@ export default function Page() {
         stats: data.stats,
       });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load campaigns');
+      toast.error(err instanceof Error ? err.message : t('campaigns.failedToLoad'));
       setCampaignData(null);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchCampaigns(); }, [fetchCampaigns]);
 

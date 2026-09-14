@@ -157,7 +157,7 @@ export const PostHistoryScreen = ({ onBack, onNavigate }: PostHistoryScreenProps
       <div className="px-5 pt-6">
         <div className="flex items-center gap-3 mb-4">
           <button onClick={onBack}><ChevronLeft size={24} className="text-foreground rtl:rotate-180" /></button>
-          <h1 className="text-[20px] font-extrabold text-foreground">{t('postHistory.title', 'Post History')}</h1>
+          <h1 className="text-[20px] font-extrabold text-foreground">{t('postHistoryExtra.title', 'Post History')}</h1>
           <span className="text-[13px] text-muted-foreground ms-auto">{t('postHistoryExtra.postsLabel', { count: data?.pagination.total ?? 0 })}</span>
         </div>
 
@@ -165,7 +165,7 @@ export const PostHistoryScreen = ({ onBack, onNavigate }: PostHistoryScreenProps
         <div className="flex gap-2 mb-3">
           <div className="relative flex-1">
             <Search size={16} className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('postHistory.search', 'Search posts...')}
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('postHistoryExtra.search', 'Search posts...')}
               className="w-full h-10 rounded-xl bg-card border border-border-light ps-9 pe-4 text-[13px] text-foreground placeholder:text-muted-foreground outline-none" />
           </div>
           <div className="relative">
@@ -194,7 +194,7 @@ export const PostHistoryScreen = ({ onBack, onNavigate }: PostHistoryScreenProps
             <button key={p} onClick={() => setFilterPlatform(p)}
               className={`rounded-3xl px-4 py-2 text-[12px] font-semibold whitespace-nowrap transition-all ${
                 filterPlatform === p ? 'bg-brand-blue text-primary-foreground' : 'bg-card border border-border text-muted-foreground'
-              }`}>{p}</button>
+              }`}>{p === 'All' ? t('postHistoryExtra.allPlatforms') : p}</button>
           ))}
         </div>
 
@@ -226,9 +226,9 @@ export const PostHistoryScreen = ({ onBack, onNavigate }: PostHistoryScreenProps
         {/* Stats summary */}
         <div className="grid grid-cols-3 gap-3 mb-4">
           {[
-            { label: t('postHistory.totalPosts', 'Total Posts'), value: String(data?.pagination.total ?? 0), icon: '📝' },
-            { label: t('postHistory.totalReach', 'Total Reach'), value: formatReach(totalReach), icon: '👁️' },
-            { label: t('postHistory.avgEngagement', 'Avg. Engagement'), value: '—', icon: '📈' },
+            { label: t('postHistoryExtra.totalPosts', 'Total Posts'), value: String(data?.pagination.total ?? 0), icon: '📝' },
+            { label: t('postHistoryExtra.totalReach', 'Total Reach'), value: formatReach(totalReach), icon: '👁️' },
+            { label: t('postHistoryExtra.avgEngagement', 'Avg. Engagement'), value: '—', icon: '📈' },
           ].map((s, i) => (
             <div key={i} className="bg-card rounded-2xl p-3 border border-border-light text-center">
               <span className="text-[18px]">{s.icon}</span>
@@ -273,9 +273,9 @@ export const PostHistoryScreen = ({ onBack, onNavigate }: PostHistoryScreenProps
                   {effectiveStatus === 'published' && (
                     <div className="grid grid-cols-3 gap-2 mt-3">
                       {[
-                        { l: t('postHistory.reach', 'Reach'), v: post.reach },
-                        { l: t('postHistory.likes', 'Likes'), v: post.likes },
-                        { l: t('postHistory.commentCount', 'Comments'), v: post.comments },
+                        { l: t('postHistoryExtra.reach', 'Reach'), v: post.reach },
+                        { l: t('postHistoryExtra.likes', 'Likes'), v: post.likes },
+                        { l: t('postHistoryExtra.commentCount', 'Comments'), v: post.comments },
                       ].map((m, j) => (
                         <div key={j}>
                           <span className="text-[9px] uppercase text-muted-foreground font-semibold">{m.l}</span>
@@ -286,10 +286,10 @@ export const PostHistoryScreen = ({ onBack, onNavigate }: PostHistoryScreenProps
                   )}
                   {effectiveStatus === 'failed' && !isRetrying && (
                     <div className="mt-2 bg-red-accent/10 rounded-xl p-3">
-                      <p className="text-[12px] text-red-accent font-medium">⚠️ {post.failReason || t('postHistory.failedReason', 'API error — retry or edit post')}</p>
+                      <p className="text-[12px] text-red-accent font-medium">⚠️ {post.failReason || t('postHistoryExtra.failedReason', 'API error — retry or edit post')}</p>
                       <div className="flex gap-3 mt-2">
                         <button onClick={() => handleRetry(post)} className="h-8 px-4 rounded-lg bg-red-accent text-primary-foreground text-[12px] font-bold flex items-center gap-1.5 btn-press">
-                          <RefreshCw size={12} /> {t('postHistory.retry', 'Retry')}
+                          <RefreshCw size={12} /> {t('postHistoryExtra.retry', 'Retry')}
                         </button>
                         <button
                           onClick={() => onNavigate?.(`postEdit?postId=${encodeURIComponent(post.id)}&from=post-history`)}
