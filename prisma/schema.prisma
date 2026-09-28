@@ -47,6 +47,7 @@ model User {
   logo              Logo?
   menu              Menu?
   postrapides       Postrapide[]
+  pendingChatResponses PendingChatResponse[]
 }
 
 model UserDiscussionCode {
@@ -299,6 +300,27 @@ model DataImage {
   size      Int
   data      Bytes
   createdAt DateTime @default(now())
+}
+
+// Durable queue for async n8n → web chat replies (replaces the old in-memory
+// Map, which lost messages on every restart/redeploy and never worked across
+// multiple server instances). A message is bound to both sessionId and
+// userId so a poller can only ever read replies for their own account, even
+// if a sessionId is guessed or leaked.
+model PendingChatResponse {
+  id         String    @id @default(cuid())
+  seq        Int       @default(autoincrement())
+  sessionId  String
+  userId     BigInt
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reply      String    @db.Text
+  type       String    @default("text")
+  mediaUrl   String?
+  options    String?   @db.Text
+  createdAt  DateTime  @default(now())
+  consumedAt DateTime?
+
+  @@index([sessionId, userId, consumedAt])
 }
 
 model RefreshToken {

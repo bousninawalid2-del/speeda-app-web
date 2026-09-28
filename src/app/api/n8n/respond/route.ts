@@ -1,49 +1,37 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
+import { prisma } from '@/lib/db';
 import { requireN8nAuth } from '@/lib/n8n-guard';
-import { errorResponse } from '@/lib/auth-guard';
+import { requireAuth, errorResponse } from '@/lib/auth-guard';
+import { rateLimit } from '@/lib/rate-limit';
+import { resolveExistingUserId } from '@/lib/n8n-validate';
+import { toUserIdString } from '@/lib/user-id';
+import { traceLog } from '@/lib/trace';
 
 /**
  * POST /api/n8n/respond
  *
- * Receives async responses from n8n workflows.
- * Stores them so the frontend can poll for updates.
- *
- * This is needed because n8n sub-workflows send responses via WhatsApp
- * but for web chat, we need to capture them here.
+ * Receives async responses from n8n workflows and durably queues them so the
+ * web chat frontend can poll for updates. Backed by the PendingChatResponse
+ * table (not an in-memory Map) so messages survive restarts/redeploys and
+ * work across multiple server instances.
  */
 
-const schema = z.object({
+const optionSchema = z.object({
+  id:    z.string(),
+  title: z.string(),
+});
+
+const postSchema = z.object({
   sessionId: z.string().min(1),
   userId:    z.string().min(1),
   reply:     z.string(),
   type:      z.enum(['text', 'image', 'video', 'file']).default('text'),
   mediaUrl:  z.string().optional(),
-  options:   z.array(z.object({
-    id:    z.string(),
-    title: z.string(),
-  })).optional(),
+  options:   z.array(optionSchema).optional(),
 });
 
-// In-memory store for pending responses (keyed by sessionId)
-// In production, replace with Redis or DB table
-const pendingResponses = new Map<string, Array<{
-  reply: string;
-  type: string;
-  mediaUrl?: string;
-  options?: Array<{ id: string; title: string }>;
-  timestamp: number;
-}>>();
-
-// Cleanup old entries every 5 minutes
-setInterval(() => {
-  const cutoff = Date.now() - 10 * 60 * 1000; // 10 min TTL
-  for (const [key, msgs] of pendingResponses) {
-    const fresh = msgs.filter(m => m.timestamp > cutoff);
-    if (fresh.length === 0) pendingResponses.delete(key);
-    else pendingResponses.set(key, fresh);
-  }
-}, 5 * 60 * 1000);
+const TTL_MS = 60 * 60 * 1000; // drop unpolled/consumed rows after 1 hour
 
 /**
  * POST — n8n pushes a response
@@ -55,14 +43,35 @@ export async function POST(req: NextRequest) {
   let body: unknown;
   try { body = await req.json(); } catch { return errorResponse('Invalid JSON', 400); }
 
-  const parsed = schema.safeParse(body);
+  const parsed = postSchema.safeParse(body);
   if (!parsed.success) return errorResponse(parsed.error.issues[0].message, 400);
 
   const { sessionId, reply, type, mediaUrl, options } = parsed.data;
 
-  const queue = pendingResponses.get(sessionId) ?? [];
-  queue.push({ reply, type, mediaUrl, options, timestamp: Date.now() });
-  pendingResponses.set(sessionId, queue);
+  if (!rateLimit(`n8n:respond:${sessionId}`, { limit: 30, windowMs: 60_000 })) {
+    return errorResponse('Too many responses for this session', 429);
+  }
+
+  const resolvedUserId = await resolveExistingUserId(parsed.data.userId);
+  if (typeof resolvedUserId !== 'bigint') return resolvedUserId;
+
+  await prisma.pendingChatResponse.create({
+    data: {
+      sessionId,
+      userId: resolvedUserId,
+      reply,
+      type,
+      mediaUrl,
+      options: options ? JSON.stringify(options) : null,
+    },
+  });
+
+  // Opportunistic cleanup — no dedicated cron/worker in this deployment yet.
+  prisma.pendingChatResponse
+    .deleteMany({ where: { createdAt: { lt: new Date(Date.now() - TTL_MS) } } })
+    .catch(() => {});
+
+  traceLog('n8n.respond.push', sessionId, { type });
 
   return Response.json({ ok: true });
 }
@@ -70,24 +79,39 @@ export async function POST(req: NextRequest) {
 /**
  * GET /api/n8n/respond?sessionId=xxx
  *
- * Frontend polls this to get async responses from n8n.
- * Returns and clears all pending messages for the session.
+ * Frontend polls this to get async responses from n8n. Requires the user's
+ * own access token — a message is only ever returned to the user it belongs
+ * to (bound by userId, not just the client-supplied sessionId), so a guessed
+ * or leaked sessionId cannot be used to read another user's replies.
  */
 export async function GET(req: NextRequest) {
-  // This endpoint is called by the frontend with Bearer auth, not n8n secret
-  // We accept either auth method
-  const secret = req.headers.get('x-n8n-secret');
-  const bearer = req.headers.get('Authorization');
-
-  if (!secret && !bearer) {
-    return errorResponse('Unauthorized', 401);
-  }
+  const auth = requireAuth(req);
+  if (auth instanceof Response) return auth;
+  const { user } = auth;
 
   const sessionId = req.nextUrl.searchParams.get('sessionId');
   if (!sessionId) return errorResponse('sessionId is required', 400);
 
-  const messages = pendingResponses.get(sessionId) ?? [];
-  pendingResponses.delete(sessionId);
+  const pending = await prisma.pendingChatResponse.findMany({
+    where: { sessionId, userId: user.sub, consumedAt: null },
+    orderBy: { seq: 'asc' },
+  });
+
+  if (pending.length > 0) {
+    await prisma.pendingChatResponse.updateMany({
+      where: { id: { in: pending.map(p => p.id) } },
+      data: { consumedAt: new Date() },
+    });
+    traceLog('n8n.respond.poll', sessionId, { userId: toUserIdString(user.sub), count: pending.length });
+  }
+
+  const messages = pending.map(p => ({
+    reply: p.reply,
+    type: p.type,
+    mediaUrl: p.mediaUrl ?? undefined,
+    options: p.options ? JSON.parse(p.options) : undefined,
+    timestamp: p.createdAt.getTime(),
+  }));
 
   return Response.json({ messages });
 }

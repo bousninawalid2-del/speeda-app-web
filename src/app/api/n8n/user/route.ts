@@ -2,7 +2,8 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireN8nAuth } from '@/lib/n8n-guard';
 import { errorResponse } from '@/lib/auth-guard';
-import { toJsonSafe, toUserIdBigInt, toUserIdString } from '@/lib/user-id';
+import { toJsonSafe, toUserIdString } from '@/lib/user-id';
+import { parseUserId } from '@/lib/n8n-validate';
 
 /**
  * GET /api/n8n/user?userId=xxx
@@ -16,7 +17,8 @@ export async function GET(req: NextRequest) {
 
   const userId = req.nextUrl.searchParams.get('userId');
   if (!userId) return errorResponse('userId is required', 400);
-  const normalizedUserId = toUserIdBigInt(userId);
+  const normalizedUserId = parseUserId(userId);
+  if (typeof normalizedUserId !== 'bigint') return normalizedUserId;
 
   const [user, activity, preference, strategy, images] = await Promise.all([
     prisma.user.findUnique({

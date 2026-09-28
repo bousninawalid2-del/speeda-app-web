@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { requireN8nAuth } from '@/lib/n8n-guard';
 import { errorResponse } from '@/lib/auth-guard';
+import { rateLimit } from '@/lib/rate-limit';
 
 /**
  * GET /api/n8n/draft-posts?weeklyPlanningId=xxx
@@ -66,11 +67,22 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return errorResponse(parsed.error.issues[0].message, 400);
 
-  const { postDate, ...data } = parsed.data;
+  const { postDate, weeklyPlanningId, ...data } = parsed.data;
+
+  if (!rateLimit(`n8n:draft-posts:create:${weeklyPlanningId}`, { limit: 30, windowMs: 60_000 })) {
+    return errorResponse('Too many requests', 429);
+  }
+
+  const weeklyPlanning = await prisma.weeklyPlanning.findUnique({
+    where: { id: weeklyPlanningId },
+    select: { id: true },
+  });
+  if (!weeklyPlanning) return errorResponse('weeklyPlanningId not found', 404);
 
   const post = await prisma.draftPost.create({
     data: {
       ...data,
+      weeklyPlanningId,
       postDate: postDate ? new Date(postDate) : null,
     },
   });
@@ -109,6 +121,13 @@ export async function PATCH(req: NextRequest) {
   if (!parsed.success) return errorResponse(parsed.error.issues[0].message, 400);
 
   const { id, postDate, ...data } = parsed.data;
+
+  if (!rateLimit(`n8n:draft-posts:update:${id}`, { limit: 30, windowMs: 60_000 })) {
+    return errorResponse('Too many requests', 429);
+  }
+
+  const existing = await prisma.draftPost.findUnique({ where: { id }, select: { id: true } });
+  if (!existing) return errorResponse('Draft post not found', 404);
 
   const post = await prisma.draftPost.update({
     where: { id },

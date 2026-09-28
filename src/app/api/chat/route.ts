@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { requireAuth, errorResponse } from '@/lib/auth-guard';
 import { rateLimit } from '@/lib/rate-limit';
 import { makeDiscussionCode } from '@/lib/discussion-code';
+import { traceLog } from '@/lib/trace';
 
 /**
  * POST /api/chat
@@ -122,6 +123,8 @@ export async function POST(req: NextRequest) {
       source: 'web',
     };
 
+    traceLog('chat.webhook.request', resolvedSessionId, { userId: user.sub.toString(), isInteractive: !!isInteractive, mediaType });
+
     const res = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -131,6 +134,7 @@ export async function POST(req: NextRequest) {
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
       console.error(`[chat] n8n webhook error: ${res.status}`, errText);
+      traceLog('chat.webhook.error', resolvedSessionId, { status: res.status });
       return errorResponse('Chat service unavailable', 502);
     }
 
@@ -144,6 +148,8 @@ export async function POST(req: NextRequest) {
     // Interactive options (buttons/lists) from n8n
     const options = data.options ?? data.interactive_options ?? undefined;
 
+    traceLog('chat.webhook.response', resolvedSessionId, { type });
+
     return Response.json({
       reply,
       type,
@@ -153,6 +159,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error('[chat] n8n webhook exception', err);
+    traceLog('chat.webhook.exception', sessionId ?? user.sub.toString(), { message: err instanceof Error ? err.message : String(err) });
     return errorResponse('Chat service unavailable', 502);
   }
 }

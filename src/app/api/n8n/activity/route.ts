@@ -3,8 +3,10 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { requireN8nAuth } from '@/lib/n8n-guard';
 import { errorResponse } from '@/lib/auth-guard';
+import { rateLimit } from '@/lib/rate-limit';
 import { syncActivityToN8n } from '@/lib/sync-n8n';
-import { toJsonSafe, toUserIdBigInt } from '@/lib/user-id';
+import { toJsonSafe } from '@/lib/user-id';
+import { parseUserId, resolveExistingUserId } from '@/lib/n8n-validate';
 
 /**
  * POST /api/n8n/activity
@@ -38,7 +40,14 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return errorResponse(parsed.error.issues[0].message, 400);
 
   const { userId, country, location, ...data } = parsed.data;
-  const normalizedUserId = toUserIdBigInt(userId);
+
+  if (!rateLimit(`n8n:activity:${userId}`, { limit: 20, windowMs: 60_000 })) {
+    return errorResponse('Too many requests', 429);
+  }
+
+  const resolvedUserId = await resolveExistingUserId(userId);
+  if (typeof resolvedUserId !== 'bigint') return resolvedUserId;
+  const normalizedUserId = resolvedUserId;
   const activityData = { ...data, location: location ?? country };
 
   const activity = await prisma.activity.upsert({
@@ -62,7 +71,9 @@ export async function GET(req: NextRequest) {
 
   const userId = req.nextUrl.searchParams.get('userId');
   if (!userId) return errorResponse('userId is required', 400);
+  const normalizedUserId = parseUserId(userId);
+  if (typeof normalizedUserId !== 'bigint') return normalizedUserId;
 
-  const activity = await prisma.activity.findUnique({ where: { userId: toUserIdBigInt(userId) } });
+  const activity = await prisma.activity.findUnique({ where: { userId: normalizedUserId } });
   return Response.json({ activity: toJsonSafe(activity) });
 }

@@ -2,7 +2,9 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireN8nAuth } from '@/lib/n8n-guard';
 import { errorResponse } from '@/lib/auth-guard';
+import { rateLimit } from '@/lib/rate-limit';
 import { serializePrisma } from '@/lib/serialize';
+import { parseUserId } from '@/lib/n8n-validate';
 
 /**
  * GET /api/n8n/images?userId=xxx
@@ -22,8 +24,16 @@ export async function GET(req: NextRequest) {
   const metadataOnly = req.nextUrl.searchParams.get('metadataOnly') === 'true';
 
   if (!userId) return errorResponse('userId is required', 400);
+  const normalizedUserId = parseUserId(userId);
+  if (typeof normalizedUserId !== 'bigint') return normalizedUserId;
 
-  const where: Record<string, unknown> = { userId };
+  // Base64 image payloads are heavy — guard against a runaway workflow
+  // hammering this endpoint (each call can pull multi-MB blobs).
+  if (!metadataOnly && !rateLimit(`n8n:images:${userId}`, { limit: 10, windowMs: 60_000 })) {
+    return errorResponse('Too many requests', 429);
+  }
+
+  const where: Record<string, unknown> = { userId: normalizedUserId };
   if (type) {
     where.filename = { contains: type, mode: 'insensitive' };
   }

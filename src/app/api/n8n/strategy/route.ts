@@ -3,7 +3,9 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { requireN8nAuth } from '@/lib/n8n-guard';
 import { errorResponse } from '@/lib/auth-guard';
-import { toJsonSafe, toUserIdBigInt } from '@/lib/user-id';
+import { rateLimit } from '@/lib/rate-limit';
+import { toJsonSafe } from '@/lib/user-id';
+import { parseUserId, resolveExistingUserId } from '@/lib/n8n-validate';
 
 /**
  * POST /api/n8n/strategy
@@ -56,50 +58,61 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return errorResponse(parsed.error.issues[0].message, 400);
 
   const { userId, weeks, periodStartDate, periodEndDate, ...strategyData } = parsed.data;
-  const normalizedUserId = toUserIdBigInt(userId);
 
-  // Deactivate any existing active strategy for this user
-  await prisma.strategy.updateMany({
-    where: { userId: normalizedUserId, status: 'active' },
-    data:  { status: 'completed' },
-  });
+  if (!rateLimit(`n8n:strategy:${userId}`, { limit: 10, windowMs: 60_000 })) {
+    return errorResponse('Too many requests', 429);
+  }
 
-  // Create the strategy with nested weekly plannings and draft posts
-  const strategy = await prisma.strategy.create({
-    data: {
-      userId: normalizedUserId,
-      ...strategyData,
-      periodStartDate: periodStartDate ? new Date(periodStartDate) : null,
-      periodEndDate:   periodEndDate   ? new Date(periodEndDate)   : null,
-      weeklyPlannings: weeks ? {
-        create: weeks.map(w => ({
-          weekNumber:    w.weekNumber,
-          weekStartDate: w.weekStartDate ? new Date(w.weekStartDate) : null,
-          weekEndDate:   w.weekEndDate   ? new Date(w.weekEndDate)   : null,
-          postsCount:    w.postsCount ?? 0,
-          weeklyGoal:    w.weeklyGoal,
-          draftPosts: w.posts ? {
-            create: w.posts.map(p => ({
-              platform:     p.platform,
-              caption:      p.caption,
-              hashtags:     p.hashtags,
-              mediaUrl:     p.mediaUrl,
-              mediaType:    p.mediaType,
-              postDate:     p.postDate ? new Date(p.postDate) : null,
-              postTime:     p.postTime,
-              postDetails:  p.postDetails,
-              postReminder: p.postReminder,
-            })),
-          } : undefined,
-        })),
-      } : undefined,
-    },
-    include: {
-      weeklyPlannings: {
-        include: { draftPosts: true },
-        orderBy: { weekNumber: 'asc' },
+  const resolvedUserId = await resolveExistingUserId(userId);
+  if (typeof resolvedUserId !== 'bigint') return resolvedUserId;
+  const normalizedUserId = resolvedUserId;
+
+  // Deactivate the old active strategy and create the new one (with its
+  // nested weekly plannings + draft posts) in a single transaction, so a
+  // failure partway through never leaves the user with zero or two "active"
+  // strategies.
+  const strategy = await prisma.$transaction(async (tx) => {
+    await tx.strategy.updateMany({
+      where: { userId: normalizedUserId, status: 'active' },
+      data:  { status: 'completed' },
+    });
+
+    return tx.strategy.create({
+      data: {
+        userId: normalizedUserId,
+        ...strategyData,
+        periodStartDate: periodStartDate ? new Date(periodStartDate) : null,
+        periodEndDate:   periodEndDate   ? new Date(periodEndDate)   : null,
+        weeklyPlannings: weeks ? {
+          create: weeks.map(w => ({
+            weekNumber:    w.weekNumber,
+            weekStartDate: w.weekStartDate ? new Date(w.weekStartDate) : null,
+            weekEndDate:   w.weekEndDate   ? new Date(w.weekEndDate)   : null,
+            postsCount:    w.postsCount ?? 0,
+            weeklyGoal:    w.weeklyGoal,
+            draftPosts: w.posts ? {
+              create: w.posts.map(p => ({
+                platform:     p.platform,
+                caption:      p.caption,
+                hashtags:     p.hashtags,
+                mediaUrl:     p.mediaUrl,
+                mediaType:    p.mediaType,
+                postDate:     p.postDate ? new Date(p.postDate) : null,
+                postTime:     p.postTime,
+                postDetails:  p.postDetails,
+                postReminder: p.postReminder,
+              })),
+            } : undefined,
+          })),
+        } : undefined,
       },
-    },
+      include: {
+        weeklyPlannings: {
+          include: { draftPosts: true },
+          orderBy: { weekNumber: 'asc' },
+        },
+      },
+    });
   });
 
   return Response.json({ strategy: toJsonSafe(strategy) }, { status: 201 });
@@ -116,9 +129,11 @@ export async function GET(req: NextRequest) {
 
   const userId = req.nextUrl.searchParams.get('userId');
   if (!userId) return errorResponse('userId is required', 400);
+  const normalizedUserId = parseUserId(userId);
+  if (typeof normalizedUserId !== 'bigint') return normalizedUserId;
 
   const strategy = await prisma.strategy.findFirst({
-    where: { userId: toUserIdBigInt(userId), status: 'active' },
+    where: { userId: normalizedUserId, status: 'active' },
     orderBy: { createdAt: 'desc' },
     include: {
       weeklyPlannings: {
