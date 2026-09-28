@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Send, Plus, Clock, Paperclip, X, Camera, Image, Film, FileText, Sparkles } from 'lucide-react';
+import { Mic, Send, Plus, Clock, Paperclip, X, Camera, Image, FileText, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { InstagramLogo, GoogleLogo, WhatsAppLogo, FacebookLogo } from '@/components/PlatformLogos';
 import smashBurgerImg from '@/assets/demo-smash-burger.jpg';
@@ -24,6 +24,12 @@ const chatHistory = [
 ];
 
 const CHAR_LIMITS_CHAT: Record<string, number> = { Instagram: 2200, TikTok: 150, Facebook: 8000, Google: 4000, WhatsApp: 4096, default: 2000 };
+
+// Async reply polling (Path B): fast at first, backs off, then gives up.
+const POLL_START_DELAY_MS = 2000;
+const POLL_BACKOFF_DELAY_MS = 5000;
+const POLL_BACKOFF_AFTER_MS = 15000;
+const POLL_MAX_DURATION_MS = 3 * 60 * 1000;
 
 // ─── Engagement Sub-tab ───────────────────────────────────────────────────────
 
@@ -207,15 +213,24 @@ interface ChatOption {
   title: string;
 }
 
+type ChatErrorKind = 'rate_limited' | 'unavailable' | 'not_configured' | 'connection';
+
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
-  type?: 'text' | 'image' | 'video' | 'file';
+  type?: 'text' | 'image' | 'video' | 'file' | 'voice';
   mediaUrl?: string;
   options?: ChatOption[];
   timestamp: Date;
   hasCard?: boolean;
   cardType?: string;
+  errorKind?: ChatErrorKind;
+}
+
+interface PendingSend {
+  text: string;
+  interactive?: { isInteractive: boolean; interactiveTitle: string };
+  upload?: { mediaId: string; mediaUrl: string; mediaType: 'image' | 'voice' | 'pdf'; filename: string } | null;
 }
 
 interface AIChatScreenProps {
@@ -232,7 +247,8 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
   const { isFree, useMessage } = useFreeTier();
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSentRef = useRef<PendingSend | null>(null);
 
   const welcomeMsg: ChatMessage = {
     role: 'assistant',
@@ -264,6 +280,9 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
     mediaType: 'image' | 'voice' | 'pdf';
     filename: string;
   } | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [pollTimedOut, setPollTimedOut] = useState(false);
 
   const quickPrompts = [
     t('chat.createInstaPost'),
@@ -282,41 +301,63 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
   useEffect(() => { scrollToBottom(); }, [messages]);
 
   // ── Polling for async n8n responses ──────────────────────────────────────
-  const startPolling = useCallback((sid: string) => {
-    if (pollingRef.current) clearInterval(pollingRef.current);
+  // Path B (see migration plan): starts fast (2s), backs off to 5s after
+  // ~15s, and gives up after 3 minutes with a "taking longer than expected"
+  // message the user can dismiss by retrying or refreshing. A successful
+  // poll extends the window instead of stopping it outright, since a long
+  // job (e.g. an 8-week strategy) can push several message batches over
+  // time.
+  const stopPolling = useCallback(() => {
+    if (pollTimeoutRef.current) { clearTimeout(pollTimeoutRef.current); pollTimeoutRef.current = null; }
+  }, []);
 
-    pollingRef.current = setInterval(async () => {
+  const startPolling = useCallback((sid: string) => {
+    stopPolling();
+    setPollTimedOut(false);
+    let startedAt = Date.now();
+
+    const poll = async () => {
+      const elapsed = Date.now() - startedAt;
+      if (elapsed >= POLL_MAX_DURATION_MS) {
+        setIsTyping(false);
+        setPollTimedOut(true);
+        return;
+      }
+
       try {
         const token = typeof window !== 'undefined' ? localStorage.getItem('speeda_access_token') : null;
         const res = await fetch(`/api/n8n/respond?sessionId=${encodeURIComponent(sid)}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.messages && data.messages.length > 0) {
-          setMessages(prev => [
-            ...prev,
-            ...data.messages.map((m: { reply: string; type?: string; mediaUrl?: string; options?: ChatOption[] }) => ({
-              role: 'assistant' as const,
-              content: m.reply,
-              type: m.type ?? 'text',
-              mediaUrl: m.mediaUrl,
-              options: m.options,
-              timestamp: new Date(),
-            })),
-          ]);
-          setIsTyping(false);
-          scrollToBottom();
+        if (res.ok) {
+          const data = await res.json();
+          if (data.messages && data.messages.length > 0) {
+            setMessages(prev => [
+              ...prev,
+              ...data.messages.map((m: { reply: string; type?: string; mediaUrl?: string; options?: ChatOption[] }) => ({
+                role: 'assistant' as const,
+                content: m.reply,
+                type: m.type ?? 'text',
+                mediaUrl: m.mediaUrl,
+                options: m.options,
+                timestamp: new Date(),
+              })),
+            ]);
+            setIsTyping(false);
+            scrollToBottom();
+            startedAt = Date.now(); // more may be coming — extend the window
+          }
         }
-      } catch { /* polling errors are silent */ }
-    }, 3000);
-  }, []);
+      } catch { /* polling errors are silent — just retry on the next tick */ }
 
-  useEffect(() => {
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
+      const nextDelay = elapsed < POLL_BACKOFF_AFTER_MS ? POLL_START_DELAY_MS : POLL_BACKOFF_DELAY_MS;
+      pollTimeoutRef.current = setTimeout(poll, nextDelay);
     };
-  }, []);
+
+    pollTimeoutRef.current = setTimeout(poll, POLL_START_DELAY_MS);
+  }, [stopPolling]);
+
+  useEffect(() => stopPolling, [stopPolling]);
 
   useEffect(() => {
     if (subTab !== 'engagement') {
@@ -425,6 +466,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
     const form = new FormData();
     form.append('file', file);
 
+    setUploading(true);
     try {
       const res = await fetch('/api/chat/upload', {
         method: 'POST',
@@ -433,8 +475,8 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
       });
 
       if (!res.ok) {
-        const err = await res.json();
-        alert(err.error ?? t('chat.uploadFailed'));
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error ?? t('chat.uploadFailed'));
         return;
       }
 
@@ -446,42 +488,27 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
         filename: data.filename,
       });
     } catch {
-      alert(t('chat.uploadFailedRetry'));
+      toast.error(t('chat.uploadFailedRetry'));
+    } finally {
+      setUploading(false);
     }
 
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   // ── Send message ─────────────────────────────────────────────────────────
-  const handleSend = async (text?: string, interactive?: { isInteractive: boolean; interactiveTitle: string }) => {
-    const msgText = (text || inputVal).trim();
-    if (!msgText && !pendingUpload) return;
-
-    if (isFree && !useMessage()) {
-      setLimitReached(true);
-      return;
-    }
-
-    const userMsg: ChatMessage = {
-      role: 'user',
-      content: msgText || (pendingUpload ? `📎 ${pendingUpload.filename}` : ''),
-      type: pendingUpload?.mediaType === 'image' ? 'image' : 'text',
-      mediaUrl: pendingUpload?.mediaType === 'image' ? pendingUpload.mediaUrl : undefined,
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMsg]);
-    setInputVal('');
+  // Split from handleSend so a retry can re-issue the exact same call
+  // without pushing a duplicate "user message" bubble.
+  const sendToBackend = useCallback(async (
+    msgText: string,
+    interactive?: { isInteractive: boolean; interactiveTitle: string },
+    upload?: PendingSend['upload'],
+  ) => {
     setIsTyping(true);
-    setShowChips(false);
-    scrollToBottom();
-
-    const upload = pendingUpload;
-    setPendingUpload(null);
-
+    setSending(true);
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('speeda_access_token') : null;
-      const authRes = await fetch('/api/chat', {
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -496,34 +523,44 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
         }),
       });
 
-      const data = await authRes.json();
+      const data = await res.json().catch(() => ({}));
 
-      if (!authRes.ok) {
+      if (!res.ok) {
+        // Distinguish the failure modes the backend can return (see the
+        // migration plan's Phase 3 error/timeout UX): a rate limit and a
+        // dead n8n webhook need different messaging, and 503 (chat not
+        // configured) shouldn't read like a generic crash.
+        // No default errorKind: an unretryable failure (401, 400, ...)
+        // should just show its message, not a Retry button that would only
+        // ever fail the same way again.
+        let errorKind: ChatErrorKind | undefined;
+        let content: string;
+        if (res.status === 429) { errorKind = 'rate_limited'; content = t('chat.rateLimited'); }
+        else if (res.status === 503) { errorKind = 'not_configured'; content = t('chat.notConfigured'); }
+        else if (res.status === 502) { errorKind = 'unavailable'; content = t('chat.serviceUnavailable'); }
+        else { content = data.error ?? t('chat.serviceUnavailable'); }
+
+        setMessages(prev => [...prev, { role: 'assistant', content, type: 'text', timestamp: new Date(), errorKind }]);
+        setIsTyping(false);
+        return;
+      }
+
+      const newSessionId = data.sessionId ?? sessionId;
+      if (newSessionId) {
+        setSessionId(newSessionId);
+        startPolling(newSessionId);
+      }
+
+      if (data.reply) {
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: data.error ?? t('chat.serviceUnavailable'),
-          type: 'text',
+          content: data.reply,
+          type: data.type ?? 'text',
+          mediaUrl: data.mediaUrl,
+          options: data.options,
           timestamp: new Date(),
         }]);
         setIsTyping(false);
-      } else {
-        const newSessionId = data.sessionId ?? sessionId;
-        if (newSessionId) {
-          setSessionId(newSessionId);
-          startPolling(newSessionId);
-        }
-
-        if (data.reply) {
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: data.reply,
-            type: data.type ?? 'text',
-            mediaUrl: data.mediaUrl,
-            options: data.options,
-            timestamp: new Date(),
-          }]);
-          setIsTyping(false);
-        }
       }
     } catch {
       setMessages(prev => [...prev, {
@@ -531,11 +568,47 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
         content: t('chat.connectionError'),
         type: 'text',
         timestamp: new Date(),
+        errorKind: 'connection',
       }]);
       setIsTyping(false);
     } finally {
+      setSending(false);
       scrollToBottom();
     }
+  }, [sessionId, startPolling, t]);
+
+  const handleSend = async (text?: string, interactive?: { isInteractive: boolean; interactiveTitle: string }) => {
+    const msgText = (text || inputVal).trim();
+    if (!msgText && !pendingUpload) return;
+
+    if (isFree && !useMessage()) {
+      setLimitReached(true);
+      return;
+    }
+
+    const upload = pendingUpload;
+    const userMsg: ChatMessage = {
+      role: 'user',
+      content: msgText || (upload ? `📎 ${upload.filename}` : ''),
+      type: upload ? (upload.mediaType === 'image' ? 'image' : upload.mediaType === 'voice' ? 'voice' : 'file') : 'text',
+      mediaUrl: upload?.mediaUrl,
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, userMsg]);
+    setInputVal('');
+    setShowChips(false);
+    setPendingUpload(null);
+    scrollToBottom();
+
+    lastSentRef.current = { text: msgText, interactive, upload };
+    await sendToBackend(msgText, interactive, upload);
+  };
+
+  const handleRetry = () => {
+    const last = lastSentRef.current;
+    if (!last) return;
+    sendToBackend(last.text, last.interactive, last.upload);
   };
 
   const handleOptionClick = (option: ChatOption) => {
@@ -543,7 +616,8 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
   };
 
   const handleNewChat = () => {
-    if (pollingRef.current) clearInterval(pollingRef.current);
+    stopPolling();
+    setPollTimedOut(false);
     setMessages([welcomeMsg]);
     setSessionId(undefined);
     setInputVal('');
@@ -554,14 +628,30 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
 
   const filteredEngagement = engFilter === 'All' ? engagementFeed : engagementFeed.filter(m => m.filter === engFilter);
 
-  const handleAttach = (type: string) => {
-    setPendingUpload({
-      mediaId: '',
-      mediaUrl: '',
-      mediaType: type === 'photo' ? 'image' : type === 'video' ? 'voice' : 'pdf',
-      filename: type === 'photo' ? 'food_photo.jpg' : type === 'video' ? 'kitchen_video.mp4' : 'menu.pdf',
-    });
+  // Opens the OS file/camera picker for the chosen kind, then hands off to
+  // handleFileSelect (real upload to /api/chat/upload). The backend only
+  // accepts image/audio/pdf (see /api/chat/upload's ALLOWED_TYPES), so
+  // there's no "video" option here.
+  const handleAttach = (type: 'camera' | 'photo' | 'voice' | 'doc') => {
+    const input = fileInputRef.current;
+    if (!input) return;
+
+    if (type === 'camera') {
+      input.accept = 'image/*';
+      input.setAttribute('capture', 'environment');
+    } else if (type === 'photo') {
+      input.accept = 'image/*';
+      input.removeAttribute('capture');
+    } else if (type === 'voice') {
+      input.accept = 'audio/*';
+      input.removeAttribute('capture');
+    } else {
+      input.accept = 'application/pdf';
+      input.removeAttribute('capture');
+    }
+
     setAttachMenuOpen(false);
+    input.click();
   };
 
   return (
@@ -647,6 +737,9 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
                       <span className="text-[13px] font-medium text-brand-blue underline">{t('chat.downloadFile')}</span>
                     </a>
                   )}
+                  {msg.mediaUrl && msg.type === 'voice' && (
+                    <audio src={msg.mediaUrl} controls className="w-full mb-3" />
+                  )}
 
                   <p className={`text-[14px] leading-[1.55] whitespace-pre-wrap ${
                     msg.role === 'user' ? 'text-primary-foreground' : 'text-foreground'
@@ -666,6 +759,16 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
                         </button>
                       ))}
                     </div>
+                  )}
+
+                  {i === messages.length - 1 && (msg.errorKind === 'unavailable' || msg.errorKind === 'connection') && (
+                    <button
+                      onClick={handleRetry}
+                      disabled={sending}
+                      className="mt-3 h-9 px-4 rounded-xl border border-border text-muted-foreground text-[12px] font-semibold btn-press disabled:opacity-50"
+                    >
+                      {t('chat.retry')}
+                    </button>
                   )}
 
                   <p className={`text-[10px] mt-1 ${
@@ -703,18 +806,28 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
           </div>
 
           {/* Attachment preview */}
-          {pendingUpload && pendingUpload.mediaId && (
+          {(uploading || (pendingUpload && pendingUpload.mediaId)) && (
             <div className="flex-shrink-0 px-5 pt-2">
               <div className="bg-card rounded-2xl p-3 border border-border-light flex items-center gap-3">
                 <div className="w-[60px] h-[60px] rounded-xl gradient-hero flex items-center justify-center flex-shrink-0">
-                  <span className="text-xl">📷</span>
+                  {uploading ? (
+                    <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  ) : (
+                    <span className="text-xl">
+                      {pendingUpload?.mediaType === 'voice' ? '🎙️' : pendingUpload?.mediaType === 'pdf' ? '📄' : '📷'}
+                    </span>
+                  )}
                 </div>
                 <div className="flex-1">
-                  <p className="text-[13px] font-medium text-foreground">{pendingUpload.filename}</p>
+                  <p className="text-[13px] font-medium text-foreground">
+                    {uploading ? t('chat.uploading') : pendingUpload?.filename}
+                  </p>
                 </div>
-                <button onClick={() => setPendingUpload(null)} className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
-                  <X size={14} className="text-muted-foreground" />
-                </button>
+                {!uploading && (
+                  <button onClick={() => setPendingUpload(null)} className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
+                    <X size={14} className="text-muted-foreground" />
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -728,10 +841,10 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
                   <div className="w-10 h-1 rounded-full bg-border mx-auto mb-4" />
                   <div className="space-y-1">
                     {[
-                      { icon: Camera, label: t('chat.takePhoto'), type: 'photo' },
-                      { icon: Image, label: t('chat.chooseFromLibrary'), type: 'photo' },
-                      { icon: Film, label: t('chat.video'), type: 'video' },
-                      { icon: FileText, label: t('chat.uploadFile'), type: 'doc' },
+                      { icon: Camera, label: t('chat.takePhoto'), type: 'camera' as const },
+                      { icon: Image, label: t('chat.chooseFromLibrary'), type: 'photo' as const },
+                      { icon: Mic, label: t('chat.voiceMessage'), type: 'voice' as const },
+                      { icon: FileText, label: t('chat.uploadFile'), type: 'doc' as const },
                     ].map((item, i) => (
                       <button key={i} onClick={() => handleAttach(item.type)} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-start">
                         <span className="text-[15px]">{item.label}</span>
@@ -760,16 +873,30 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
             </div>
           )}
 
-          {/* Disabled quick prompt chips (kept for reference, now unclickable) */}
+          {/* Poll timeout — Path B gave up waiting for an async n8n reply */}
+          {pollTimedOut && (
+            <div className="flex-shrink-0 px-5 pb-2">
+              <div className="bg-card rounded-2xl px-4 py-3 border border-border-light flex items-center justify-between gap-3">
+                <p className="text-[12px] text-muted-foreground flex-1">{t('chat.pollTimeout')}</p>
+                <button
+                  onClick={() => { setPollTimedOut(false); if (sessionId) startPolling(sessionId); }}
+                  className="h-8 px-3 rounded-lg border border-border text-muted-foreground text-[12px] font-semibold btn-press flex-shrink-0"
+                >
+                  {t('chat.retry')}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Quick prompt chips */}
           {showChips && (
             <div className="flex-shrink-0 px-5 pt-2 bg-background z-30">
               <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
                 {quickPrompts.map((p, j) => (
                   <button
                     key={j}
-                    disabled
-                    aria-disabled="true"
-                    className="px-3.5 py-1.5 rounded-3xl bg-card text-brand-blue/50 text-[12px] font-semibold border border-brand-blue/10 whitespace-nowrap flex-shrink-0 cursor-not-allowed opacity-60"
+                    onClick={() => handleSend(p)}
+                    className="px-3.5 py-1.5 rounded-3xl bg-card text-brand-blue text-[12px] font-semibold border border-brand-blue/10 whitespace-nowrap flex-shrink-0 hover:bg-brand-blue/5 transition-colors btn-press"
                   >
                     {p}
                   </button>
@@ -804,10 +931,12 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
             <AIMessageLimitReached onUpgrade={() => { setLimitReached(false); setShowUpgrade(true); }} />
           )}
 
-          {/* Fixed Input Bar — disabled */}
+          {/* Fixed Input Bar */}
           <div className="flex-shrink-0 px-5 py-3 pb-[76px] bg-background z-30">
-            <div className="bg-card rounded-[20px] border border-border-light flex items-center px-3 h-[52px] gap-2 opacity-60">
-              <button disabled aria-disabled="true" className="flex-shrink-0 p-1 cursor-not-allowed">
+            <div className="bg-card rounded-[20px] border border-border-light flex items-center px-3 h-[52px] gap-2">
+              {/* Live voice recording isn't implemented yet — attach an audio
+                  file instead via the paperclip menu. */}
+              <button disabled aria-disabled="true" title={t('chat.voiceMessage')} className="flex-shrink-0 p-1 cursor-not-allowed opacity-40">
                 <Mic size={20} className="text-muted-foreground" />
               </button>
               <input
@@ -816,24 +945,35 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
                 accept="image/*,audio/*,.pdf"
                 className="hidden"
                 onChange={handleFileSelect}
-                disabled
               />
-              <button disabled aria-disabled="true" className="flex-shrink-0 p-1 cursor-not-allowed">
+              <button
+                type="button"
+                onClick={() => setAttachMenuOpen(true)}
+                disabled={uploading}
+                className="flex-shrink-0 p-1 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
                 <Paperclip size={18} className="text-muted-foreground" />
               </button>
               <input
                 value={inputVal}
-                readOnly
-                disabled
+                onChange={e => setInputVal(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
                 placeholder={t('chat.placeholder')}
-                className="flex-1 bg-transparent border-none outline-none text-[14px] text-foreground placeholder:text-muted-foreground/50 cursor-not-allowed"
+                className="flex-1 bg-transparent border-none outline-none text-[14px] text-foreground placeholder:text-muted-foreground/50"
               />
               <button
-                disabled
-                aria-disabled="true"
-                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-muted cursor-not-allowed"
+                onClick={() => handleSend()}
+                disabled={sending || (!inputVal.trim() && !pendingUpload)}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 btn-press ${
+                  sending || (!inputVal.trim() && !pendingUpload) ? 'bg-muted cursor-not-allowed' : 'gradient-btn'
+                }`}
               >
-                <Send size={16} className="text-muted-foreground" />
+                <Send size={16} className={sending || (!inputVal.trim() && !pendingUpload) ? 'text-muted-foreground' : 'text-primary-foreground'} />
               </button>
             </div>
           </div>
