@@ -18,6 +18,7 @@ import { parseUserId, resolveExistingUserId } from '@/lib/n8n-validate';
 const schema = z.object({
   userId:              z.string().min(1),
   business_name:       z.string().optional(),
+  business_description: z.string().optional(),
   industry:            z.string().optional(),
   country:             z.string().optional(),
   location:            z.string().optional(),

@@ -18,14 +18,13 @@ const schema = z.object({
   userId:               z.string().min(1),
   tone_of_voice:        z.string().optional(),
   language_preference:  z.string().optional(),
-  business_description: z.string().optional(),
   social_media_goals:   z.string().optional(),
-  color_primary:        z.string().optional(),
-  color_secondary:      z.string().optional(),
+  color:                z.string().optional(),
   preferred_platforms:  z.string().optional(),
   hashtags:             z.string().optional(),
   emojis:               z.string().optional(),
   other:                z.string().optional(),
+  resumer:              z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {

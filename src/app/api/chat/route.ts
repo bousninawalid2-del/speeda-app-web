@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
 
       // Activity data (so n8n doesn't need to query separately)
       business_name:         activity?.business_name ?? '',
-      business_description:  preference?.business_description ?? '',
+      business_description:  activity?.business_description ?? '',
       audience_target:       activity?.audience_target ?? '',
 
       // Preference data
