@@ -12,7 +12,7 @@
 The Speeda backend now sends **enriched payloads** to the n8n webhook with all user state data (activity_exist, preference_exist, user_strategy, etc.) and a new `source: "web"` field. The backend also exposes **callback API endpoints** that n8n should use instead of its own separate Postgres tables.
 
 **App Base URL:** `https://platform.speeda.ai`
-**n8n Secret Header:** All callback APIs require `x-n8n-secret: eI1I8if3TYWPTdnHbggg2wdbzi4EgPsj4m4fqefODTM`
+**n8n Secret Header:** All callback APIs require `x-n8n-secret: <ADMIN_SECRET — value rotated, see Phase 0 of migration plan; retrieve from your secrets manager, never commit>`
 
 ---
 
@@ -92,7 +92,7 @@ In each sub-workflow, **wherever there is a WhatsApp send node**, add a parallel
    - **Headers:**
      ```
      Content-Type: application/json
-     x-n8n-secret: eI1I8if3TYWPTdnHbggg2wdbzi4EgPsj4m4fqefODTM
+     x-n8n-secret: <ADMIN_SECRET — value rotated, see Phase 0 of migration plan; retrieve from your secrets manager, never commit>
      ```
    - **Body (JSON):**
      ```json
@@ -148,7 +148,7 @@ Replace the Postgres insert/update nodes with HTTP Request nodes that call the a
 Replace the Postgres node with an HTTP Request:
 - **Method:** POST
 - **URL:** `https://platform.speeda.ai/api/n8n/activity`
-- **Headers:** `x-n8n-secret: eI1I8if3TYWPTdnHbggg2wdbzi4EgPsj4m4fqefODTM`
+- **Headers:** `x-n8n-secret: <ADMIN_SECRET — value rotated, see Phase 0 of migration plan; retrieve from your secrets manager, never commit>`
 - **Body:**
 ```json
 {
@@ -170,7 +170,7 @@ Replace the Postgres node with an HTTP Request:
 
 - **Method:** POST
 - **URL:** `https://platform.speeda.ai/api/n8n/preference`
-- **Headers:** `x-n8n-secret: eI1I8if3TYWPTdnHbggg2wdbzi4EgPsj4m4fqefODTM`
+- **Headers:** `x-n8n-secret: <ADMIN_SECRET — value rotated, see Phase 0 of migration plan; retrieve from your secrets manager, never commit>`
 - **Body:**
 ```json
 {
@@ -194,7 +194,7 @@ Instead of 3 separate Postgres inserts (strategies → weekly_plannings → draf
 
 - **Method:** POST
 - **URL:** `https://platform.speeda.ai/api/n8n/strategy`
-- **Headers:** `x-n8n-secret: eI1I8if3TYWPTdnHbggg2wdbzi4EgPsj4m4fqefODTM`
+- **Headers:** `x-n8n-secret: <ADMIN_SECRET — value rotated, see Phase 0 of migration plan; retrieve from your secrets manager, never commit>`
 - **Body:**
 ```json
 {
@@ -237,7 +237,7 @@ This single call creates the strategy, all weekly plannings, and all draft posts
 
 - **Method:** PATCH
 - **URL:** `https://platform.speeda.ai/api/n8n/draft-posts`
-- **Headers:** `x-n8n-secret: eI1I8if3TYWPTdnHbggg2wdbzi4EgPsj4m4fqefODTM`
+- **Headers:** `x-n8n-secret: <ADMIN_SECRET — value rotated, see Phase 0 of migration plan; retrieve from your secrets manager, never commit>`
 - **Body:**
 ```json
 {
@@ -271,7 +271,7 @@ Replace the `getLogo` Postgres query nodes with an HTTP Request:
 
 - **Method:** GET
 - **URL:** `https://platform.speeda.ai/api/n8n/images?userId={{ $json.user_id }}&type=logo`
-- **Headers:** `x-n8n-secret: eI1I8if3TYWPTdnHbggg2wdbzi4EgPsj4m4fqefODTM`
+- **Headers:** `x-n8n-secret: <ADMIN_SECRET — value rotated, see Phase 0 of migration plan; retrieve from your secrets manager, never commit>`
 
 **Response format:**
 ```json
@@ -308,7 +308,7 @@ If you want n8n to independently verify user state (for WhatsApp messages that d
 
 - **Method:** GET
 - **URL:** `https://platform.speeda.ai/api/n8n/user?userId={{ $json.body.user_id }}`
-- **Headers:** `x-n8n-secret: eI1I8if3TYWPTdnHbggg2wdbzi4EgPsj4m4fqefODTM`
+- **Headers:** `x-n8n-secret: <ADMIN_SECRET — value rotated, see Phase 0 of migration plan; retrieve from your secrets manager, never commit>`
 
 **Response:**
 ```json
@@ -427,7 +427,7 @@ For **images/voice/pdf** when `source !== "web"`:
 | `POST /api/n8n/respond` | POST | Push async response to web chat |
 | `GET /api/chat/upload?id=xxx` | GET | Serve uploaded media file |
 
-**All endpoints require header:** `x-n8n-secret: eI1I8if3TYWPTdnHbggg2wdbzi4EgPsj4m4fqefODTM`
+**All endpoints require header:** `x-n8n-secret: <ADMIN_SECRET — value rotated, see Phase 0 of migration plan; retrieve from your secrets manager, never commit>`
 (except `GET /api/chat/upload` which is public)
 
 ---
