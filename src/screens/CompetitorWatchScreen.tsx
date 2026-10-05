@@ -531,7 +531,7 @@ export const CompetitorWatchScreen = ({ onBack, onNavigate }: CompetitorWatchScr
         </button>
 
         {/* Notify Me */}
-        <div className="bg-card rounded-2xl p-[18px] border border-border-light mt-5 relative overflow-hidden" style={{ borderLeft: '3px solid transparent', borderImage: 'linear-gradient(to bottom, hsl(233,100%,42%), hsl(193,100%,48%)) 1 0 0 0' }}>
+        <div className="bg-card rounded-2xl p-[18px] border border-border-light mt-5 relative overflow-hidden" style={{ borderInlineStart: '3px solid transparent', borderImage: 'linear-gradient(to bottom, hsl(233,100%,42%), hsl(193,100%,48%)) 1 0 0 0' }}>
           <p className="text-[14px] font-bold text-foreground">{t('competitor.notifyTitle')}</p>
           <div className={`mt-3 ${isMobile ? 'space-y-2' : 'flex gap-2'}`}>
             <input type="email" value={notifyEmail} onChange={e => setNotifyEmail(e.target.value)} placeholder={t('competitor.yourEmail')}

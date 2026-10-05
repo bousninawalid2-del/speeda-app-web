@@ -94,7 +94,7 @@ type Filter = 'Active' | 'Scheduled' | 'Completed' | 'Drafts';
 const CampaignSkeleton = () => (
   <div className="space-y-3">
     {[1, 2, 3].map(i => (
-      <div key={i} className="bg-card rounded-2xl border border-border-light overflow-hidden animate-pulse" style={{ borderLeft: '4px solid hsl(157,100%,42%)' }}>
+      <div key={i} className="bg-card rounded-2xl border border-border-light overflow-hidden animate-pulse" style={{ borderInlineStart: '4px solid hsl(157,100%,42%)' }}>
         <div className="p-4 space-y-3">
           <div className="flex items-center gap-2">
             <div className="h-4 w-32 bg-muted rounded-lg" />
@@ -580,7 +580,7 @@ export const CampaignsScreen = ({ onNavigate }: CampaignsScreenProps) => {
                   return (
                     <motion.div key={c.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                       className="bg-card rounded-2xl border border-border-light overflow-hidden card-tap cursor-pointer"
-                      style={{ borderLeft: `4px solid ${c.status === 'Active' ? 'hsl(157,100%,42%)' : c.status === 'Scheduled' ? 'hsl(233,100%,42%)' : '#9ca3af'}` }}
+                      style={{ borderInlineStart: `4px solid ${c.status === 'Active' ? 'hsl(157,100%,42%)' : c.status === 'Scheduled' ? 'hsl(233,100%,42%)' : '#9ca3af'}` }}
                       onClick={() => setSelectedCampaign(c)}
                     >
                       <div className="p-4">

@@ -20,7 +20,7 @@ i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 });
 
-const applyDir = (lang: string) => {
+export const applyDir = (lang: string) => {
   if (typeof document === 'undefined') return;
   document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
   document.documentElement.lang = lang;

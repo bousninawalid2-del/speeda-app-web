@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useTranslation } from 'react-i18next';
 import { BottomNav } from '@/components/BottomNav';
 import { DesktopSidebar } from '@/components/DesktopSidebar';
 import { DesktopTopBar } from '@/components/DesktopTopBar';
@@ -22,14 +21,12 @@ function getActiveNav(pathname: string): string {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { i18n } = useTranslation();
   const isMobile = useIsMobile();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showSessionExpired, setShowSessionExpired] = useState(false);
 
   const activeNav = getActiveNav(pathname);
   const showNav = mainTabPaths.includes(pathname);
-  const isRTL = i18n.language === 'ar';
   const sidebarWidth = sidebarCollapsed ? 72 : 260;
 
   const handleNavigate = (screen: string) => {
@@ -62,8 +59,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
       <div
-        className="flex-1 flex flex-col min-h-screen transition-all duration-250"
-        style={{ marginLeft: isRTL ? 0 : sidebarWidth, marginRight: isRTL ? sidebarWidth : 0 }}
+        className="flex-1 min-w-0 flex flex-col min-h-screen transition-all duration-250"
+        style={{ marginInlineStart: sidebarWidth }}
       >
         <DesktopTopBar onNavigate={handleNavigate} />
         <main className="flex-1 overflow-y-auto desktop-scrollbar">

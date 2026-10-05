@@ -282,7 +282,7 @@ export const MosScoreScreen = ({ onBack, onNavigate, liveData, isLoading }: MosS
                 <motion.div
                   key={r.slug}
                   className="bg-card rounded-2xl border border-border-light p-4 overflow-hidden"
-                  style={{ borderLeft: `4px solid ${r.border}` }}
+                  style={{ borderInlineStart: `4px solid ${r.border}` }}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3 }}

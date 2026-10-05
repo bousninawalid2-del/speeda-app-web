@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useFreeTier } from '../components/FreeTier';
 import { AnimatePresence } from 'framer-motion';
-import { useTranslation } from 'react-i18next';
 import { SplashScreen } from './SplashScreen';
 import { OnboardingScreen } from './OnboardingScreen';
 import { AuthScreen } from './AuthScreen';
@@ -55,7 +54,6 @@ const mainTabs = ['home', 'chat', 'chat-engagement', 'chat-engagement-reviews', 
 const desktopTopBarScreens = ['home', 'create', 'campaigns', 'analytics', 'social', 'notifications', 'settings', 'tokens', 'referral', 'aiActivity', 'actionPlan', 'competitorWatch', 'profile', 'security', 'planComparison', 'billingHistory', 'editBrandVoice', 'topUp', 'weeklyReport', 'helpCenter', 'contactSupport', 'whatsNew', 'subscription', 'quickad', 'mosScore', 'aiBriefingPreview', 'menuManagement', 'postHistory', 'accountHealth', 'postEdit', 'engagement', 'linkTracking'];
 
 const Index = () => {
-  const { i18n } = useTranslation();
   const [screen, setScreen] = useState<Screen>('splash');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [pendingActionCardId, setPendingActionCardId] = useState<number | null>(null);
@@ -69,7 +67,6 @@ const Index = () => {
   const activeNav = screen.startsWith('chat') ? 'chat' : screen;
   const showDesktopLayout = !isMobile && !isPreOnboarding;
   const showDesktopTopBar = showDesktopLayout && desktopTopBarScreens.includes(screen);
-  const isRTL = i18n.language === 'ar';
 
   const handleNavigate = (s: string) => {
     if (s.startsWith('__doaction__')) {
@@ -171,8 +168,8 @@ const Index = () => {
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
       <div
-        className="flex-1 flex flex-col min-h-screen transition-all duration-250"
-        style={{ marginLeft: isRTL ? 0 : sidebarWidth, marginRight: isRTL ? sidebarWidth : 0 }}
+        className="flex-1 min-w-0 flex flex-col min-h-screen transition-all duration-250"
+        style={{ marginInlineStart: sidebarWidth }}
       >
         {showDesktopTopBar && (
           <DesktopTopBar onNavigate={(s) => setScreen(s as Screen)} />

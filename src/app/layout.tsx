@@ -20,13 +20,20 @@ export const metadata: Metadata = {
   },
 };
 
+// Runs before first paint so Arabic users never see an LTR flash, and keeps
+// <html> in sync with the saved language (mirrors applyDir in src/i18n).
+const LANG_BOOTSTRAP = `try{var l=localStorage.getItem('speeda-lang');if(l==='ar'||l==='fr'||l==='en'){var d=document.documentElement;d.lang=l;d.dir=l==='ar'?'rtl':'ltr';d.style.fontFamily=l==='ar'?"'IBM Plex Sans Arabic','Poppins',sans-serif":"'Poppins',sans-serif"}}catch(e){}`;
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: LANG_BOOTSTRAP }} />
+      </head>
       <body className="min-h-screen bg-background text-foreground antialiased">
         <Providers>{children}</Providers>
       </body>
