@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   description: 'AI-powered social media management and content creation platform',
   icons: {
     icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml', size: 'any' },
+      { url: '/favicon.svg', type: 'image/svg+xml', sizes: 'any' },
     ],
     apple: '/favicon.svg',
   },

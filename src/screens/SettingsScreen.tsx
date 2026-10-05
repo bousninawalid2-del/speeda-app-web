@@ -118,7 +118,7 @@ export const SettingsScreen = ({ onBack, onNavigate, onLogout }: SettingsScreenP
     return map;
   }, [connectedPlatformsData, socialData]);
 
-  const paymentMethods = useMemo(() => {
+  const paymentMethods = useMemo<{ id: string; brand: string; displayBrand: string; last4: string; isDefault: boolean }[]>(() => {
     const methods = Array.isArray((billingData as any)?.paymentMethods) ? (billingData as any).paymentMethods : [];
     return methods.map((method: any) => {
       const brand = String(method?.brand ?? method?.type ?? '').toLowerCase();

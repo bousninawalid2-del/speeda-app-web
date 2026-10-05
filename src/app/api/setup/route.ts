@@ -30,6 +30,27 @@ const setupSchema = z.object({
   other:                z.string().optional(),
 });
 
+function joinBrandColors(primary?: string, secondary?: string): string | undefined {
+  const colors = [primary, secondary].filter((c): c is string => !!c);
+  return colors.length ? colors.join(',') : undefined;
+}
+
+// The setup form works with color_primary / color_secondary / business_description,
+// which are stored in Preference.color and Activity.business_description.
+function toClientPreference<P extends { color: string | null }>(
+  preference: P | null,
+  activity: { business_description: string | null } | null,
+) {
+  if (!preference) return preference;
+  const [color_primary = null, color_secondary = null] = (preference.color ?? '').split(',');
+  return {
+    ...preference,
+    color_primary: color_primary || null,
+    color_secondary: color_secondary || null,
+    business_description: activity?.business_description ?? null,
+  };
+}
+
 export async function POST(req: NextRequest) {
   const auth = requireAuth(req);
   if (auth instanceof Response) return auth;
@@ -49,17 +70,19 @@ export async function POST(req: NextRequest) {
     preferred_platforms, hashtags, emojis, other,
   } = parsed.data;
   const finalLocation = location ?? country;
+  // Preference stores one `color` column; keep both brand colors by joining them.
+  const color = joinBrandColors(color_primary, color_secondary);
 
   const [activity, preference] = await prisma.$transaction([
     prisma.activity.upsert({
       where:  { userId: user.sub },
-      create: { userId: user.sub, business_name, industry, location: finalLocation, opening_hours, business_size, year_founded, audience_target, unique_selling_point, certifications },
-      update: { business_name, industry, location: finalLocation, opening_hours, business_size, year_founded, audience_target, unique_selling_point, certifications },
+      create: { userId: user.sub, business_name, business_description, industry, location: finalLocation, opening_hours, business_size, year_founded, audience_target, unique_selling_point, certifications },
+      update: { business_name, business_description, industry, location: finalLocation, opening_hours, business_size, year_founded, audience_target, unique_selling_point, certifications },
     }),
     prisma.preference.upsert({
       where:  { userId: user.sub },
-      create: { userId: user.sub, tone_of_voice, language_preference, business_description, social_media_goals, color_primary, color_secondary, preferred_platforms, hashtags, emojis, other },
-      update: { tone_of_voice, language_preference, business_description, social_media_goals, color_primary, color_secondary, preferred_platforms, hashtags, emojis, other },
+      create: { userId: user.sub, tone_of_voice, language_preference, social_media_goals, color, preferred_platforms, hashtags, emojis, other },
+      update: { tone_of_voice, language_preference, social_media_goals, color, preferred_platforms, hashtags, emojis, other },
     }),
   ]);
 
@@ -67,7 +90,7 @@ export async function POST(req: NextRequest) {
   syncPreferenceToN8n(user.sub).catch(() => {});
   syncActivityToN8n(user.sub).catch(() => {});
 
-  return Response.json(serializePrisma({ activity, preference }));
+  return Response.json(serializePrisma({ activity, preference: toClientPreference(preference, activity) }));
 }
 
 export async function GET(req: NextRequest) {
@@ -84,5 +107,5 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
-  return Response.json(serializePrisma({ activity, preference, images }));
+  return Response.json(serializePrisma({ activity, preference: toClientPreference(preference, activity), images }));
 }

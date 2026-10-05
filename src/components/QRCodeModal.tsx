@@ -83,7 +83,7 @@ export const QRCodeModal = ({ url, onClose }: QRCodeModalProps) => {
       const blob = await qrInstance.current.getRawData('png');
       if (blob) {
         await navigator.clipboard.write([
-          new ClipboardItem({ 'image/png': blob }),
+          new ClipboardItem({ 'image/png': blob as Blob }),
         ]);
         toast.success(t('qr.copied', 'QR code copied ✓'));
       }

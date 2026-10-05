@@ -181,8 +181,8 @@ async function main() {
       userId: user.id,
       business_name: 'Speeda Test Business',
       industry: 'Technology',
-      country: 'Saudi Arabia',
-      location: 'Riyadh',
+      location: 'Riyadh, Saudi Arabia',
+      business_description: 'AI-powered social media companion for Saudi businesses',
       business_size: 'Small (1-10)',
       audience_target: 'Young professionals 25-35',
       unique_selling_point: 'AI-powered social media management',
@@ -198,10 +198,8 @@ async function main() {
       userId: user.id,
       tone_of_voice: 'Professional, Bold',
       language_preference: 'saudi, english',
-      business_description: 'AI-powered social media companion for Saudi businesses',
       social_media_goals: 'More Followers, Brand Awareness',
-      color_primary: '#0020d4',
-      color_secondary: '#00c7f3',
+      color: '#0020d4,#00c7f3',
     },
   });
   console.log(`  ✓ Preferences: tone, language, colors`);

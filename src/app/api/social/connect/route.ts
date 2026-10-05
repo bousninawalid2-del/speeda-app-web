@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   const { user } = auth;
 
   // Fetch or create Ayrshare profile
-  let dbUser = await prisma.user.findUnique({
+  const dbUser = await prisma.user.findUnique({
     where: { id: user.sub },
     select: { email: true, profileKey: true, ayrshareUserId: true },
   });

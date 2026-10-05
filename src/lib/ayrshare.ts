@@ -164,10 +164,13 @@ export async function getConnectedPlatforms(
     if (!res.ok) return null;
     const data = await res.json();
     if (data.platforms && Object.keys(data.platforms).length > 0) {
-      return Object.fromEntries(Object.entries(data.platforms).map(([s, i]) => [s.toLowerCase(), { username: i.username, followers: i.followers || 0 }]));
+      return Object.fromEntries(
+        Object.entries(data.platforms as Record<string, { username?: string; followers?: number }>)
+          .map(([s, i]) => [s.toLowerCase(), { username: i.username, followers: i.followers || 0 }]),
+      );
     }
     if (Array.isArray(data.activeSocialAccounts) && data.activeSocialAccounts.length > 0) {
-      return Object.fromEntries(data.activeSocialAccounts.map((s) => [s.toLowerCase(), {}]));
+      return Object.fromEntries((data.activeSocialAccounts as string[]).map((s) => [s.toLowerCase(), {}]));
     }
     return {};
   } catch {

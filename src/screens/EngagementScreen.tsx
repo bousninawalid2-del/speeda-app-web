@@ -368,7 +368,7 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
       {autoResponses.map(ar => (
         <div key={ar.id} className="bg-card rounded-2xl p-4 border border-border-light">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[12px] font-bold text-brand-blue bg-brand-blue/10 px-2 py-0.5 rounded-lg">{t('engagement.trigger', 'Trigger')}: "{ar.trigger}"</span>
+            <span className="text-[12px] font-bold text-brand-blue bg-brand-blue/10 px-2 py-0.5 rounded-lg">{t('engagement.trigger', 'Trigger')}: &quot;{ar.trigger}&quot;</span>
             <button onClick={() => toggleAutoResponse(ar.id)} className={`w-10 h-5 rounded-full p-0.5 transition-colors ${ar.enabled ? 'bg-green-accent' : 'bg-border'}`}>
               <div className={`w-4 h-4 rounded-full bg-card shadow transition-transform ${ar.enabled ? 'translate-x-5 rtl:-translate-x-5' : ''}`} />
             </button>
@@ -436,7 +436,7 @@ export const EngagementScreen = ({ onBack, onNavigate }: { onBack: () => void; o
           <div className="px-4 py-2 bg-green-accent/10 border-t border-green-accent/20">
             <div className="flex items-center gap-2">
               <Bot size={14} className="text-green-accent" />
-              <span className="text-[11px] font-semibold text-green-accent">{t('engagement.autoResponseMatched', 'Auto-response matched')}: "{matchedAuto.trigger}"</span>
+              <span className="text-[11px] font-semibold text-green-accent">{t('engagement.autoResponseMatched', 'Auto-response matched')}: &quot;{matchedAuto.trigger}&quot;</span>
             </div>
           </div>
         )}

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomBytes, randomInt } from 'crypto';
 import { verifyAccessToken, AccessTokenPayload } from './jwt';
 
 /**
@@ -23,14 +24,12 @@ export function requireAuth(
 
 /** Generate a cryptographically secure 6-digit numeric OTP */
 export function generateOTP(): string {
-  const crypto = require('crypto') as typeof import('crypto');
-  return crypto.randomInt(100000, 1000000).toString();
+  return randomInt(100000, 1000000).toString();
 }
 
 /** Generate a secure random hex token (32 bytes = 64 hex chars) */
 export function generateSecureToken(): string {
-  const crypto = require('crypto') as typeof import('crypto');
-  return crypto.randomBytes(32).toString('hex');
+  return randomBytes(32).toString('hex');
 }
 
 /** Standard error response helper */

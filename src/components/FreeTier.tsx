@@ -18,7 +18,7 @@ interface FreeTierState {
   tokensLimit:        number;
   trialDaysRemaining: number;
   trialExpired:       boolean;
-  useMessage: () => boolean;
+  consumeMessage: () => boolean;
   upgrade:    () => void;
 }
 
@@ -31,7 +31,7 @@ const FreeTierContext = createContext<FreeTierState>({
   tokensLimit:        50,
   trialDaysRemaining: 0,
   trialExpired:       false,
-  useMessage: () => true,
+  consumeMessage: () => true,
   upgrade:    () => {},
 });
 
@@ -91,7 +91,7 @@ export const FreeTierProvider = ({ children }: { children: React.ReactNode }) =>
       .catch(() => {});
   }, [isAuthenticated]);
 
-  const useMessage = () => {
+  const consumeMessage = () => {
     if (trialExpired && currentPlan === 'free_trial') {
       if (messagesUsed >= maxMessages) return false;
     }
@@ -102,7 +102,7 @@ export const FreeTierProvider = ({ children }: { children: React.ReactNode }) =>
   const upgrade = () => setIsFree(false);
 
   return (
-    <FreeTierContext.Provider value={{ isFree, currentPlan, messagesUsed, maxMessages, tokensUsed, tokensLimit, trialDaysRemaining, trialExpired, useMessage, upgrade }}>
+    <FreeTierContext.Provider value={{ isFree, currentPlan, messagesUsed, maxMessages, tokensUsed, tokensLimit, trialDaysRemaining, trialExpired, consumeMessage, upgrade }}>
       {children}
     </FreeTierContext.Provider>
   );

@@ -1,6 +1,5 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
-import { PrismaPg } from "@prisma/adapter-pg";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -9,7 +8,5 @@ export default defineConfig({
   },
   migrations: {
     path: "prisma/migrations",
-    adapter: async () =>
-      new PrismaPg({ connectionString: process.env["DATABASE_URL"] }),
   },
 });

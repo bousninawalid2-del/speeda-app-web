@@ -244,7 +244,7 @@ interface AIChatScreenProps {
 
 export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, initialInputValue, onNavigate }: AIChatScreenProps) => {
   const { t, i18n } = useTranslation();
-  const { isFree, useMessage } = useFreeTier();
+  const { isFree, consumeMessage } = useFreeTier();
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -581,7 +581,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
     const msgText = (text || inputVal).trim();
     if (!msgText && !pendingUpload) return;
 
-    if (isFree && !useMessage()) {
+    if (isFree && !consumeMessage()) {
       setLimitReached(true);
       return;
     }
