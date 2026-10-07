@@ -638,6 +638,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
     setPendingUpload(null);
     setShowChips(true);
     setSubTab('chat');
+    setHistoryOpen(false);
   };
 
   const filteredEngagement = engFilter === 'All' ? engagementFeed : engagementFeed.filter(m => m.filter === engFilter);

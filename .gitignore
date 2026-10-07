@@ -50,3 +50,5 @@ ayrshare/
 
 .kilo
 tasks-bilel
+# test coverage output
+coverage/
