@@ -7,6 +7,20 @@ import smashBurgerImg from '@/assets/demo-smash-burger.jpg';
 import { useFreeTier, AIMessageLimitBanner, AIMessageLimitReached, UpgradePrompt } from '@/components/FreeTier';
 import { getSmartReplies } from '@/components/SmartReplyEngine';
 import { toast } from 'sonner';
+import { Fragment, type ReactNode } from 'react';
+
+// n8n replies are written for WhatsApp (*bold*, _italic_, ~strike~, ```mono```).
+// Render that markup on web instead of showing the raw symbols.
+const WA_FORMAT = /(```[\s\S]+?```|(?<![\w*])\*[^*\n]+\*(?![\w*])|(?<![\w_])_[^_\n]+_(?![\w_])|(?<![\w~])~[^~\n]+~(?![\w~]))/g;
+function renderWhatsAppFormatting(text: string): ReactNode {
+  return text.split(WA_FORMAT).map((part, i) => {
+    if (part.startsWith('```') && part.endsWith('```') && part.length > 6) return <code key={i} className="font-mono text-[13px]">{part.slice(3, -3)}</code>;
+    if (part.length > 2 && part.startsWith('*') && part.endsWith('*')) return <strong key={i}>{part.slice(1, -1)}</strong>;
+    if (part.length > 2 && part.startsWith('_') && part.endsWith('_')) return <em key={i}>{part.slice(1, -1)}</em>;
+    if (part.length > 2 && part.startsWith('~') && part.endsWith('~')) return <s key={i}>{part.slice(1, -1)}</s>;
+    return <Fragment key={i}>{part}</Fragment>;
+  });
+}
 
 // ─── Engagement Data ──────────────────────────────────────────────────────────
 
@@ -229,7 +243,7 @@ interface ChatMessage {
 
 interface PendingSend {
   text: string;
-  interactive?: { isInteractive: boolean; interactiveTitle: string };
+  interactive?: { isInteractive: boolean; interactiveTitle: string; interactiveId?: string };
   upload?: { mediaId: string; mediaUrl: string; mediaType: 'image' | 'voice' | 'pdf'; filename: string } | null;
 }
 
@@ -501,7 +515,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
   // without pushing a duplicate "user message" bubble.
   const sendToBackend = useCallback(async (
     msgText: string,
-    interactive?: { isInteractive: boolean; interactiveTitle: string },
+    interactive?: { isInteractive: boolean; interactiveTitle: string; interactiveId?: string },
     upload?: PendingSend['upload'],
   ) => {
     setIsTyping(true);
@@ -577,7 +591,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
     }
   }, [sessionId, startPolling, t]);
 
-  const handleSend = async (text?: string, interactive?: { isInteractive: boolean; interactiveTitle: string }) => {
+  const handleSend = async (text?: string, interactive?: { isInteractive: boolean; interactiveTitle: string; interactiveId?: string }) => {
     const msgText = (text || inputVal).trim();
     if (!msgText && !pendingUpload) return;
 
@@ -612,7 +626,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
   };
 
   const handleOptionClick = (option: ChatOption) => {
-    handleSend(option.title, { isInteractive: true, interactiveTitle: option.id });
+    handleSend(option.title, { isInteractive: true, interactiveTitle: option.title, interactiveId: option.id });
   };
 
   const handleNewChat = () => {
@@ -744,7 +758,7 @@ export const AIChatScreen = ({ initialTab = 'chat', initialEngagementFilter, ini
                   <p className={`text-[14px] leading-[1.55] whitespace-pre-wrap ${
                     msg.role === 'user' ? 'text-primary-foreground' : 'text-foreground'
                   }`}>
-                    {msg.content}
+                    {msg.role === 'assistant' ? renderWhatsAppFormatting(msg.content) : msg.content}
                   </p>
 
                   {msg.options && msg.options.length > 0 && (

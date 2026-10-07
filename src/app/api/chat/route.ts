@@ -1,18 +1,19 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/db';
 import { requireAuth, errorResponse } from '@/lib/auth-guard';
 import { rateLimit } from '@/lib/rate-limit';
-import { makeDiscussionCode } from '@/lib/discussion-code';
+import { buildN8nPayload } from '@/lib/n8n-payload';
+import { normalizeN8nReply } from '@/lib/n8n-reply';
 import { traceLog } from '@/lib/trace';
 
 /**
  * POST /api/chat
  *
- * Proxies chat messages to an n8n webhook workflow with enriched user state.
- * n8n expects a full payload including user flags, activity, preferences, etc.
+ * Proxies chat messages to the n8n root webhook. The payload is built by
+ * buildN8nPayload, shared with the WhatsApp webhook, so both channels reach
+ * n8n in the same shape.
  *
- * Request:  { message, sessionId?, isInteractive?, interactiveTitle?, mediaId?, mediaType? }
+ * Request:  { message, sessionId?, isInteractive?, interactiveTitle?, interactiveId?, mediaId?, mediaType? }
  * Response: { reply, type, mediaUrl?, sessionId, options? }
  */
 
@@ -21,6 +22,7 @@ const schema = z.object({
   sessionId:        z.string().optional(),
   isInteractive:    z.boolean().optional(),
   interactiveTitle: z.string().optional(),
+  interactiveId:    z.string().optional(),
   mediaId:          z.string().optional(),
   mediaType:        z.enum(['image', 'voice', 'pdf']).optional(),
 });
@@ -45,83 +47,20 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return errorResponse(parsed.error.issues[0].message, 400);
 
-  const { message, sessionId, isInteractive, interactiveTitle, mediaId, mediaType } = parsed.data;
-  const discussionCode = makeDiscussionCode(user.sub);
+  const { message, sessionId, isInteractive, interactiveTitle, interactiveId, mediaId, mediaType } = parsed.data;
 
   try {
-    // ── Fetch user state in parallel ───────────────────────────────────────
-    const [dbUser, activity, preference, activeStrategy] = await Promise.all([
-      prisma.user.findUnique({
-        where: { id: user.sub },
-        select: {
-          id: true, name: true, email: true, phone: true,
-          isVerified: true, tokenBalance: true, profileKey: true,
-        },
-      }),
-      prisma.activity.findUnique({ where: { userId: user.sub } }),
-      prisma.preference.findUnique({ where: { userId: user.sub } }),
-      prisma.strategy.findFirst({
-        where: { userId: user.sub, status: 'active' },
-        orderBy: { createdAt: 'desc' },
-      }),
-    ]);
-
     const resolvedSessionId = sessionId ?? `${user.sub}-${Date.now()}`;
-
-    // ── Build enriched payload matching n8n root workflow expectations ────
-    const n8nPayload = {
-      // Core identifiers
-      phone:      dbUser?.phone ?? resolvedSessionId,
-      user_id:    user.sub,
-      session_id: resolvedSessionId,
-      email:      user.email,
-      username:   user.name ?? '',
-      message,
-
-      // Input type flags
-      is_text:        !mediaType && !isInteractive,
-      is_image:       mediaType === 'image',
-      is_voice:       mediaType === 'voice',
-      is_pdf:         mediaType === 'pdf',
-      is_interactive: isInteractive ?? false,
-
-      // Media IDs — raw IDs, same pattern as WhatsApp media IDs
-      // n8n resolves the download URL based on source:
-      //   web   → GET {APP_URL}/api/chat/upload?id={media_id}
-      //   whatsapp → WhatsApp Business Cloud media download
-      image_media_id:  mediaType === 'image' ? (mediaId ?? '') : '',
-      voice_media_id:  mediaType === 'voice' ? (mediaId ?? '') : '',
-      pdf_media_id:    mediaType === 'pdf'   ? (mediaId ?? '') : '',
-      image_caption:   '',
-
-      // Interactive message data
-      interactive_title: interactiveTitle ?? '',
-
-      // User state flags — n8n uses these for routing
-      user_exist:       !!dbUser,
-      token_valide:     (dbUser?.tokenBalance ?? 0) > 0,
-      restapiRegister:  dbUser?.isVerified ?? false,
-      activity_exist:   !!activity,
-      preference_exist: !!preference,
-      user_strategy:    !!activeStrategy,
-
-      // Activity data (so n8n doesn't need to query separately)
-      business_name:         activity?.business_name ?? '',
-      business_description:  activity?.business_description ?? '',
-      audience_target:       activity?.audience_target ?? '',
-
-      // Preference data
-      preference_text:       preference ? JSON.stringify(preference) : '',
-      preferred_platforms:   preference?.preferred_platforms ?? '',
-
-      // Conversation tracking
-      wa_message_id: '',
-      discu_code:    discussionCode,
-      discu_key:     discussionCode,
-
-      // Source channel — lets n8n know this is web chat, not WhatsApp
-      source: 'web',
-    };
+    const n8nPayload = await buildN8nPayload({
+      channel: 'web',
+      userId: user.sub,
+      sessionId: resolvedSessionId,
+      message: {
+        text: message,
+        interactive: isInteractive ? { id: interactiveId, title: interactiveTitle } : null,
+        media: mediaType && mediaId ? { type: mediaType, id: mediaId } : null,
+      },
+    });
 
     traceLog('chat.webhook.request', resolvedSessionId, { userId: user.sub.toString(), isInteractive: !!isInteractive, mediaType });
 
@@ -138,24 +77,20 @@ export async function POST(req: NextRequest) {
       return errorResponse('Chat service unavailable', 502);
     }
 
-    const data = await res.json();
+    const data: unknown = await res.json().catch(() => ({}));
 
-    // n8n can return various shapes — normalize
-    const reply    = data.reply ?? data.output ?? data.text ?? data.message ?? '';
-    const type     = data.type ?? 'text';
-    const outMedia = data.mediaUrl ?? data.imageUrl ?? data.videoUrl ?? data.fileUrl ?? undefined;
+    // Reduce whatever n8n returned (text, agent JSON, raw WhatsApp payload)
+    // to what the web chat renders.
+    const normalized = normalizeN8nReply(data);
 
-    // Interactive options (buttons/lists) from n8n
-    const options = data.options ?? data.interactive_options ?? undefined;
-
-    traceLog('chat.webhook.response', resolvedSessionId, { type });
+    traceLog('chat.webhook.response', resolvedSessionId, { type: normalized?.type ?? 'none' });
 
     return Response.json({
-      reply,
-      type,
-      mediaUrl: outMedia,
-      sessionId: data.sessionId ?? resolvedSessionId,
-      options,
+      reply: normalized?.reply ?? '',
+      type: normalized?.type ?? 'text',
+      mediaUrl: normalized?.mediaUrl,
+      sessionId: resolvedSessionId,
+      options: normalized?.options,
     });
   } catch (err) {
     console.error('[chat] n8n webhook exception', err);

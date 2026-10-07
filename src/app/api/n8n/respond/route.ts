@@ -7,6 +7,7 @@ import { rateLimit } from '@/lib/rate-limit';
 import { resolveExistingUserId } from '@/lib/n8n-validate';
 import { toUserIdString } from '@/lib/user-id';
 import { traceLog } from '@/lib/trace';
+import { normalizeN8nReply } from '@/lib/n8n-reply';
 
 /**
  * POST /api/n8n/respond
@@ -17,18 +18,16 @@ import { traceLog } from '@/lib/trace';
  * work across multiple server instances.
  */
 
-const optionSchema = z.object({
-  id:    z.string(),
-  title: z.string(),
-});
-
+// reply/options are loosely typed on purpose: workflows built for WhatsApp
+// sometimes push a raw WhatsApp Cloud API payload or an agent JSON string.
+// normalizeN8nReply turns any of those into clean text + options.
 const postSchema = z.object({
   sessionId: z.string().min(1),
   userId:    z.string().min(1),
-  reply:     z.string(),
-  type:      z.enum(['text', 'image', 'video', 'file']).default('text'),
+  reply:     z.unknown(),
+  type:      z.string().optional(),
   mediaUrl:  z.string().optional(),
-  options:   z.array(optionSchema).optional(),
+  options:   z.unknown().optional(),
 });
 
 const TTL_MS = 60 * 60 * 1000; // drop unpolled/consumed rows after 1 hour
@@ -46,7 +45,11 @@ export async function POST(req: NextRequest) {
   const parsed = postSchema.safeParse(body);
   if (!parsed.success) return errorResponse(parsed.error.issues[0].message, 400);
 
-  const { sessionId, reply, type, mediaUrl, options } = parsed.data;
+  const { sessionId, reply: rawReply, type: rawType, mediaUrl: rawMediaUrl, options: rawOptions } = parsed.data;
+  const normalized = normalizeN8nReply(rawReply, { type: rawType, mediaUrl: rawMediaUrl, options: rawOptions });
+  // e.g. a WhatsApp reaction (👍 on the user's message): nothing to show on web.
+  if (!normalized) return Response.json({ ok: true, skipped: true });
+  const { reply, type, mediaUrl, options } = normalized;
 
   if (!rateLimit(`n8n:respond:${sessionId}`, { limit: 30, windowMs: 60_000 })) {
     return errorResponse('Too many responses for this session', 429);

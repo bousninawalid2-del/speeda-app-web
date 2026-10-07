@@ -4,6 +4,7 @@ import { requireN8nAuth } from '@/lib/n8n-guard';
 import { errorResponse } from '@/lib/auth-guard';
 import { toJsonSafe, toUserIdString } from '@/lib/user-id';
 import { parseUserId } from '@/lib/n8n-validate';
+import { computeUserFlags } from '@/lib/n8n-payload';
 
 /**
  * GET /api/n8n/user?userId=xxx
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
       where: { id: normalizedUserId },
       select: {
         id: true, name: true, email: true, phone: true,
-        isVerified: true, tokenBalance: true, profileKey: true,
+        isVerified: true, tokenBalance: true, profileKey: true, password: true,
       },
     }),
     prisma.activity.findUnique({ where: { userId: normalizedUserId } }),
@@ -48,18 +49,15 @@ export async function GET(req: NextRequest) {
 
   if (!user) return errorResponse('User not found', 404);
 
+  const { password, ...publicUser } = user;
+  const flags = await computeUserFlags({ id: user.id, password, isVerified: user.isVerified }, 'whatsapp');
+
   return Response.json({
-    user: { ...user, id: toUserIdString(user.id) },
+    user: { ...publicUser, id: toUserIdString(user.id) },
     activity: toJsonSafe(activity),
     preference: toJsonSafe(preference),
     strategy: toJsonSafe(strategy),
     images: toJsonSafe(images),
-    flags: {
-      user_exist: true,
-      token_valide: user.tokenBalance > 0,
-      activity_exist: !!activity,
-      preference_exist: !!preference,
-      user_strategy: !!strategy,
-    },
+    flags,
   });
 }
